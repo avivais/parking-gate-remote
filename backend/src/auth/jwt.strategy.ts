@@ -3,15 +3,12 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, StrategyOptions } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
-
-export interface JwtPayload {
-    sub: string;
-    role: string;
-}
+import { JwtPayload } from './auth.types';
 
 function extractJwtFromRequest(req: Request): string | null {
     const authorization =
-        req.headers.authorization ?? (req.headers.Authorization as string | undefined);
+        req.headers.authorization ??
+        (req.headers.Authorization as string | undefined);
 
     if (!authorization || typeof authorization !== 'string') {
         return null;
@@ -41,7 +38,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
             secretOrKey: jwtSecret,
         };
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         super(options);
     }
 
