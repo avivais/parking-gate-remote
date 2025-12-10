@@ -1,5 +1,7 @@
 import {
     BadRequestException,
+    ConflictException,
+    ForbiddenException,
     Injectable,
     UnauthorizedException,
 } from '@nestjs/common';
@@ -8,7 +10,7 @@ import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { User, UserDocument, UserStatus } from '../users/schemas/user.schema';
+import { User, UserDocument } from '../users/schemas/user.schema';
 import { JwtPayload } from './auth.types';
 
 export interface AuthTokens {
@@ -20,6 +22,18 @@ export interface AuthUserResponse {
     tokens: AuthTokens;
 }
 
+export interface MeTokenInfo {
+    expiresAtUnix: number;
+    expiresAtIso: string;
+    remainingMs: number;
+    remainingSeconds: number;
+}
+
+export interface MeResponse {
+    user: User | null;
+    token: MeTokenInfo | null;
+}
+
 @Injectable()
 export class AuthService {
     constructor(
@@ -27,10 +41,11 @@ export class AuthService {
         private readonly jwtService: JwtService,
     ) {}
 
-    private buildAccessToken(user: UserDocument): string {
+    private buildAccessToken(user: UserDocument, deviceId: string): string {
         const payload: JwtPayload = {
-            sub: String(user.id),
-            role: String(user.role),
+            sub: user._id.toString(),
+            role: user.role,
+            deviceId,
         };
 
         return this.jwtService.sign(payload);
@@ -38,6 +53,7 @@ export class AuthService {
 
     async register(registerDto: RegisterDto): Promise<User> {
         const existing = await this.usersService.findByEmail(registerDto.email);
+
         if (existing) {
             throw new BadRequestException(
                 'User with this email already exists',
@@ -46,46 +62,123 @@ export class AuthService {
 
         const passwordHash = await bcrypt.hash(registerDto.password, 10);
 
-        const user = await this.usersService.createLocalUser(
-            registerDto.name,
-            registerDto.email,
+        const createdUser = await this.usersService.create({
+            email: registerDto.email,
             passwordHash,
-        );
+        });
 
-        return user;
+        return createdUser;
     }
 
     async login(loginDto: LoginDto): Promise<AuthUserResponse> {
-        const userWithPassword =
-            await this.usersService.findByEmailWithPassword(loginDto.email);
-
-        if (!userWithPassword || !userWithPassword.passwordHash) {
-            throw new UnauthorizedException('Invalid credentials');
-        }
-
-        if (userWithPassword.status === UserStatus.BLOCKED) {
-            throw new UnauthorizedException('User is blocked');
-        }
-
-        const passwordValid = await bcrypt.compare(
-            loginDto.password,
-            userWithPassword.passwordHash,
+        const user = await this.usersService.findByEmailWithPassword(
+            loginDto.email,
         );
 
-        if (!passwordValid) {
+        if (!user) {
             throw new UnauthorizedException('Invalid credentials');
         }
 
-        const accessToken = this.buildAccessToken(userWithPassword);
-        const user = userWithPassword.toObject() as User;
+        const isValidPassword = await bcrypt.compare(
+            loginDto.password,
+            user.passwordHash,
+        );
+
+        if (!isValidPassword) {
+            throw new UnauthorizedException('Invalid credentials');
+        }
+
+        if (!user.approved) {
+            throw new ForbiddenException('User is not approved yet');
+        }
+
+        if (user.activeDeviceId && user.activeDeviceId !== loginDto.deviceId) {
+            throw new ConflictException(
+                'User is already logged in from another device',
+            );
+        }
+
+        const userId = user._id.toString();
+
+        if (user.activeDeviceId !== loginDto.deviceId) {
+            await this.usersService.setActiveDevice(userId, loginDto.deviceId);
+            user.activeDeviceId = loginDto.deviceId;
+        }
+
+        const tokens: AuthTokens = {
+            accessToken: this.buildAccessToken(user, loginDto.deviceId),
+        };
 
         return {
             user,
-            tokens: { accessToken },
+            tokens,
         };
     }
 
     async getProfile(userId: string): Promise<User | null> {
-        return await this.usersService.findById(userId);
+        return this.usersService.findById(userId);
+    }
+
+    async getMe(
+        userId: string,
+        token: string | undefined,
+    ): Promise<MeResponse> {
+        const user = await this.getProfile(userId);
+
+        if (!token) {
+            return {
+                user,
+                token: null,
+            };
+        }
+
+        const decoded = this.jwtService.decode<JwtPayload & { exp?: number }>(
+            token,
+        );
+
+        if (!decoded || typeof decoded.exp !== 'number') {
+            return {
+                user,
+                token: null,
+            };
+        }
+
+        const expiresAtUnix = decoded.exp; // seconds since epoch
+        const expiresAtMs = expiresAtUnix * 1000;
+        const nowMs = Date.now();
+        const remainingMs = Math.max(expiresAtMs - nowMs, 0);
+        const remainingSeconds = Math.floor(remainingMs / 1000);
+
+        return {
+            user,
+            token: {
+                expiresAtUnix,
+                expiresAtIso: new Date(expiresAtMs).toISOString(),
+                remainingMs,
+                remainingSeconds,
+            },
+        };
+    }
+
+    async logout(userId: string, deviceId: string): Promise<void> {
+        const user = await this.usersService.findById(userId);
+
+        if (!user) {
+            throw new UnauthorizedException('User not found');
+        }
+
+        if (!user.activeDeviceId) {
+            throw new ConflictException(
+                'User is not logged in from any device',
+            );
+        }
+
+        if (user.activeDeviceId !== deviceId) {
+            throw new ConflictException(
+                'User is logged in from a different device',
+            );
+        }
+
+        await this.usersService.clearActiveDevice(userId);
     }
 }
