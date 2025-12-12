@@ -12,6 +12,7 @@ interface AuthUser {
     userId: string;
     role: string;
     deviceId: string;
+    sid?: string;
 }
 
 interface AuthenticatedRequest extends Request {
@@ -48,15 +49,11 @@ export class ApprovedGuard implements CanActivate {
         }
 
         if (!user.activeDeviceId) {
-            throw new UnauthorizedException(
-                'המשתמש לא מחובר ממכשיר כלשהו',
-            );
+            throw new UnauthorizedException('המשתמש לא מחובר');
         }
 
         if (user.activeDeviceId !== authUser.deviceId) {
-            throw new UnauthorizedException(
-                'המשתמש מחובר ממכשיר אחר או התנתק',
-            );
+            throw new UnauthorizedException('המשתמש מחובר ממכשיר אחר או התנתק');
         }
 
         return true;

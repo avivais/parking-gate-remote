@@ -6,12 +6,14 @@ import {
     UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
+import { randomUUID } from 'crypto';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { User, UserDocument } from '../users/schemas/user.schema';
-import { JwtPayload } from './auth.types';
+import { JwtPayload, UserRole } from './auth.types';
 
 export interface AuthTokens {
     accessToken: string;
@@ -20,6 +22,7 @@ export interface AuthTokens {
 export interface AuthUserResponse {
     user: User;
     tokens: AuthTokens;
+    refreshToken: string;
 }
 
 export interface MeTokenInfo {
@@ -39,25 +42,62 @@ export class AuthService {
     constructor(
         private readonly usersService: UsersService,
         private readonly jwtService: JwtService,
+        private readonly configService: ConfigService,
     ) {}
 
-    private buildAccessToken(user: UserDocument, deviceId: string): string {
+    private buildAccessToken(
+        user: UserDocument,
+        deviceId: string,
+        sid: string,
+    ): string {
         const payload: JwtPayload = {
             sub: user._id.toString(),
             role: user.role,
             deviceId,
+            sid,
         };
 
         return this.jwtService.sign(payload);
+    }
+
+    private buildRefreshToken(
+        userId: string,
+        role: UserRole,
+        deviceId: string,
+        sid: string,
+    ): string {
+        const refreshSecret =
+            this.configService.get<string>('JWT_REFRESH_SECRET') ||
+            this.configService.get<string>('JWT_SECRET') + '_refresh';
+
+        const refreshExpiresInConfig =
+            this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '365d';
+
+        type ExpiresInType =
+            | number
+            | `${number}${'ms' | 's' | 'm' | 'h' | 'd' | 'w' | 'y'}`;
+
+        const refreshExpiresIn: ExpiresInType =
+            refreshExpiresInConfig as ExpiresInType;
+
+        const payload: JwtPayload = {
+            sub: userId,
+            role,
+            deviceId,
+            sid,
+        };
+
+        return this.jwtService.sign(payload, {
+            secret: refreshSecret,
+            expiresIn: refreshExpiresIn,
+        });
     }
 
     async register(registerDto: RegisterDto): Promise<User> {
         const existing = await this.usersService.findByEmail(registerDto.email);
 
         if (existing) {
-            throw new BadRequestException(
-                'כתובת אימייל זו כבר רשומה במערכת',
-            );
+            throw new BadRequestException('כתובת אימייל זו כבר רשומה במערכת');
         }
 
         const passwordHash = await bcrypt.hash(registerDto.password, 10);
@@ -93,25 +133,118 @@ export class AuthService {
         }
 
         if (user.activeDeviceId && user.activeDeviceId !== loginDto.deviceId) {
-            throw new ConflictException(
-                'המשתמש כבר מחובר ממכשיר אחר',
-            );
+            throw new ConflictException('המשתמש כבר מחובר ממכשיר אחר');
         }
 
         const userId = user._id.toString();
+        const sid = randomUUID();
 
-        if (user.activeDeviceId !== loginDto.deviceId) {
-            await this.usersService.setActiveDevice(userId, loginDto.deviceId);
-            user.activeDeviceId = loginDto.deviceId;
-        }
+        const refreshToken = this.buildRefreshToken(
+            userId,
+            user.role,
+            loginDto.deviceId,
+            sid,
+        );
+        const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
+
+        await this.usersService.setSession(
+            userId,
+            loginDto.deviceId,
+            sid,
+            refreshTokenHash,
+        );
 
         const tokens: AuthTokens = {
-            accessToken: this.buildAccessToken(user, loginDto.deviceId),
+            accessToken: this.buildAccessToken(user, loginDto.deviceId, sid),
         };
 
         return {
             user,
             tokens,
+            refreshToken,
+        };
+    }
+
+    async refresh(refreshToken: string): Promise<{
+        accessToken: string;
+        refreshToken: string;
+    }> {
+        const refreshSecret =
+            this.configService.get<string>('JWT_REFRESH_SECRET') ||
+            this.configService.get<string>('JWT_SECRET') + '_refresh';
+
+        let payload: JwtPayload;
+        try {
+            payload = this.jwtService.verify<JwtPayload>(refreshToken, {
+                secret: refreshSecret,
+            });
+        } catch {
+            throw new UnauthorizedException('Refresh token לא תקין');
+        }
+
+        const sessionData = await this.usersService.getSessionData(payload.sub);
+
+        if (!sessionData) {
+            throw new UnauthorizedException('משתמש לא נמצא');
+        }
+
+        if (
+            !sessionData.activeSessionId ||
+            sessionData.activeSessionId !== payload.sid
+        ) {
+            throw new UnauthorizedException('Session לא תקין');
+        }
+
+        if (
+            !sessionData.activeDeviceId ||
+            sessionData.activeDeviceId !== payload.deviceId
+        ) {
+            throw new UnauthorizedException('Device לא תואם');
+        }
+
+        if (!sessionData.refreshTokenHash) {
+            throw new UnauthorizedException('Refresh token לא נמצא');
+        }
+
+        const isValidRefreshToken = await bcrypt.compare(
+            refreshToken,
+            sessionData.refreshTokenHash,
+        );
+
+        if (!isValidRefreshToken) {
+            throw new UnauthorizedException('Refresh token לא תקין');
+        }
+
+        const newSid = randomUUID();
+        const newRefreshToken = this.buildRefreshToken(
+            payload.sub,
+            payload.role,
+            payload.deviceId,
+            newSid,
+        );
+        const newRefreshTokenHash = await bcrypt.hash(newRefreshToken, 10);
+
+        await this.usersService.setSession(
+            payload.sub,
+            payload.deviceId,
+            newSid,
+            newRefreshTokenHash,
+        );
+
+        const user = await this.usersService.findById(payload.sub);
+        if (!user) {
+            throw new UnauthorizedException('משתמש לא נמצא');
+        }
+
+        const accessToken = this.buildAccessToken(
+            user as UserDocument,
+            payload.deviceId,
+            newSid,
+        );
+
+        return {
+            accessToken,
+            refreshToken: newRefreshToken,
         };
     }
 
@@ -168,17 +301,13 @@ export class AuthService {
         }
 
         if (!user.activeDeviceId) {
-            throw new ConflictException(
-                'המשתמש לא מחובר ממכשיר כלשהו',
-            );
+            throw new ConflictException('המשתמש לא מחובר');
         }
 
         if (user.activeDeviceId !== deviceId) {
-            throw new ConflictException(
-                'המשתמש מחובר ממכשיר אחר',
-            );
+            throw new ConflictException('המשתמש מחובר ממכשיר אחר');
         }
 
-        await this.usersService.clearActiveDevice(userId);
+        await this.usersService.clearSession(userId);
     }
 }

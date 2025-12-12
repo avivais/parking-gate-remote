@@ -23,7 +23,7 @@ type ExpiresInType =
             inject: [ConfigService],
             useFactory: (configService: ConfigService) => {
                 const expiresInConfig =
-                    configService.get<string>('JWT_EXPIRES_IN') ?? '30d';
+                    configService.get<string>('JWT_EXPIRES_IN') ?? '15m';
 
                 const expiresIn: ExpiresInType =
                     expiresInConfig as ExpiresInType;

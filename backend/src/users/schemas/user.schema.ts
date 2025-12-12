@@ -19,6 +19,12 @@ export class User {
 
     @Prop()
     activeDeviceId?: string;
+
+    @Prop()
+    activeSessionId?: string;
+
+    @Prop({ select: false })
+    refreshTokenHash?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

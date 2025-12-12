@@ -57,4 +57,52 @@ export class UsersService {
             .findByIdAndUpdate(userId, { approved: true }, { new: true })
             .exec();
     }
+
+    async setSession(
+        userId: string,
+        deviceId: string,
+        sid: string,
+        refreshTokenHash: string,
+    ): Promise<void> {
+        await this.userModel
+            .findByIdAndUpdate(userId, {
+                activeDeviceId: deviceId,
+                activeSessionId: sid,
+                refreshTokenHash,
+            })
+            .exec();
+    }
+
+    async clearSession(userId: string): Promise<void> {
+        await this.userModel
+            .findByIdAndUpdate(userId, {
+                $unset: {
+                    activeDeviceId: 1,
+                    activeSessionId: 1,
+                    refreshTokenHash: 1,
+                },
+            })
+            .exec();
+    }
+
+    async getSessionData(userId: string): Promise<{
+        activeSessionId: string | null;
+        activeDeviceId: string | null;
+        refreshTokenHash: string | null;
+    } | null> {
+        const user = await this.userModel
+            .findById(userId)
+            .select('+refreshTokenHash')
+            .exec();
+
+        if (!user) {
+            return null;
+        }
+
+        return {
+            activeSessionId: user.activeSessionId ?? null,
+            activeDeviceId: user.activeDeviceId ?? null,
+            refreshTokenHash: user.refreshTokenHash ?? null,
+        };
+    }
 }

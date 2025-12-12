@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, StrategyOptions } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import { JwtPayload } from './auth.types';
+import { UsersService } from '../users/users.service';
 
 function extractJwtFromRequest(req: Request): string | null {
     const authorization =
@@ -25,7 +26,10 @@ function extractJwtFromRequest(req: Request): string | null {
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-    constructor(configService: ConfigService) {
+    constructor(
+        configService: ConfigService,
+        private readonly usersService: UsersService,
+    ) {
         const jwtSecret = configService.get<string>('JWT_SECRET');
 
         if (!jwtSecret) {
@@ -41,11 +45,32 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         super(options);
     }
 
-    validate(payload: JwtPayload) {
+    async validate(payload: JwtPayload) {
+        const sessionData = await this.usersService.getSessionData(payload.sub);
+
+        if (!sessionData) {
+            throw new UnauthorizedException('משתמש לא נמצא');
+        }
+
+        if (
+            !sessionData.activeSessionId ||
+            sessionData.activeSessionId !== payload.sid
+        ) {
+            throw new UnauthorizedException('Session לא תקין');
+        }
+
+        if (
+            !sessionData.activeDeviceId ||
+            sessionData.activeDeviceId !== payload.deviceId
+        ) {
+            throw new UnauthorizedException('Device לא תואם');
+        }
+
         return {
             userId: payload.sub,
             role: payload.role,
             deviceId: payload.deviceId,
+            sid: payload.sid,
         };
     }
 }

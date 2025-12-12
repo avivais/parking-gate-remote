@@ -4,4 +4,5 @@ export interface JwtPayload {
     sub: string;
     role: UserRole;
     deviceId: string;
+    sid: string;
 }
