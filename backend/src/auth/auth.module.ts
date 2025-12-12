@@ -7,6 +7,7 @@ import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
 import { JwtStrategy } from './jwt.strategy';
 import { ApprovedGuard } from './approved.guard';
+import { AdminGuard } from './admin.guard';
 
 type ExpiresInType =
     | number
@@ -36,8 +37,8 @@ type ExpiresInType =
             },
         }),
     ],
-    providers: [AuthService, JwtStrategy, ApprovedGuard],
+    providers: [AuthService, JwtStrategy, ApprovedGuard, AdminGuard],
     controllers: [AuthController],
-    exports: [AuthService, ApprovedGuard],
+    exports: [AuthService, ApprovedGuard, AdminGuard],
 })
 export class AuthModule {}

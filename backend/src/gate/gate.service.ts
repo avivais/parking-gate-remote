@@ -14,19 +14,28 @@ export class GateService {
         userId: string;
         email: string;
         deviceId: string;
+        ip?: string;
+        userAgent?: string;
     }): Promise<{ success: true }> {
         await this.gateLogModel.create({
             userId: params.userId,
             email: params.email,
             deviceId: params.deviceId,
+            ip: params.ip,
+            userAgent: params.userAgent,
             openedBy: 'user',
         });
 
         return { success: true };
     }
 
-    async openByAdminBackdoor(): Promise<{ success: true }> {
+    async openByAdminBackdoor(params: {
+        ip?: string;
+        userAgent?: string;
+    }): Promise<{ success: true }> {
         await this.gateLogModel.create({
+            ip: params.ip,
+            userAgent: params.userAgent,
             openedBy: 'admin-backdoor',
         });
 

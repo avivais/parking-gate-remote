@@ -16,6 +16,12 @@ export class GateLog {
     @Prop({ required: false })
     deviceId?: string;
 
+    @Prop({ required: false })
+    ip?: string;
+
+    @Prop({ required: false })
+    userAgent?: string;
+
     @Prop({ required: true, enum: ['user', 'admin-backdoor'] })
     openedBy: GateOpenedBy;
 }
