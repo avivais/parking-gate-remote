@@ -61,11 +61,11 @@ export class GateController {
         const expectedKey = this.configService.get<string>('ADMIN_OPEN_KEY');
 
         if (!expectedKey) {
-            throw new BadRequestException('ADMIN_OPEN_KEY is not configured');
+            throw new BadRequestException('מפתח פתיחת אדמין לא מוגדר');
         }
 
         if (!key || key !== expectedKey) {
-            throw new BadRequestException('Invalid key');
+            throw new BadRequestException('מפתח לא תקין');
         }
 
         return this.gateService.openByAdminBackdoor({

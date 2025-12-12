@@ -29,13 +29,13 @@ export class ApprovedGuard implements CanActivate {
         const authUser = req.user;
 
         if (!authUser) {
-            throw new UnauthorizedException('User is not authenticated');
+            throw new UnauthorizedException('המשתמש לא מאומת');
         }
 
         const user = await this.usersService.findById(authUser.userId);
 
         if (!user) {
-            throw new UnauthorizedException('User not found');
+            throw new UnauthorizedException('משתמש לא נמצא');
         }
 
         // אדמין תמיד עובר
@@ -44,18 +44,18 @@ export class ApprovedGuard implements CanActivate {
         }
 
         if (!user.approved) {
-            throw new ForbiddenException('User is not approved');
+            throw new ForbiddenException('החשבון ממתין לאישור אדמין');
         }
 
         if (!user.activeDeviceId) {
             throw new UnauthorizedException(
-                'User is not connected from any device',
+                'המשתמש לא מחובר ממכשיר כלשהו',
             );
         }
 
         if (user.activeDeviceId !== authUser.deviceId) {
             throw new UnauthorizedException(
-                'User is connected from a different device or has logged out',
+                'המשתמש מחובר ממכשיר אחר או התנתק',
             );
         }
 

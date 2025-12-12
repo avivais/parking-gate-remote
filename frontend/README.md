@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frontend - פתיחת שער חניה
 
-## Getting Started
+Frontend ב-Next.js (App Router) + TypeScript עבור אפליקציית פתיחת שער חניה בעברית מלאה ו-RTL.
 
-First, run the development server:
+## התקנה והרצה
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+האפליקציה תרוץ על `http://localhost:3000`
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## מבנה הפרויקט
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+├── app/                    # Next.js App Router pages
+│   ├── layout.tsx         # Root layout עם RTL, AuthProvider, Toaster
+│   ├── page.tsx           # דף ראשי - פתיחת שער
+│   ├── login/             # דף התחברות
+│   ├── register/          # דף הרשמה
+│   ├── pending/           # מסך המתנה לאישור
+│   └── admin/             # מסך אדמין - לוגים
+├── lib/
+│   ├── api.ts             # Fetch wrapper עם Authorization header
+│   └── auth.ts            # ניהול token ו-deviceId
+├── context/
+│   └── AuthContext.tsx    # Context לניהול authentication
+├── components/
+│   └── RequireAuth.tsx    # Guard component לדפים מוגנים
+└── types/
+    └── auth.ts            # TypeScript types
 
-## Learn More
+```
 
-To learn more about Next.js, take a look at the following resources:
+## תכונות
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Mobile-first**: עיצוב מותאם למובייל עם כפתורים גדולים
+- **RTL**: תמיכה מלאה בעברית וכיוון RTL
+- **Authentication**: ניהול session עם JWT tokens
+- **Device ID**: מזהה מכשיר ייחודי ב-localStorage
+- **Toast Notifications**: הודעות הצלחה/שגיאה עם react-hot-toast
+- **Admin Panel**: מסך ניהול לוגים למנהלים
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## API Endpoints
 
-## Deploy on Vercel
+האפליקציה מתחברת ל-Backend API על `http://localhost:3001/api`:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `POST /auth/register` - הרשמה
+- `POST /auth/login` - התחברות
+- `POST /auth/logout` - התנתקות
+- `GET /auth/me` - פרטי משתמש נוכחי
+- `POST /gate/open` - פתיחת שער (דורש JWT + approved)
+- `GET /gate/logs?limit=100` - לוגים (רק אדמין)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Flow
+
+1. משתמש חדש → `/register` → ממתין לאישור → `/pending`
+2. משתמש מאושר → `/login` → `/` (דף ראשי)
+3. משתמש לא מאושר → `/login` → `/pending`
+4. אדמין → `/login` → `/` או `/admin`
+
+## בדיקות ידניות
+
+1. **הרשמה**: גש ל-`/register`, הירשם, בדוק שהודעת הצלחה מופיעה
+2. **התחברות**: גש ל-`/login`, התחבר עם משתמש מאושר
+3. **פתיחת שער**: לחץ על כפתור "פתח שער" בדף הראשי
+4. **התנתקות**: לחץ על "התנתק" ובדוק שה-redirect ל-`/login`
+5. **לוגים אדמין**: התחבר כמנהל וגש ל-`/admin` לבדיקת הלוגים
+
+## טכנולוגיות
+
+- Next.js 16 (App Router)
+- React 19
+- TypeScript
+- Tailwind CSS
+- react-hot-toast
+- uuid

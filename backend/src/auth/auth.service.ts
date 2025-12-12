@@ -56,7 +56,7 @@ export class AuthService {
 
         if (existing) {
             throw new BadRequestException(
-                'User with this email already exists',
+                'כתובת אימייל זו כבר רשומה במערכת',
             );
         }
 
@@ -76,7 +76,7 @@ export class AuthService {
         );
 
         if (!user) {
-            throw new UnauthorizedException('Invalid credentials');
+            throw new UnauthorizedException('אימייל או סיסמה שגויים');
         }
 
         const isValidPassword = await bcrypt.compare(
@@ -85,16 +85,16 @@ export class AuthService {
         );
 
         if (!isValidPassword) {
-            throw new UnauthorizedException('Invalid credentials');
+            throw new UnauthorizedException('אימייל או סיסמה שגויים');
         }
 
         if (!user.approved) {
-            throw new ForbiddenException('User is not approved yet');
+            throw new ForbiddenException('החשבון ממתין לאישור אדמין');
         }
 
         if (user.activeDeviceId && user.activeDeviceId !== loginDto.deviceId) {
             throw new ConflictException(
-                'User is already logged in from another device',
+                'המשתמש כבר מחובר ממכשיר אחר',
             );
         }
 
@@ -164,18 +164,18 @@ export class AuthService {
         const user = await this.usersService.findById(userId);
 
         if (!user) {
-            throw new UnauthorizedException('User not found');
+            throw new UnauthorizedException('משתמש לא נמצא');
         }
 
         if (!user.activeDeviceId) {
             throw new ConflictException(
-                'User is not logged in from any device',
+                'המשתמש לא מחובר ממכשיר כלשהו',
             );
         }
 
         if (user.activeDeviceId !== deviceId) {
             throw new ConflictException(
-                'User is logged in from a different device',
+                'המשתמש מחובר ממכשיר אחר',
             );
         }
 
