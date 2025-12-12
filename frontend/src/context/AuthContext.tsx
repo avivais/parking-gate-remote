@@ -2,18 +2,20 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiRequest, ApiError } from "@/lib/api";
-import { getToken, setToken, clearToken, getOrCreateDeviceId } from "@/lib/auth";
+import { apiRequest, ApiError, setAccessToken, clearAccessToken, API_BASE_URL } from "@/lib/api";
+import { getOrCreateDeviceId } from "@/lib/auth";
 import type {
     User,
     AuthUserResponse,
     MeResponse,
+    RefreshResponse,
 } from "@/types/auth";
 
 interface AuthContextType {
     user: User | null;
     token: MeResponse["token"];
     loading: boolean;
+    isReady: boolean;
     login: (email: string, password: string) => Promise<void>;
     register: (email: string, password: string) => Promise<void>;
     logout: () => Promise<void>;
@@ -26,29 +28,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [token, setTokenInfo] = useState<MeResponse["token"]>(null);
     const [loading, setLoading] = useState(true);
+    const [isReady, setIsReady] = useState(false);
     const router = useRouter();
 
     const refresh = async () => {
-        const storedToken = getToken();
-        if (!storedToken) {
-            setLoading(false);
-            return;
-        }
-
         try {
-            const data = await apiRequest<MeResponse>("/auth/me");
-            setUser(data.user);
-            setTokenInfo(data.token);
-        } catch (err) {
-            if (err instanceof ApiError) {
-                if (err.status === 401 || err.status === 403) {
-                    clearToken();
-                    setUser(null);
-                    setTokenInfo(null);
-                    router.push("/login");
-                }
+            // Attempt silent refresh using httpOnly cookie
+            const refreshUrl = `${API_BASE_URL}/auth/refresh`;
+            const refreshResponse = await fetch(refreshUrl, {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                    Accept: "application/json",
+                },
+            });
+
+            if (!refreshResponse.ok) {
+                // Refresh failed - treat as logged out
+                clearAccessToken();
+                setUser(null);
+                setTokenInfo(null);
+                return;
             }
+
+            // Store the new access token
+            const refreshData: RefreshResponse = await refreshResponse.json();
+            setAccessToken(refreshData.tokens.accessToken);
+
+            // Fetch user info
+            const meData = await apiRequest<MeResponse>("/auth/me");
+            setUser(meData.user);
+            setTokenInfo(meData.token);
+        } catch (err) {
+            // If refresh or /auth/me fails, treat as logged out
+            clearAccessToken();
+            setUser(null);
+            setTokenInfo(null);
         } finally {
+            setIsReady(true);
             setLoading(false);
         }
     };
@@ -61,8 +78,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             auth: false,
         });
 
-        setToken(data.tokens.accessToken);
+        // Store access token in memory
+        setAccessToken(data.tokens.accessToken);
         setUser(data.user);
+
         // Get token info from /auth/me
         try {
             const meData = await apiRequest<MeResponse>("/auth/me");
@@ -90,7 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (err) {
             // Continue even if logout fails
         } finally {
-            clearToken();
+            clearAccessToken();
             setUser(null);
             setTokenInfo(null);
             router.push("/login");
@@ -103,7 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return (
         <AuthContext.Provider
-            value={{ user, token, loading, login, register, logout, refresh }}
+            value={{ user, token, loading, isReady, login, register, logout, refresh }}
         >
             {children}
         </AuthContext.Provider>
@@ -117,3 +136,4 @@ export function useAuth() {
     }
     return context;
 }
+

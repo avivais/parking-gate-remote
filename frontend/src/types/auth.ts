@@ -27,6 +27,10 @@ export interface MeResponse {
     token: MeTokenInfo | null;
 }
 
+export interface RefreshResponse {
+    tokens: AuthTokens;
+}
+
 export interface GateLog {
     _id: string;
     userId?: string;
@@ -37,3 +41,4 @@ export interface GateLog {
     openedBy: "user" | "admin-backdoor";
     createdAt: string;
 }
+

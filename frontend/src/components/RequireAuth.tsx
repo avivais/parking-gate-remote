@@ -15,20 +15,12 @@ export function RequireAuth({
     requireApproved = true,
     requireAdmin = false,
 }: RequireAuthProps) {
-    const { user, loading } = useAuth();
+    const { user, loading, isReady } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
-        if (loading) return;
-
-        const token = typeof window !== "undefined"
-            ? localStorage.getItem("pgr_access_token")
-            : null;
-
-        if (!token) {
-            router.push("/login");
-            return;
-        }
+        // Wait for initial auth check to complete
+        if (!isReady || loading) return;
 
         if (!user) {
             router.push("/login");
@@ -44,9 +36,10 @@ export function RequireAuth({
             router.push("/");
             return;
         }
-    }, [user, loading, requireApproved, requireAdmin, router]);
+    }, [user, loading, isReady, requireApproved, requireAdmin, router]);
 
-    if (loading) {
+    // Show loading state until ready
+    if (!isReady || loading) {
         return (
             <div className="flex min-h-screen items-center justify-center">
                 <div className="text-lg">טוען...</div>
@@ -54,11 +47,8 @@ export function RequireAuth({
         );
     }
 
-    const token = typeof window !== "undefined"
-        ? localStorage.getItem("pgr_access_token")
-        : null;
-
-    if (!token || !user) {
+    // Check auth status after ready
+    if (!user) {
         return null;
     }
 
@@ -72,3 +62,4 @@ export function RequireAuth({
 
     return <>{children}</>;
 }
+
