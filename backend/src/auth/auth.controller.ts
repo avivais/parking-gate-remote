@@ -12,6 +12,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { User } from '../users/schemas/user.schema';
 import { Request as ExpressRequest } from 'express';
+import { ApprovedGuard } from './approved.guard';
 
 interface AuthenticatedRequestUser {
     userId: string;
@@ -37,7 +38,7 @@ export class AuthController {
         return this.authService.login(loginDto);
     }
 
-    @UseGuards(AuthGuard('jwt'))
+    @UseGuards(AuthGuard('jwt'), ApprovedGuard)
     @Get('me')
     me(@Request() req: AuthenticatedRequest): Promise<MeResponse> {
         const rawAuthHeader =

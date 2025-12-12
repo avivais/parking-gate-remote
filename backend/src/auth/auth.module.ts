@@ -8,6 +8,10 @@ import { UsersModule } from '../users/users.module';
 import { JwtStrategy } from './jwt.strategy';
 import { ApprovedGuard } from './approved.guard';
 
+type ExpiresInType =
+    | number
+    | `${number}${'ms' | 's' | 'm' | 'h' | 'd' | 'w' | 'y'}`;
+
 @Module({
     imports: [
         ConfigModule,
@@ -16,12 +20,20 @@ import { ApprovedGuard } from './approved.guard';
         JwtModule.registerAsync({
             imports: [ConfigModule],
             inject: [ConfigService],
-            useFactory: (configService: ConfigService) => ({
-                secret: configService.get<string>('JWT_SECRET'),
-                signOptions: {
-                    expiresIn: '30d',
-                },
-            }),
+            useFactory: (configService: ConfigService) => {
+                const expiresInConfig =
+                    configService.get<string>('JWT_EXPIRES_IN') ?? '30d';
+
+                const expiresIn: ExpiresInType =
+                    expiresInConfig as ExpiresInType;
+
+                return {
+                    secret: configService.get<string>('JWT_SECRET') ?? '',
+                    signOptions: {
+                        expiresIn,
+                    },
+                };
+            },
         }),
     ],
     providers: [AuthService, JwtStrategy, ApprovedGuard],
