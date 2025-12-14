@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import toast from "react-hot-toast";
@@ -9,7 +10,29 @@ export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
-    const { login } = useAuth();
+    const { login, user, isReady } = useAuth();
+    const router = useRouter();
+
+    // Redirect to home if already logged in
+    useEffect(() => {
+        if (isReady && user) {
+            router.push("/");
+        }
+    }, [user, isReady, router]);
+
+    // Show loading while checking auth status
+    if (!isReady) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-gray-50">
+                <div className="text-lg">טוען...</div>
+            </div>
+        );
+    }
+
+    // Don't render login form if already logged in (redirect will happen)
+    if (user) {
+        return null;
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -33,7 +56,7 @@ export default function LoginPage() {
                     } else if (errorMessage.includes("not approved") || errorMessage.includes("approved")) {
                         message = "החשבון ממתין לאישור אדמין";
                     } else if (errorMessage.includes("already logged in") || errorMessage.includes("another device") || errorMessage.includes("different device")) {
-                        message = "המשתמש כבר מחובר ממכשיר אחר";
+                        message = "המשתמש מחובר כבר ממכשיר אחר";
                     } else if (errorMessage.includes("not authenticated") || errorMessage.includes("unauthorized")) {
                         message = "המשתמש לא מאומת";
                     } else if (errorMessage.includes("admin only") || errorMessage.includes("forbidden")) {
@@ -126,3 +149,4 @@ export default function LoginPage() {
         </div>
     );
 }
+

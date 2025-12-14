@@ -133,7 +133,7 @@ export class AuthService {
         }
 
         if (user.activeDeviceId && user.activeDeviceId !== loginDto.deviceId) {
-            throw new ConflictException('המשתמש כבר מחובר ממכשיר אחר');
+            throw new ConflictException('המשתמש מחובר כבר ממכשיר אחר');
         }
 
         const userId = user._id.toString();
