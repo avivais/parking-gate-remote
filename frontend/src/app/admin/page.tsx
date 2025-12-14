@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { RequireAuth } from "@/components/RequireAuth";
 import { apiRequest, ApiError } from "@/lib/api";
 import type { GateLog } from "@/types/auth";
 
@@ -36,8 +35,7 @@ export default function AdminPage() {
     };
 
     return (
-        <RequireAuth requireAdmin={true}>
-            <div className="min-h-screen bg-gray-50 px-4 py-8">
+        <div className="min-h-screen bg-gray-50 px-4 py-8">
                 <div className="mx-auto max-w-7xl">
                     <div className="mb-6">
                         <h1 className="text-3xl font-bold text-gray-900">
@@ -152,6 +150,5 @@ export default function AdminPage() {
                     </div>
                 </div>
             </div>
-        </RequireAuth>
     );
 }

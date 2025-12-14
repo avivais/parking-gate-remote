@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/context/AuthContext";
 import { apiRequest, ApiError, setAccessToken, API_BASE_URL } from "@/lib/api";
 import type { MeResponse, RefreshResponse } from "@/types/auth";
@@ -102,8 +101,7 @@ export default function PendingPage() {
     };
 
     return (
-        <RequireAuth requireApproved={false}>
-            <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12">
+        <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12">
                 <div className="w-full max-w-md space-y-8 text-center">
                     <div className="space-y-4">
                         <div className="mx-auto h-16 w-16 rounded-full bg-yellow-100 flex items-center justify-center">
@@ -181,7 +179,6 @@ export default function PendingPage() {
                     </div>
                 </div>
             </div>
-        </RequireAuth>
     );
 }
 

@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { RequireAuth } from "@/components/RequireAuth";
 import { apiRequest, ApiError } from "@/lib/api";
 import toast from "react-hot-toast";
 
@@ -75,7 +74,7 @@ export default function HomePage() {
                         setTimeout(() => {
                             setShowSuccess(false);
                         }, 2000);
-                    } catch (retryErr) {
+                    } catch {
                         // If retry also fails, redirect to login
                         toast.error("נדרש להתחבר מחדש");
                         setTimeout(() => {
@@ -114,8 +113,7 @@ export default function HomePage() {
     const isButtonDisabled = loading || isLocked || isOffline;
 
     return (
-        <RequireAuth>
-            <div className="flex min-h-screen flex-col bg-gray-50">
+        <div className="flex min-h-screen flex-col bg-gray-50">
                 <div className="flex-1 flex items-center justify-center px-4 py-12">
                     <div className="w-full max-w-md space-y-8">
                         <div className="text-center">
@@ -213,7 +211,6 @@ export default function HomePage() {
                     </div>
                 </div>
             </div>
-        </RequireAuth>
     );
 }
 

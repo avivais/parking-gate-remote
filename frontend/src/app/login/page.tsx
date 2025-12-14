@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import toast from "react-hot-toast";
@@ -10,29 +9,7 @@ export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
-    const { login, user, isReady } = useAuth();
-    const router = useRouter();
-
-    // Redirect to home if already logged in
-    useEffect(() => {
-        if (isReady && user) {
-            router.push("/");
-        }
-    }, [user, isReady, router]);
-
-    // Show loading while checking auth status
-    if (!isReady) {
-        return (
-            <div className="flex min-h-screen items-center justify-center bg-gray-50">
-                <div className="text-lg">טוען...</div>
-            </div>
-        );
-    }
-
-    // Don't render login form if already logged in (redirect will happen)
-    if (user) {
-        return null;
-    }
+    const { login } = useAuth();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
