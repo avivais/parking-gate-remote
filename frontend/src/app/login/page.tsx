@@ -35,7 +35,7 @@ export default function LoginPage() {
                     } else if (errorMessage.includes("already logged in") || errorMessage.includes("another device") || errorMessage.includes("different device")) {
                         message = "המשתמש מחובר כבר ממכשיר אחר";
                     } else if (errorMessage.includes("not authenticated") || errorMessage.includes("unauthorized")) {
-                        message = "המשתמש לא מאומת";
+                        message = "שם המשתמש ו/או הסיסמא שגויים";
                     } else if (errorMessage.includes("admin only") || errorMessage.includes("forbidden")) {
                         message = "גישה מוגבלת לאדמין בלבד";
                     } else {
