@@ -2,13 +2,12 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiRequest, ApiError, setAccessToken, clearAccessToken, API_BASE_URL } from "@/lib/api";
+import { apiRequest, ApiError, setAccessToken, clearAccessToken, refreshToken, AUTH_UNAUTHORIZED } from "@/lib/api";
 import { getOrCreateDeviceId } from "@/lib/auth";
 import type {
     User,
     AuthUserResponse,
     MeResponse,
-    RefreshResponse,
 } from "@/types/auth";
 
 interface AuthContextType {
@@ -34,36 +33,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const refresh = async () => {
         try {
             // Attempt silent refresh using httpOnly cookie
-            const refreshUrl = `${API_BASE_URL}/auth/refresh`;
-            const refreshResponse = await fetch(refreshUrl, {
-                method: "POST",
-                credentials: "include",
-                headers: {
-                    Accept: "application/json",
-                },
-            });
-
-            if (!refreshResponse.ok) {
-                // Refresh failed - treat as logged out
-                clearAccessToken();
-                setUser(null);
-                setTokenInfo(null);
-                return;
-            }
-
-            // Store the new access token
-            const refreshData: RefreshResponse = await refreshResponse.json();
-            setAccessToken(refreshData.tokens.accessToken);
+            // refreshToken() automatically sets the access token
+            await refreshToken();
 
             // Fetch user info
             const meData = await apiRequest<MeResponse>("/auth/me");
             setUser(meData.user);
             setTokenInfo(meData.token);
         } catch (err) {
-            // If refresh or /auth/me fails, treat as logged out
-            clearAccessToken();
-            setUser(null);
-            setTokenInfo(null);
+            // If refresh fails with AUTH_UNAUTHORIZED or /auth/me fails, treat as logged out
+            if (err instanceof ApiError && err.message === AUTH_UNAUTHORIZED) {
+                // Refresh token expired or invalid
+                clearAccessToken();
+                setUser(null);
+                setTokenInfo(null);
+            } else {
+                // Other errors (network, etc.) - also treat as logged out
+                clearAccessToken();
+                setUser(null);
+                setTokenInfo(null);
+            }
         } finally {
             setIsReady(true);
             setLoading(false);

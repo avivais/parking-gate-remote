@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { apiRequest, ApiError } from "@/lib/api";
+import { apiRequest, ApiError, AUTH_UNAUTHORIZED, AUTH_FORBIDDEN } from "@/lib/api";
 import toast from "react-hot-toast";
 
 export default function HomePage() {
@@ -60,28 +60,14 @@ export default function HomePage() {
             }, 2000);
         } catch (err) {
             if (err instanceof ApiError) {
-                // Handle specific status codes
-                if (err.status === 401) {
-                    toast.error("החיבור פג, מתחבר מחדש…");
-                    // Auto-refresh should handle this, but wait a bit and retry once
-                    await new Promise((resolve) => setTimeout(resolve, 1000));
-                    try {
-                        await apiRequest("/gate/open", {
-                            method: "POST",
-                        });
-                        toast.success("השער נפתח ✅");
-                        setShowSuccess(true);
-                        setTimeout(() => {
-                            setShowSuccess(false);
-                        }, 2000);
-                    } catch {
-                        // If retry also fails, redirect to login
-                        toast.error("נדרש להתחבר מחדש");
-                        setTimeout(() => {
-                            router.push("/login");
-                        }, 1500);
-                    }
-                } else if (err.status === 403) {
+                // Handle standardized auth errors
+                if (err.message === AUTH_UNAUTHORIZED) {
+                    // Refresh failed or retry after refresh failed - redirect to login
+                    toast.error("נדרש להתחבר מחדש");
+                    setTimeout(() => {
+                        router.push("/login");
+                    }, 1500);
+                } else if (err.message === AUTH_FORBIDDEN) {
                     toast.error("אין לך הרשאה לפתוח שער");
                 } else if (err.status === 409) {
                     toast.error("המשתמש מחובר כבר ממכשיר אחר");

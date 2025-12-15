@@ -4,6 +4,10 @@ import type { RefreshResponse } from "@/types/auth";
 export const API_BASE_URL =
     process.env.NEXT_PUBLIC_API_BASE || "http://localhost:3001/api";
 
+// Standardized auth error messages
+export const AUTH_UNAUTHORIZED = "AUTH_UNAUTHORIZED";
+export const AUTH_FORBIDDEN = "AUTH_FORBIDDEN";
+
 // In-memory access token storage
 let accessToken: string | null = null;
 let refreshPromise: Promise<string | null> | null = null;
@@ -25,6 +29,7 @@ interface ApiOptions {
     body?: unknown;
     headers?: HeadersInit;
     auth?: boolean;
+    isRefreshCall?: boolean; // Internal flag to prevent refresh-on-refresh recursion
 }
 
 /**
@@ -43,6 +48,7 @@ export function clearAccessToken(): void {
 
 /**
  * Refresh the access token using the httpOnly refresh cookie
+ * This function uses apiRequest with isRefreshCall=true to prevent recursion
  */
 async function refreshAccessToken(): Promise<string | null> {
     // If a refresh is already in progress, wait for it
@@ -50,24 +56,15 @@ async function refreshAccessToken(): Promise<string | null> {
         return refreshPromise;
     }
 
-    // Start a new refresh
+    // Start a new refresh using apiRequest to ensure single source of truth
     refreshPromise = (async () => {
         try {
-            const url = `${API_BASE_URL}/auth/refresh`;
-            const response = await fetch(url, {
+            const data = await apiRequest<RefreshResponse>("/auth/refresh", {
                 method: "POST",
-                credentials: "include",
-                headers: {
-                    Accept: "application/json",
-                },
+                auth: false,
+                isRefreshCall: true,
             });
 
-            if (!response.ok) {
-                accessToken = null;
-                return null;
-            }
-
-            const data: RefreshResponse = await response.json();
             accessToken = data.tokens.accessToken;
             return accessToken;
         } catch (err) {
@@ -81,9 +78,24 @@ async function refreshAccessToken(): Promise<string | null> {
     return refreshPromise;
 }
 
+/**
+ * Helper function to refresh the token (for use by AuthContext and pending page)
+ * Returns the refresh response data and automatically sets the access token
+ */
+export async function refreshToken(): Promise<RefreshResponse> {
+    const data = await apiRequest<RefreshResponse>("/auth/refresh", {
+        method: "POST",
+        auth: false,
+        isRefreshCall: true,
+    });
+    // Set the access token from the refresh response
+    accessToken = data.tokens.accessToken;
+    return data;
+}
+
 export async function apiRequest<T>(
     path: string,
-    { method = "GET", body, headers = {}, auth = true }: ApiOptions = {},
+    { method = "GET", body, headers = {}, auth = true, isRefreshCall = false }: ApiOptions = {},
 ): Promise<T> {
     const url = path.startsWith("http")
         ? path
@@ -116,7 +128,8 @@ export async function apiRequest<T>(
     }
 
     // Handle 401 Unauthorized - try to refresh and retry once
-    if (response.status === 401 && auth) {
+    // Skip refresh logic if this is already a refresh call to prevent recursion
+    if (response.status === 401 && auth && !isRefreshCall) {
         const newToken = await refreshAccessToken();
 
         if (newToken) {
@@ -142,6 +155,15 @@ export async function apiRequest<T>(
     const data = isJson ? await response.json() : null;
 
     if (!response.ok) {
+        // Standardize auth errors after refresh retry (or if refresh was skipped)
+        if (response.status === 401) {
+            throw new ApiError(AUTH_UNAUTHORIZED, 401, data);
+        }
+        if (response.status === 403) {
+            throw new ApiError(AUTH_FORBIDDEN, 403, data);
+        }
+
+        // Handle other errors
         let message = "שגיאת שרת";
 
         if (data && typeof data === "object") {

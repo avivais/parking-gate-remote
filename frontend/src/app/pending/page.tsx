@@ -3,12 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { apiRequest, ApiError, setAccessToken, API_BASE_URL } from "@/lib/api";
-import type { MeResponse, RefreshResponse } from "@/types/auth";
+import { apiRequest, ApiError, refreshToken, AUTH_UNAUTHORIZED, AUTH_FORBIDDEN } from "@/lib/api";
+import type { MeResponse } from "@/types/auth";
 import toast from "react-hot-toast";
 
 export default function PendingPage() {
-    const { logout, user, refresh } = useAuth();
+    const { logout, refresh } = useAuth();
     const router = useRouter();
     const [checking, setChecking] = useState(false);
 
@@ -17,29 +17,8 @@ export default function PendingPage() {
 
         try {
             // Step 1: Refresh the access token
-            const refreshUrl = `${API_BASE_URL}/auth/refresh`;
-            const refreshResponse = await fetch(refreshUrl, {
-                method: "POST",
-                credentials: "include",
-                headers: {
-                    Accept: "application/json",
-                },
-            });
-
-            if (!refreshResponse.ok) {
-                if (refreshResponse.status === 401) {
-                    toast.error("החיבור פג, נסה להתחבר מחדש");
-                    setTimeout(() => {
-                        router.push("/login");
-                    }, 1500);
-                    return;
-                }
-                throw new Error("שגיאה ברענון החיבור");
-            }
-
-            // Store the new access token
-            const refreshData: RefreshResponse = await refreshResponse.json();
-            setAccessToken(refreshData.tokens.accessToken);
+            // refreshToken() automatically sets the access token
+            await refreshToken();
 
             // Step 2: Check user status
             try {
@@ -63,13 +42,13 @@ export default function PendingPage() {
                 }
             } catch (meErr) {
                 if (meErr instanceof ApiError) {
-                    if (meErr.status === 403) {
+                    if (meErr.message === AUTH_FORBIDDEN) {
                         // Still pending - this is expected
                         toast("עדיין ממתין לאישור", {
                             icon: "⏳",
                         });
                         return;
-                    } else if (meErr.status === 401) {
+                    } else if (meErr.message === AUTH_UNAUTHORIZED) {
                         toast.error("החיבור פג, נסה להתחבר מחדש");
                         setTimeout(() => {
                             router.push("/login");
@@ -82,7 +61,7 @@ export default function PendingPage() {
             }
         } catch (err) {
             if (err instanceof ApiError) {
-                if (err.status === 401) {
+                if (err.message === AUTH_UNAUTHORIZED) {
                     toast.error("החיבור פג, נסה להתחבר מחדש");
                     setTimeout(() => {
                         router.push("/login");
