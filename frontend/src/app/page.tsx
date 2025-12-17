@@ -53,7 +53,7 @@ export default function HomePage() {
                     toast.error("נדרש להתחבר מחדש");
                     setStatus("error");
                     setTimeout(() => router.push("/login"), 1500);
-                    throw err;
+                    throw err; // Re-throw only for AUTH_UNAUTHORIZED to signal re-login requirement
                 } else if (err.message === AUTH_FORBIDDEN) {
                     toast.error("אין לך הרשאה לפתוח שער");
                 } else if (err.status === 409) {
@@ -67,9 +67,10 @@ export default function HomePage() {
                 toast.error("אין תקשורת עם השרת, נסה שוב");
             }
 
+            // For recoverable errors, set error state and reset after 2s
+            // Don't re-throw as they've already been handled with user feedback
             setStatus("error");
             setTimeout(() => setStatus("idle"), 2000);
-            throw err;
         }
     }, [status, isOffline, router]);
 
