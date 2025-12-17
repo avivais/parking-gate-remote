@@ -32,7 +32,7 @@ export class UsersService {
         return this.userModel.findOne({ email }).select('+passwordHash').exec();
     }
 
-    async findById(id: string): Promise<User | null> {
+    async findById(id: string): Promise<UserDocument | null> {
         return this.userModel.findById(id).exec();
     }
 
@@ -52,7 +52,7 @@ export class UsersService {
             .exec();
     }
 
-    async approveUser(userId: string): Promise<User | null> {
+    async approveUser(userId: string): Promise<UserDocument | null> {
         return this.userModel
             .findByIdAndUpdate(userId, { approved: true }, { new: true })
             .exec();
@@ -104,5 +104,18 @@ export class UsersService {
             activeDeviceId: user.activeDeviceId ?? null,
             refreshTokenHash: user.refreshTokenHash ?? null,
         };
+    }
+
+    async countUsers(filter: any): Promise<number> {
+        return this.userModel.countDocuments(filter).exec();
+    }
+
+    async findUsersPaginated(filter: any, skip: number, limit: number): Promise<UserDocument[]> {
+        return this.userModel
+            .find(filter)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .exec();
     }
 }

@@ -42,3 +42,37 @@ export interface GateLog {
     createdAt: string;
 }
 
+export interface AdminUser {
+    id: string;
+    email: string;
+    role: "user" | "admin";
+    approved: boolean;
+    activeDeviceId?: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface PaginatedUsersResponse {
+    items: AdminUser[];
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+}
+
+export interface PaginatedLogsResponse {
+    items: Array<{
+        id: string;
+        openedBy: "user" | "admin-backdoor";
+        email?: string;
+        deviceId?: string;
+        ip?: string;
+        userAgent?: string;
+        createdAt: string;
+    }>;
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+}
+

@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { GateModule } from './gate/gate.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
     imports: [
@@ -22,6 +23,7 @@ import { GateModule } from './gate/gate.module';
         UsersModule,
         AuthModule,
         GateModule,
+        AdminModule,
     ],
     controllers: [AppController],
     providers: [AppService],

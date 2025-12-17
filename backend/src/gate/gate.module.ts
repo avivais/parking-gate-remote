@@ -18,5 +18,6 @@ import { GateLog, GateLogSchema } from './schemas/gate-log.schema';
     ],
     controllers: [GateController],
     providers: [GateService],
+    exports: [GateService],
 })
 export class GateModule {}
