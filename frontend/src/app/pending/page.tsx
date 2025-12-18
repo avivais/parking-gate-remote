@@ -24,8 +24,8 @@ export default function PendingPage() {
             try {
                 const meData = await apiRequest<MeResponse>("/auth/me");
 
-                // If we get here, user is approved (ApprovedGuard passed)
-                if (meData.user?.approved) {
+                // Check user status
+                if (meData.user?.status === "approved") {
                     // Update AuthContext state by calling refresh
                     // This ensures the user state is updated before redirect
                     try {
@@ -39,14 +39,48 @@ export default function PendingPage() {
                         router.push("/");
                     }, 1000);
                     return;
+                } else if (meData.user?.status === "rejected") {
+                    // User was rejected - show reason and redirect to login
+                    const rejectionReason = meData.user.rejectionReason
+                        ? `: ${meData.user.rejectionReason}`
+                        : "";
+                    toast.error(`הבקשה נדחתה${rejectionReason}`);
+                    setTimeout(() => {
+                        router.push("/login");
+                    }, 2000);
+                    return;
+                } else if (meData.user?.status === "archived") {
+                    // User was archived - redirect to login
+                    toast.error("המשתמש נחסם");
+                    setTimeout(() => {
+                        router.push("/login");
+                    }, 2000);
+                    return;
+                } else if (meData.user?.status === "pending") {
+                    // Still pending - this is expected
+                    toast("עדיין ממתין לאישור", {
+                        icon: "⏳",
+                    });
+                    return;
                 }
             } catch (meErr) {
                 if (meErr instanceof ApiError) {
                     if (meErr.message === AUTH_FORBIDDEN) {
-                        // Still pending - this is expected
-                        toast("עדיין ממתין לאישור", {
-                            icon: "⏳",
-                        });
+                        // Still pending or rejected/archived - check the error data
+                        const rejectionReason = meErr.data && typeof meErr.data === 'object' && 'rejectionReason' in meErr.data
+                            ? (meErr.data as any).rejectionReason
+                            : null;
+                        if (rejectionReason) {
+                            toast.error(`הבקשה נדחתה: ${rejectionReason}`);
+                            setTimeout(() => {
+                                router.push("/login");
+                            }, 2000);
+                        } else {
+                            // Still pending - this is expected
+                            toast("עדיין ממתין לאישור", {
+                                icon: "⏳",
+                            });
+                        }
                         return;
                     } else if (meErr.message === AUTH_UNAUTHORIZED) {
                         toast.error("החיבור פג, נסה להתחבר מחדש");

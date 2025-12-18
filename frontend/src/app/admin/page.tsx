@@ -11,7 +11,7 @@ import toast from "react-hot-toast";
 
 type Tab = "users" | "logs";
 
-type UserStatusFilter = "pending" | "approved" | "all";
+type UserStatusFilter = "pending" | "approved" | "rejected" | "archived" | "all";
 
 type OpenedByFilter = "all" | "user" | "admin-backdoor";
 
@@ -63,6 +63,21 @@ export default function AdminPage() {
     const [usersSearchDebounced, setUsersSearchDebounced] = useState("");
     const [usersPage, setUsersPage] = useState(1);
     const [usersLimit, setUsersLimit] = useState(20);
+
+    // Modal state
+    const [rejectModalOpen, setRejectModalOpen] = useState(false);
+    const [editModalOpen, setEditModalOpen] = useState(false);
+    const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+    const [rejectionReason, setRejectionReason] = useState("");
+    const [editFormData, setEditFormData] = useState({
+        firstName: "",
+        lastName: "",
+        phone: "",
+        apartmentNumber: "",
+        floor: "",
+        status: "pending" as "pending" | "approved" | "rejected" | "archived",
+        rejectionReason: "",
+    });
 
     // Logs state
     const [logsData, setLogsData] = useState<PaginatedLogsResponse | null>(null);
@@ -170,8 +185,9 @@ export default function AdminPage() {
     // Handle approve user
     const handleApproveUser = async (userId: string) => {
         try {
-            await apiRequest(`/admin/users/${userId}/approve`, {
-                method: "POST",
+            await apiRequest(`/admin/users/${userId}`, {
+                method: "PATCH",
+                body: { status: "approved" },
             });
             toast.success("המשתמש אושר בהצלחה");
             loadUsers();
@@ -182,6 +198,120 @@ export default function AdminPage() {
                 toast.error("שגיאה באישור המשתמש");
             }
         }
+    };
+
+    // Handle reject user
+    const handleRejectUser = async () => {
+        if (!selectedUser || !rejectionReason.trim()) {
+            toast.error("יש להזין סיבת דחייה");
+            return;
+        }
+        try {
+            await apiRequest(`/admin/users/${selectedUser.id}`, {
+                method: "PATCH",
+                body: { status: "rejected", rejectionReason: rejectionReason.trim() },
+            });
+            toast.success("המשתמש נדחה בהצלחה");
+            setRejectModalOpen(false);
+            setSelectedUser(null);
+            setRejectionReason("");
+            loadUsers();
+        } catch (err) {
+            if (err instanceof ApiError) {
+                toast.error(err.message || "שגיאה בדחיית המשתמש");
+            } else {
+                toast.error("שגיאה בדחיית המשתמש");
+            }
+        }
+    };
+
+    // Handle archive user
+    const handleArchiveUser = async (userId: string) => {
+        try {
+            await apiRequest(`/admin/users/${userId}`, {
+                method: "PATCH",
+                body: { status: "archived" },
+            });
+            toast.success("המשתמש הושבת בהצלחה");
+            loadUsers();
+        } catch (err) {
+            if (err instanceof ApiError) {
+                toast.error(err.message || "שגיאה בהשבתת המשתמש");
+            } else {
+                toast.error("שגיאה בהשבתת המשתמש");
+            }
+        }
+    };
+
+    // Handle edit user
+    const handleEditUser = async () => {
+        if (!selectedUser) return;
+
+        const aptNum = parseInt(editFormData.apartmentNumber, 10);
+        const floorNum = parseInt(editFormData.floor, 10);
+
+        if (isNaN(aptNum) || isNaN(floorNum)) {
+            toast.error("מספר דירה וקומה חייבים להיות מספרים");
+            return;
+        }
+
+        const updateData: any = {
+            firstName: editFormData.firstName,
+            lastName: editFormData.lastName,
+            phone: editFormData.phone,
+            apartmentNumber: aptNum,
+            floor: floorNum,
+            status: editFormData.status,
+        };
+
+        if (editFormData.status === "rejected") {
+            if (!editFormData.rejectionReason.trim()) {
+                toast.error("יש להזין סיבת דחייה");
+                return;
+            }
+            updateData.rejectionReason = editFormData.rejectionReason.trim();
+        } else {
+            updateData.rejectionReason = null;
+        }
+
+        try {
+            await apiRequest(`/admin/users/${selectedUser.id}`, {
+                method: "PATCH",
+                body: updateData,
+            });
+            toast.success("המשתמש עודכן בהצלחה");
+            setEditModalOpen(false);
+            setSelectedUser(null);
+            loadUsers();
+        } catch (err) {
+            if (err instanceof ApiError) {
+                toast.error(err.message || "שגיאה בעדכון המשתמש");
+            } else {
+                toast.error("שגיאה בעדכון המשתמש");
+            }
+        }
+    };
+
+    // Open reject modal
+    const openRejectModal = (user: AdminUser) => {
+        setSelectedUser(user);
+        setRejectionReason("");
+        setRejectModalOpen(true);
+    };
+
+    // Open edit modal
+    const openEditModal = (user: AdminUser) => {
+        setSelectedUser(user);
+        setEditFormData({
+            firstName: user.firstName,
+            lastName: user.lastName,
+            phone: user.phone,
+            apartmentNumber: user.apartmentNumber.toString(),
+            floor: user.floor.toString(),
+            status: user.status,
+            rejectionReason: user.rejectionReason || "",
+        });
+        setEditModalOpen(true);
     };
 
     // Handle reset device
@@ -278,6 +408,32 @@ export default function AdminPage() {
                                 </button>
                                 <button
                                     onClick={() => {
+                                        setUsersStatusFilter("rejected");
+                                        setUsersPage(1);
+                                    }}
+                                    className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                                        usersStatusFilter === "rejected"
+                                            ? "bg-blue-600 text-white"
+                                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                                    }`}
+                                >
+                                    נדחו
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setUsersStatusFilter("archived");
+                                        setUsersPage(1);
+                                    }}
+                                    className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                                        usersStatusFilter === "archived"
+                                            ? "bg-blue-600 text-white"
+                                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                                    }`}
+                                >
+                                    מושבתים
+                                </button>
+                                <button
+                                    onClick={() => {
                                         setUsersStatusFilter("all");
                                         setUsersPage(1);
                                     }}
@@ -293,7 +449,7 @@ export default function AdminPage() {
 
                             <input
                                 type="text"
-                                placeholder="חיפוש לפי אימייל..."
+                                placeholder="חיפוש לפי אימייל, טלפון או שם..."
                                 value={usersSearchQuery}
                                 onChange={(e) => setUsersSearchQuery(e.target.value)}
                                 className="flex-1 min-w-[200px] rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -332,6 +488,15 @@ export default function AdminPage() {
                                                         אימייל
                                                     </th>
                                                     <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                                                        שם
+                                                    </th>
+                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                                                        טלפון
+                                                    </th>
+                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                                                        דירה + קומה
+                                                    </th>
+                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
                                                         סטטוס
                                                     </th>
                                                     <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
@@ -349,7 +514,7 @@ export default function AdminPage() {
                                                 {usersData.items.length === 0 ? (
                                                     <tr>
                                                         <td
-                                                            colSpan={5}
+                                                            colSpan={8}
                                                             className="px-6 py-4 text-center text-sm text-gray-500"
                                                         >
                                                             אין משתמשים להצגה
@@ -364,14 +529,31 @@ export default function AdminPage() {
                                                             <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
                                                                 {user.email}
                                                             </td>
+                                                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                                                                {user.firstName} {user.lastName}
+                                                            </td>
+                                                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                                                                {user.phone}
+                                                            </td>
+                                                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                                                                {user.apartmentNumber} / {user.floor}
+                                                            </td>
                                                             <td className="whitespace-nowrap px-6 py-4 text-sm">
-                                                                {user.approved ? (
+                                                                {user.status === "approved" ? (
                                                                     <span className="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
                                                                         מאושר
                                                                     </span>
-                                                                ) : (
+                                                                ) : user.status === "pending" ? (
                                                                     <span className="inline-flex rounded-full bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800">
                                                                         ממתין
+                                                                    </span>
+                                                                ) : user.status === "rejected" ? (
+                                                                    <span className="inline-flex rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-800">
+                                                                        נדחה
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="inline-flex rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-800">
+                                                                        מושבת
                                                                     </span>
                                                                 )}
                                                             </td>
@@ -388,15 +570,39 @@ export default function AdminPage() {
                                                                 {new Date(user.createdAt).toLocaleString("he-IL")}
                                                             </td>
                                                             <td className="whitespace-nowrap px-6 py-4 text-sm">
-                                                                <div className="flex gap-2">
-                                                                    {!user.approved && (
+                                                                <div className="flex flex-wrap gap-2">
+                                                                    {user.status === "pending" && (
+                                                                        <>
+                                                                            <button
+                                                                                onClick={() =>
+                                                                                    handleApproveUser(user.id)
+                                                                                }
+                                                                                className="rounded bg-green-600 px-3 py-1 text-xs font-medium text-white hover:bg-green-700"
+                                                                            >
+                                                                                אישור
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => openRejectModal(user)}
+                                                                                className="rounded bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700"
+                                                                            >
+                                                                                דחייה
+                                                                            </button>
+                                                                        </>
+                                                                    )}
+                                                                    <button
+                                                                        onClick={() => openEditModal(user)}
+                                                                        className="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700"
+                                                                    >
+                                                                        עריכה
+                                                                    </button>
+                                                                    {user.status !== "archived" && (
                                                                         <button
                                                                             onClick={() =>
-                                                                                handleApproveUser(user.id)
+                                                                                handleArchiveUser(user.id)
                                                                             }
-                                                                            className="rounded bg-green-600 px-3 py-1 text-xs font-medium text-white hover:bg-green-700"
+                                                                            className="rounded bg-gray-600 px-3 py-1 text-xs font-medium text-white hover:bg-gray-700"
                                                                         >
-                                                                            אישור
+                                                                            השבתה
                                                                         </button>
                                                                     )}
                                                                     {user.activeDeviceId && (
@@ -404,7 +610,7 @@ export default function AdminPage() {
                                                                             onClick={() =>
                                                                                 handleResetDevice(user.id)
                                                                             }
-                                                                            className="rounded bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700"
+                                                                            className="rounded bg-orange-600 px-3 py-1 text-xs font-medium text-white hover:bg-orange-700"
                                                                         >
                                                                             איפוס מכשיר
                                                                         </button>
@@ -667,6 +873,178 @@ export default function AdminPage() {
                                 )}
                             </>
                         ) : null}
+                    </div>
+                )}
+
+                {/* Reject Modal */}
+                {rejectModalOpen && selectedUser && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                        <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+                            <h3 className="mb-4 text-lg font-bold text-gray-900">
+                                דחיית משתמש
+                            </h3>
+                            <p className="mb-4 text-sm text-gray-600">
+                                אנא הזן סיבת דחייה עבור {selectedUser.email}
+                            </p>
+                            <textarea
+                                value={rejectionReason}
+                                onChange={(e) => setRejectionReason(e.target.value)}
+                                placeholder="סיבת דחייה..."
+                                className="mb-4 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                rows={4}
+                            />
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => {
+                                        setRejectModalOpen(false);
+                                        setSelectedUser(null);
+                                        setRejectionReason("");
+                                    }}
+                                    className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                                >
+                                    ביטול
+                                </button>
+                                <button
+                                    onClick={handleRejectUser}
+                                    className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+                                >
+                                    דחייה
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Edit Modal */}
+                {editModalOpen && selectedUser && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                        <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+                            <h3 className="mb-4 text-lg font-bold text-gray-900">
+                                עריכת משתמש
+                            </h3>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        שם פרטי
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editFormData.firstName}
+                                        onChange={(e) =>
+                                            setEditFormData({ ...editFormData, firstName: e.target.value })
+                                        }
+                                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        שם משפחה
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editFormData.lastName}
+                                        onChange={(e) =>
+                                            setEditFormData({ ...editFormData, lastName: e.target.value })
+                                        }
+                                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        טלפון
+                                    </label>
+                                    <input
+                                        type="tel"
+                                        value={editFormData.phone}
+                                        onChange={(e) =>
+                                            setEditFormData({ ...editFormData, phone: e.target.value })
+                                        }
+                                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            מספר דירה
+                                        </label>
+                                        <input
+                                            type="number"
+                                            value={editFormData.apartmentNumber}
+                                            onChange={(e) =>
+                                                setEditFormData({ ...editFormData, apartmentNumber: e.target.value })
+                                            }
+                                            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            קומה
+                                        </label>
+                                        <input
+                                            type="number"
+                                            value={editFormData.floor}
+                                            onChange={(e) =>
+                                                setEditFormData({ ...editFormData, floor: e.target.value })
+                                            }
+                                            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        סטטוס
+                                    </label>
+                                    <select
+                                        value={editFormData.status}
+                                        onChange={(e) =>
+                                            setEditFormData({
+                                                ...editFormData,
+                                                status: e.target.value as "pending" | "approved" | "rejected" | "archived",
+                                            })
+                                        }
+                                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    >
+                                        <option value="pending">ממתין</option>
+                                        <option value="approved">מאושר</option>
+                                        <option value="rejected">נדחה</option>
+                                        <option value="archived">מושבת</option>
+                                    </select>
+                                </div>
+                                {editFormData.status === "rejected" && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            סיבת דחייה
+                                        </label>
+                                        <textarea
+                                            value={editFormData.rejectionReason}
+                                            onChange={(e) =>
+                                                setEditFormData({ ...editFormData, rejectionReason: e.target.value })
+                                            }
+                                            placeholder="סיבת דחייה..."
+                                            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            rows={3}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                            <div className="mt-6 flex gap-2">
+                                <button
+                                    onClick={() => {
+                                        setEditModalOpen(false);
+                                        setSelectedUser(null);
+                                    }}
+                                    className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                                >
+                                    ביטול
+                                </button>
+                                <button
+                                    onClick={handleEditUser}
+                                    className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                                >
+                                    שמור
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>

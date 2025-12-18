@@ -1,9 +1,17 @@
 /* TypeScript types for auth and gate */
+export type UserStatus = "pending" | "approved" | "rejected" | "archived";
+
 export interface User {
     _id: string;
     email: string;
     role: "user" | "admin";
-    approved: boolean;
+    status: UserStatus;
+    rejectionReason: string | null;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    apartmentNumber: number;
+    floor: number;
 }
 
 export interface AuthTokens {
@@ -46,7 +54,13 @@ export interface AdminUser {
     id: string;
     email: string;
     role: "user" | "admin";
-    approved: boolean;
+    status: UserStatus;
+    rejectionReason: string | null;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    apartmentNumber: number;
+    floor: number;
     activeDeviceId?: string | null;
     createdAt: string;
     updatedAt: string;

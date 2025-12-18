@@ -23,22 +23,30 @@ export function NavigationGuard({ children }: { children: React.ReactNode }) {
             return;
         }
 
-        // Rule 2: If authenticated but NOT approved - allow only /pending
-        if (!user.approved) {
+        // Rule 2: If authenticated but status is rejected or archived - redirect to login
+        if (user.status === "rejected" || user.status === "archived") {
+            if (pathname !== "/login") {
+                router.replace("/login");
+            }
+            return;
+        }
+
+        // Rule 3: If authenticated but status is pending - allow only /pending
+        if (user.status !== "approved") {
             if (pathname !== "/pending") {
                 router.replace("/pending");
             }
             return;
         }
 
-        // Rule 3: If authenticated AND approved
+        // Rule 4: If authenticated AND approved
         // Redirect /pending, /login, /register to /
         if (pathname === "/pending" || pathname === "/login" || pathname === "/register") {
             router.replace("/");
             return;
         }
 
-        // Rule 4: Admin route - allow only if user.role === 'admin' AND approved
+        // Rule 5: Admin route - allow only if user.role === 'admin' AND approved
         if (pathname === "/admin") {
             if (user.role !== "admin") {
                 router.replace("/");

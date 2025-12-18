@@ -6,6 +6,13 @@ import { User, UserDocument } from './schemas/user.schema';
 export interface CreateUserParams {
     email: string;
     passwordHash: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    apartmentNumber: number;
+    floor: number;
+    status?: 'pending' | 'approved' | 'rejected' | 'archived';
+    rejectionReason?: string | null;
 }
 
 @Injectable()
@@ -19,6 +26,13 @@ export class UsersService {
         const created = new this.userModel({
             email: params.email,
             passwordHash: params.passwordHash,
+            firstName: params.firstName,
+            lastName: params.lastName,
+            phone: params.phone,
+            apartmentNumber: params.apartmentNumber,
+            floor: params.floor,
+            status: params.status || 'pending',
+            rejectionReason: params.rejectionReason ?? null,
         });
 
         return created.save();
@@ -52,9 +66,9 @@ export class UsersService {
             .exec();
     }
 
-    async approveUser(userId: string): Promise<UserDocument | null> {
+    async updateUser(userId: string, updateData: Partial<User>): Promise<UserDocument | null> {
         return this.userModel
-            .findByIdAndUpdate(userId, { approved: true }, { new: true })
+            .findByIdAndUpdate(userId, updateData, { new: true })
             .exec();
     }
 

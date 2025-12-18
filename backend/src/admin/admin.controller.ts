@@ -2,7 +2,9 @@ import {
     Controller,
     Get,
     Post,
+    Patch,
     Param,
+    Body,
     Query,
     UseGuards,
 } from '@nestjs/common';
@@ -12,6 +14,7 @@ import { ApprovedGuard } from '../auth/approved.guard';
 import { AdminGuard } from '../auth/admin.guard';
 import { GetUsersQueryDto } from './dto/get-users-query.dto';
 import { GetLogsQueryDto } from './dto/get-logs-query.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Controller('admin')
 @UseGuards(AuthGuard('jwt'), ApprovedGuard, AdminGuard)
@@ -23,9 +26,9 @@ export class AdminController {
         return this.adminService.getUsers(query);
     }
 
-    @Post('users/:id/approve')
-    async approveUser(@Param('id') id: string) {
-        return this.adminService.approveUser(id);
+    @Patch('users/:id')
+    async updateUser(@Param('id') id: string, @Body() updateDto: UpdateUserDto) {
+        return this.adminService.updateUser(id, updateDto);
     }
 
     @Post('users/:id/reset-device')
@@ -38,4 +41,5 @@ export class AdminController {
         return this.adminService.getLogs(query);
     }
 }
+
 

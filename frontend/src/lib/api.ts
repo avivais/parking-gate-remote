@@ -155,15 +155,7 @@ export async function apiRequest<T>(
     const data = isJson ? await response.json() : null;
 
     if (!response.ok) {
-        // Standardize auth errors after refresh retry (or if refresh was skipped)
-        if (response.status === 401) {
-            throw new ApiError(AUTH_UNAUTHORIZED, 401, data);
-        }
-        if (response.status === 403) {
-            throw new ApiError(AUTH_FORBIDDEN, 403, data);
-        }
-
-        // Handle other errors
+        // Handle other errors first to extract message
         let message = "שגיאת שרת";
 
         if (data && typeof data === "object") {
@@ -178,6 +170,15 @@ export async function apiRequest<T>(
         // Fallback to status text if no message found
         if (!message || message === "שגיאת שרת") {
             message = response.statusText || "שגיאת שרת";
+        }
+
+        // Standardize auth errors after extracting message
+        if (response.status === 401) {
+            throw new ApiError(AUTH_UNAUTHORIZED, 401, data);
+        }
+        if (response.status === 403) {
+            // For 403, use the actual message (which may include rejectionReason in data)
+            throw new ApiError(message, 403, data);
         }
 
         throw new ApiError(message, response.status, data);

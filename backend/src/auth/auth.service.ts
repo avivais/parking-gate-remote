@@ -105,6 +105,13 @@ export class AuthService {
         const createdUser = await this.usersService.create({
             email: registerDto.email,
             passwordHash,
+            firstName: registerDto.firstName,
+            lastName: registerDto.lastName,
+            phone: registerDto.phone,
+            apartmentNumber: registerDto.apartmentNumber,
+            floor: registerDto.floor,
+            status: 'pending',
+            rejectionReason: null,
         });
 
         return createdUser;
@@ -128,8 +135,25 @@ export class AuthService {
             throw new UnauthorizedException('אימייל או סיסמה שגויים');
         }
 
-        if (!user.approved) {
-            throw new ForbiddenException('החשבון ממתין לאישור אדמין');
+        // Check user status
+        if (user.status === 'pending') {
+            throw new ForbiddenException('המשתמש ממתין לאישור אדמין');
+        }
+
+        if (user.status === 'rejected') {
+            throw new ForbiddenException({
+                message: 'הבקשה נדחתה',
+                rejectionReason: user.rejectionReason || null,
+            });
+        }
+
+        if (user.status === 'archived') {
+            throw new ForbiddenException('המשתמש נחסם');
+        }
+
+        // Only approved status can login
+        if (user.status !== 'approved') {
+            throw new ForbiddenException('החשבון לא מאושר');
         }
 
         if (user.activeDeviceId && user.activeDeviceId !== loginDto.deviceId) {

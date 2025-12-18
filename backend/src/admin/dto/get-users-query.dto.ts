@@ -4,6 +4,8 @@ import { Type } from 'class-transformer';
 export enum UserStatusFilter {
     PENDING = 'pending',
     APPROVED = 'approved',
+    REJECTED = 'rejected',
+    ARCHIVED = 'archived',
     ALL = 'all',
 }
 
@@ -29,5 +31,6 @@ export class GetUsersQueryDto {
     @Max(100)
     limit?: number = 20;
 }
+
 
 

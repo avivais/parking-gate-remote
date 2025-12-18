@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import { ApiError } from "@/lib/api";
 import toast from "react-hot-toast";
 
 export default function LoginPage() {
@@ -21,7 +22,41 @@ export default function LoginPage() {
         } catch (err: unknown) {
             let message = "שגיאה בהתחברות";
 
-            if (err instanceof Error) {
+            if (err instanceof ApiError) {
+                // Check for rejected status with rejectionReason in data
+                if (err.message === "הבקשה נדחתה" || err.message.includes("נדחתה")) {
+                    const rejectionReason = err.data && typeof err.data === 'object' && 'rejectionReason' in err.data
+                        ? (err.data as any).rejectionReason
+                        : null;
+                    if (rejectionReason) {
+                        message = `הבקשה נדחתה: ${rejectionReason}`;
+                    } else {
+                        message = "הבקשה נדחתה";
+                    }
+                } else if (err.message === "המשתמש נחסם") {
+                    message = "המשתמש נחסם";
+                } else if (err.message === "המשתמש ממתין לאישור אדמין") {
+                    message = "המשתמש ממתין לאישור אדמין";
+                } else if (err.message.match(/[\u0590-\u05FF]/)) {
+                    message = err.message;
+                } else {
+                    const errorMessage = err.message.toLowerCase();
+                    // Translate common errors to Hebrew
+                    if (errorMessage.includes("invalid credentials") || errorMessage.includes("credentials")) {
+                        message = "אימייל או סיסמה שגויים";
+                    } else if (errorMessage.includes("not approved") || errorMessage.includes("approved")) {
+                        message = "החשבון ממתין לאישור אדמין";
+                    } else if (errorMessage.includes("already logged in") || errorMessage.includes("another device") || errorMessage.includes("different device")) {
+                        message = "המשתמש מחובר כבר ממכשיר אחר";
+                    } else if (errorMessage.includes("not authenticated") || errorMessage.includes("unauthorized")) {
+                        message = "שם המשתמש ו/או הסיסמא שגויים";
+                    } else if (errorMessage.includes("admin only") || errorMessage.includes("forbidden")) {
+                        message = "גישה מוגבלת לאדמין בלבד";
+                    } else {
+                        message = "שגיאה בהתחברות. אנא נסה שוב.";
+                    }
+                }
+            } else if (err instanceof Error) {
                 const errorMessage = err.message.toLowerCase();
                 // Check if message is already in Hebrew
                 if (err.message.match(/[\u0590-\u05FF]/)) {

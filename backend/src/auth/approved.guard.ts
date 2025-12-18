@@ -44,8 +44,17 @@ export class ApprovedGuard implements CanActivate {
             return true;
         }
 
-        if (!user.approved) {
-            throw new ForbiddenException('החשבון ממתין לאישור אדמין');
+        // Check user status
+        if (user.status !== 'approved') {
+            if (user.status === 'pending') {
+                throw new ForbiddenException('החשבון ממתין לאישור אדמין');
+            } else if (user.status === 'rejected') {
+                throw new ForbiddenException('הבקשה נדחתה');
+            } else if (user.status === 'archived') {
+                throw new ForbiddenException('המשתמש נחסם');
+            } else {
+                throw new ForbiddenException('החשבון לא מאושר');
+            }
         }
 
         if (!user.activeDeviceId) {
