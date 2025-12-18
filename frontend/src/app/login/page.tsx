@@ -24,14 +24,14 @@ export default function LoginPage() {
 
             if (err instanceof ApiError) {
                 // Check for rejected status with rejectionReason in data
-                if (err.message === "הבקשה נדחתה" || err.message.includes("נדחתה")) {
+                if (err.message === "הבקשה לאישור החשבון נדחתה" || err.message.includes("נדחתה")) {
                     const rejectionReason = err.data && typeof err.data === 'object' && 'rejectionReason' in err.data
-                        ? (err.data as any).rejectionReason
+                        ? (err.data as { rejectionReason?: string | null }).rejectionReason ?? null
                         : null;
                     if (rejectionReason) {
-                        message = `הבקשה נדחתה: ${rejectionReason}`;
+                        message = `הבקשה לאישור החשבון נדחתה: ${rejectionReason}`;
                     } else {
-                        message = "הבקשה נדחתה";
+                        message = "הבקשה לאישור החשבון נדחתה";
                     }
                 } else if (err.message === "המשתמש נחסם") {
                     message = "המשתמש נחסם";

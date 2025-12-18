@@ -49,7 +49,7 @@ export class ApprovedGuard implements CanActivate {
             if (user.status === 'pending') {
                 throw new ForbiddenException('החשבון ממתין לאישור אדמין');
             } else if (user.status === 'rejected') {
-                throw new ForbiddenException('הבקשה נדחתה');
+                throw new ForbiddenException('הבקשה לאישור החשבון נדחתה');
             } else if (user.status === 'archived') {
                 throw new ForbiddenException('המשתמש נחסם');
             } else {

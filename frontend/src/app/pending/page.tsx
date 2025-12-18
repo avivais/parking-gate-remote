@@ -44,7 +44,7 @@ export default function PendingPage() {
                     const rejectionReason = meData.user.rejectionReason
                         ? `: ${meData.user.rejectionReason}`
                         : "";
-                    toast.error(`הבקשה נדחתה${rejectionReason}`);
+                    toast.error(`הבקשה לאישור החשבון נדחתה: ${rejectionReason}`);
                     setTimeout(() => {
                         router.push("/login");
                     }, 2000);
@@ -68,10 +68,10 @@ export default function PendingPage() {
                     if (meErr.message === AUTH_FORBIDDEN) {
                         // Still pending or rejected/archived - check the error data
                         const rejectionReason = meErr.data && typeof meErr.data === 'object' && 'rejectionReason' in meErr.data
-                            ? (meErr.data as any).rejectionReason
+                            ? (meErr.data as { rejectionReason?: string | null }).rejectionReason ?? null
                             : null;
                         if (rejectionReason) {
-                            toast.error(`הבקשה נדחתה: ${rejectionReason}`);
+                            toast.error(`הבקשה לאישור החשבון נדחתה: ${rejectionReason}`);
                             setTimeout(() => {
                                 router.push("/login");
                             }, 2000);

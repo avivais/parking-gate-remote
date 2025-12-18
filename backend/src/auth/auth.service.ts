@@ -105,11 +105,11 @@ export class AuthService {
         const createdUser = await this.usersService.create({
             email: registerDto.email,
             passwordHash,
-            firstName: registerDto.firstName,
-            lastName: registerDto.lastName,
-            phone: registerDto.phone,
-            apartmentNumber: registerDto.apartmentNumber,
-            floor: registerDto.floor,
+            firstName: String(registerDto.firstName),
+            lastName: String(registerDto.lastName),
+            phone: String(registerDto.phone),
+            apartmentNumber: Number(registerDto.apartmentNumber),
+            floor: Number(registerDto.floor),
             status: 'pending',
             rejectionReason: null,
         });
@@ -141,9 +141,11 @@ export class AuthService {
         }
 
         if (user.status === 'rejected') {
+            const rejectionReason: string | null =
+                (user.rejectionReason as string | null | undefined) ?? null;
             throw new ForbiddenException({
-                message: 'הבקשה נדחתה',
-                rejectionReason: user.rejectionReason || null,
+                message: 'הבקשה לאישור החשבון נדחתה',
+                rejectionReason,
             });
         }
 
