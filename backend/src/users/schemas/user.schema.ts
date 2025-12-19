@@ -31,7 +31,11 @@ export class User {
     @Prop({ required: true })
     floor: number;
 
-    @Prop({ required: true, enum: ['pending', 'approved', 'rejected', 'archived'], default: 'pending' })
+    @Prop({
+        required: true,
+        enum: ['pending', 'approved', 'rejected', 'archived'],
+        default: 'pending',
+    })
     status: UserStatus;
 
     @Prop({ type: String, default: null })
