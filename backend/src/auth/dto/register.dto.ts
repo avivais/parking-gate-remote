@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, MinLength, IsString, IsNumber } from 'class-validator';
+import { IsEmail, IsNotEmpty, MinLength, IsString, IsNumber, Matches } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class RegisterDto {
@@ -18,7 +18,9 @@ export class RegisterDto {
     @IsNotEmpty({ message: 'שם משפחה הוא שדה חובה' })
     lastName: string;
 
-    @IsString({ message: 'טלפון חייב להיות מחרוזת' })
+    @Matches(/^0(2|3|4|5[0-9]|8|9)[0-9]{7}$/, {
+        message: 'מספר טלפון לא תקין',
+    })
     @IsNotEmpty({ message: 'טלפון הוא שדה חובה' })
     phone: string;
 

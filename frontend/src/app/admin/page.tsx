@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { apiRequest, ApiError, AUTH_FORBIDDEN } from "@/lib/api";
+import { ISRAEL_PHONE_PREFIXES, parsePhone, validatePhoneNumber } from "@/lib/phone";
 import type {
     PaginatedUsersResponse,
     PaginatedLogsResponse,
@@ -72,7 +73,8 @@ export default function AdminPage() {
     const [editFormData, setEditFormData] = useState({
         firstName: "",
         lastName: "",
-        phone: "",
+        phonePrefix: "",
+        phoneNumber: "",
         apartmentNumber: "",
         floor: "",
         status: "pending" as "pending" | "approved" | "rejected" | "archived",
@@ -255,10 +257,24 @@ export default function AdminPage() {
             return;
         }
 
+        // Validate phone number
+        if (!editFormData.phonePrefix || !editFormData.phoneNumber) {
+            toast.error("מספר טלפון לא תקין");
+            return;
+        }
+
+        if (!validatePhoneNumber(editFormData.phonePrefix, editFormData.phoneNumber)) {
+            toast.error("מספר טלפון לא תקין");
+            return;
+        }
+
+        // Combine prefix and number
+        const fullPhone = `${editFormData.phonePrefix}${editFormData.phoneNumber}`;
+
         const updateData: any = {
             firstName: editFormData.firstName,
             lastName: editFormData.lastName,
-            phone: editFormData.phone,
+            phone: fullPhone,
             apartmentNumber: aptNum,
             floor: floorNum,
             status: editFormData.status,
@@ -302,10 +318,13 @@ export default function AdminPage() {
     // Open edit modal
     const openEditModal = (user: AdminUser) => {
         setSelectedUser(user);
+        // Parse existing phone number
+        const parsedPhone = parsePhone(user.phone);
         setEditFormData({
             firstName: user.firstName,
             lastName: user.lastName,
-            phone: user.phone,
+            phonePrefix: parsedPhone.prefix,
+            phoneNumber: parsedPhone.number,
             apartmentNumber: user.apartmentNumber.toString(),
             floor: user.floor.toString(),
             status: user.status,
@@ -953,14 +972,45 @@ export default function AdminPage() {
                                     <label className="block text-sm font-medium text-gray-700">
                                         טלפון
                                     </label>
-                                    <input
-                                        type="tel"
-                                        value={editFormData.phone}
-                                        onChange={(e) =>
-                                            setEditFormData({ ...editFormData, phone: e.target.value })
-                                        }
-                                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    />
+                                    <div className="mt-1 flex gap-2">
+                                        <input
+                                            type="tel"
+                                            value={editFormData.phoneNumber}
+                                            onChange={(e) => {
+                                                // Strip non-digits and leading 0
+                                                const digits = e.target.value.replace(/\D/g, "").replace(/^0+/, "");
+                                                setEditFormData({
+                                                    ...editFormData,
+                                                    phoneNumber: digits,
+                                                });
+                                            }}
+                                            className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            placeholder="1234567"
+                                            maxLength={7}
+                                        />
+                                        <select
+                                            value={editFormData.phonePrefix}
+                                            onChange={(e) =>
+                                                setEditFormData({
+                                                    ...editFormData,
+                                                    phonePrefix: e.target.value,
+                                                })
+                                            }
+                                            className="w-24 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            <option value="">קידומת</option>
+                                            {ISRAEL_PHONE_PREFIXES.map((prefix) => (
+                                                <option key={prefix.value} value={prefix.value}>
+                                                    {prefix.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    {editFormData.phonePrefix &&
+                                        editFormData.phoneNumber &&
+                                        !validatePhoneNumber(editFormData.phonePrefix, editFormData.phoneNumber) && (
+                                            <p className="mt-1 text-sm text-red-600">מספר טלפון לא תקין</p>
+                                        )}
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>

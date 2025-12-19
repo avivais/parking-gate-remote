@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { ISRAEL_PHONE_PREFIXES, validatePhoneNumber } from "@/lib/phone";
 import toast from "react-hot-toast";
 
 export default function RegisterPage() {
@@ -11,7 +12,8 @@ export default function RegisterPage() {
     const [password, setPassword] = useState("");
     const [firstName, setFirstName] = useState("");
     const [lastName, setLastName] = useState("");
-    const [phone, setPhone] = useState("");
+    const [phonePrefix, setPhonePrefix] = useState("");
+    const [phoneNumber, setPhoneNumber] = useState("");
     const [apartmentNumber, setApartmentNumber] = useState("");
     const [floor, setFloor] = useState("");
     const [loading, setLoading] = useState(false);
@@ -33,7 +35,23 @@ export default function RegisterPage() {
                 return;
             }
 
-            await register(email, password, firstName, lastName, phone, aptNum, floorNum);
+            // Validate phone number
+            if (!phonePrefix || !phoneNumber) {
+                toast.error("מספר טלפון לא תקין");
+                setLoading(false);
+                return;
+            }
+
+            if (!validatePhoneNumber(phonePrefix, phoneNumber)) {
+                toast.error("מספר טלפון לא תקין");
+                setLoading(false);
+                return;
+            }
+
+            // Combine prefix and number
+            const fullPhone = `${phonePrefix}${phoneNumber}`;
+
+            await register(email, password, firstName, lastName, fullPhone, aptNum, floorNum);
             setShowPendingNotice(true);
             toast.success("נרשמת בהצלחה! ממתין לאישור אדמין.");
             setTimeout(() => {
@@ -165,17 +183,42 @@ export default function RegisterPage() {
                             >
                                 טלפון
                             </label>
-                            <input
-                                id="phone"
-                                name="phone"
-                                type="tel"
-                                autoComplete="tel"
-                                required
-                                value={phone}
-                                onChange={(e) => setPhone(e.target.value)}
-                                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
-                                placeholder="050-1234567"
-                            />
+                            <div className="mt-1 flex gap-2">
+                                <input
+                                    id="phoneNumber"
+                                    name="phoneNumber"
+                                    type="tel"
+                                    autoComplete="tel"
+                                    required
+                                    value={phoneNumber}
+                                    onChange={(e) => {
+                                        // Strip non-digits and leading 0
+                                        const digits = e.target.value.replace(/\D/g, "").replace(/^0+/, "");
+                                        setPhoneNumber(digits);
+                                    }}
+                                    className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                                    placeholder="1234567"
+                                    maxLength={7}
+                                />
+                                <select
+                                    id="phonePrefix"
+                                    name="phonePrefix"
+                                    required
+                                    value={phonePrefix}
+                                    onChange={(e) => setPhonePrefix(e.target.value)}
+                                    className="w-24 rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                                >
+                                    <option value="">קידומת</option>
+                                    {ISRAEL_PHONE_PREFIXES.map((prefix) => (
+                                        <option key={prefix.value} value={prefix.value}>
+                                            {prefix.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            {phonePrefix && phoneNumber && !validatePhoneNumber(phonePrefix, phoneNumber) && (
+                                <p className="mt-1 text-sm text-red-600">מספר טלפון לא תקין</p>
+                            )}
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
@@ -228,7 +271,12 @@ export default function RegisterPage() {
                     <div>
                         <button
                             type="submit"
-                            disabled={loading}
+                            disabled={
+                                loading ||
+                                !phonePrefix ||
+                                !phoneNumber ||
+                                !validatePhoneNumber(phonePrefix, phoneNumber)
+                            }
                             className="w-full rounded-md bg-blue-600 px-4 py-3 text-base font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
                         >
                             {loading ? "נרשם..." : "הירשם"}

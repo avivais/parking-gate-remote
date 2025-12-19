@@ -4,6 +4,7 @@ import {
     IsEnum,
     IsNumber,
     IsNotEmpty,
+    Matches,
     ValidateIf,
     Validate,
     ValidationArguments,
@@ -55,8 +56,9 @@ export class UpdateUserDto {
     lastName?: string;
 
     @IsOptional()
-    @IsString()
-    @IsNotEmpty()
+    @Matches(/^0(2|3|4|5[0-9]|8|9)[0-9]{7}$/, {
+        message: 'מספר טלפון לא תקין',
+    })
     phone?: string;
 
     @IsOptional()
