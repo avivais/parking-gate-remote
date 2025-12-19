@@ -351,18 +351,19 @@ export default function AdminPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 px-4 py-8">
+        <div className="min-h-screen px-4 py-8" style={{ backgroundColor: "var(--bg)" }}>
             <div className="mx-auto max-w-7xl">
                 {/* Tabs */}
-                <div className="mb-6 border-b border-gray-200">
+                <div className="mb-6 border-b border-theme">
                     <nav className="-mb-px flex gap-4">
                         <button
                             onClick={() => setActiveTab("users")}
                             className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
                                 activeTab === "users"
-                                    ? "border-blue-500 text-blue-600"
-                                    : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                                    ? "border-primary text-primary"
+                                    : "border-transparent text-muted hover:border-theme hover:text-text"
                             }`}
+                            style={activeTab === "users" ? { borderColor: "var(--primary)", color: "var(--primary)" } : {}}
                         >
                             משתמשים
                         </button>
@@ -370,9 +371,10 @@ export default function AdminPage() {
                             onClick={() => setActiveTab("logs")}
                             className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
                                 activeTab === "logs"
-                                    ? "border-blue-500 text-blue-600"
-                                    : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                                    ? "border-primary text-primary"
+                                    : "border-transparent text-muted hover:border-theme hover:text-text"
                             }`}
+                            style={activeTab === "logs" ? { borderColor: "var(--primary)", color: "var(--primary)" } : {}}
                         >
                             לוגים
                         </button>
@@ -381,8 +383,8 @@ export default function AdminPage() {
 
                 {/* Error state */}
                 {error && (
-                    <div className="mb-4 rounded-lg bg-red-50 p-4 text-red-800">
-                        {error}
+                    <div className="mb-4 rounded-theme-md border p-4" style={{ backgroundColor: "var(--danger)", borderColor: "var(--danger)", opacity: 0.1 }}>
+                        <p style={{ color: "var(--danger)" }}>{error}</p>
                     </div>
                 )}
 
@@ -397,11 +399,12 @@ export default function AdminPage() {
                                         setUsersStatusFilter("pending");
                                         setUsersPage(1);
                                     }}
-                                    className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                                    className={`rounded-theme-md px-4 py-2 text-sm font-medium transition-colors ${
                                         usersStatusFilter === "pending"
-                                            ? "bg-blue-600 text-white"
-                                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                                            ? "bg-primary text-primary-contrast"
+                                            : "bg-surface-2 text-muted hover:bg-surface"
                                     }`}
+                                    style={usersStatusFilter === "pending" ? {} : { color: "var(--muted)" }}
                                 >
                                     ממתינים
                                 </button>
@@ -410,11 +413,12 @@ export default function AdminPage() {
                                         setUsersStatusFilter("approved");
                                         setUsersPage(1);
                                     }}
-                                    className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                                    className={`rounded-theme-md px-4 py-2 text-sm font-medium transition-colors ${
                                         usersStatusFilter === "approved"
-                                            ? "bg-blue-600 text-white"
-                                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                                            ? "bg-primary text-primary-contrast"
+                                            : "bg-surface-2 text-muted hover:bg-surface"
                                     }`}
+                                    style={usersStatusFilter === "approved" ? {} : { color: "var(--muted)" }}
                                 >
                                     מאושרים
                                 </button>
@@ -423,11 +427,12 @@ export default function AdminPage() {
                                         setUsersStatusFilter("rejected");
                                         setUsersPage(1);
                                     }}
-                                    className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                                    className={`rounded-theme-md px-4 py-2 text-sm font-medium transition-colors ${
                                         usersStatusFilter === "rejected"
-                                            ? "bg-blue-600 text-white"
-                                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                                            ? "bg-primary text-primary-contrast"
+                                            : "bg-surface-2 text-muted hover:bg-surface"
                                     }`}
+                                    style={usersStatusFilter === "rejected" ? {} : { color: "var(--muted)" }}
                                 >
                                     נדחו
                                 </button>
@@ -436,11 +441,12 @@ export default function AdminPage() {
                                         setUsersStatusFilter("archived");
                                         setUsersPage(1);
                                     }}
-                                    className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                                    className={`rounded-theme-md px-4 py-2 text-sm font-medium transition-colors ${
                                         usersStatusFilter === "archived"
-                                            ? "bg-blue-600 text-white"
-                                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                                            ? "bg-primary text-primary-contrast"
+                                            : "bg-surface-2 text-muted hover:bg-surface"
                                     }`}
+                                    style={usersStatusFilter === "archived" ? {} : { color: "var(--muted)" }}
                                 >
                                     מושבתים
                                 </button>
@@ -449,11 +455,12 @@ export default function AdminPage() {
                                         setUsersStatusFilter("all");
                                         setUsersPage(1);
                                     }}
-                                    className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                                    className={`rounded-theme-md px-4 py-2 text-sm font-medium transition-colors ${
                                         usersStatusFilter === "all"
-                                            ? "bg-blue-600 text-white"
-                                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                                            ? "bg-primary text-primary-contrast"
+                                            : "bg-surface-2 text-muted hover:bg-surface"
                                     }`}
+                                    style={usersStatusFilter === "all" ? {} : { color: "var(--muted)" }}
                                 >
                                     הכל
                                 </button>
@@ -464,7 +471,8 @@ export default function AdminPage() {
                                 placeholder="חיפוש לפי אימייל, טלפון או שם..."
                                 value={usersSearchQuery}
                                 onChange={(e) => setUsersSearchQuery(e.target.value)}
-                                className="flex-1 min-w-[200px] rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="input-theme flex-1 min-w-[200px] px-4 py-2 text-sm placeholder:text-muted focus-theme"
+                                style={{ color: "var(--text)" }}
                             />
 
                             <select
@@ -473,7 +481,8 @@ export default function AdminPage() {
                                     setUsersLimit(Number(e.target.value));
                                     setUsersPage(1);
                                 }}
-                                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="input-theme px-4 py-2 text-sm focus-theme"
+                                style={{ color: "var(--text)" }}
                             >
                                 <option value={20}>20 לדף</option>
                                 <option value={50}>50 לדף</option>
@@ -483,51 +492,51 @@ export default function AdminPage() {
                         {/* Users Table */}
                         {loading ? (
                             <div className="flex items-center justify-center py-12">
-                                <div className="text-lg text-gray-600">טוען...</div>
+                                <div className="text-lg text-muted">טוען...</div>
                             </div>
                         ) : error && error.includes("הרשאה") ? (
-                            <div className="rounded-lg bg-red-50 p-4 text-red-800">
-                                {error}
+                            <div className="rounded-theme-md border p-4" style={{ backgroundColor: "var(--danger)", borderColor: "var(--danger)", opacity: 0.1 }}>
+                                <p style={{ color: "var(--danger)" }}>{error}</p>
                             </div>
                         ) : usersData ? (
                             <>
-                                <div className="overflow-hidden rounded-lg bg-white shadow">
+                                <div className="overflow-hidden rounded-theme-lg bg-surface shadow-theme-md">
                                     <div className="overflow-x-auto">
-                                        <table className="min-w-full divide-y divide-gray-200">
-                                            <thead className="bg-gray-50">
+                                        <table className="min-w-full divide-y" style={{ borderColor: "var(--table-border)" }}>
+                                            <thead className="table-header">
                                                 <tr>
-                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
                                                         אימייל
                                                     </th>
-                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
                                                         שם
                                                     </th>
-                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
                                                         טלפון
                                                     </th>
-                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
                                                         דירה + קומה
                                                     </th>
-                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
                                                         סטטוס
                                                     </th>
-                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
                                                         מכשיר פעיל
                                                     </th>
-                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
                                                         תאריך יצירה
                                                     </th>
-                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
                                                         פעולות
                                                     </th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-gray-200 bg-white">
+                                            <tbody className="divide-y bg-surface" style={{ borderColor: "var(--table-border)" }}>
                                                 {usersData.items.length === 0 ? (
                                                     <tr>
                                                         <td
                                                             colSpan={8}
-                                                            className="px-6 py-4 text-center text-sm text-gray-500"
+                                                            className="px-6 py-4 text-center text-sm text-muted"
                                                         >
                                                             אין משתמשים להצגה
                                                         </td>
@@ -536,49 +545,49 @@ export default function AdminPage() {
                                                     usersData.items.map((user) => (
                                                         <tr
                                                             key={user.id}
-                                                            className="hover:bg-gray-50"
+                                                            className="table-row"
                                                         >
-                                                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                                                            <td className="whitespace-nowrap px-6 py-4 text-sm" style={{ color: "var(--text)" }}>
                                                                 {user.email}
                                                             </td>
-                                                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                                                            <td className="whitespace-nowrap px-6 py-4 text-sm" style={{ color: "var(--text)" }}>
                                                                 {user.firstName} {user.lastName}
                                                             </td>
-                                                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                                                            <td className="whitespace-nowrap px-6 py-4 text-sm" style={{ color: "var(--text)" }}>
                                                                 {user.phone}
                                                             </td>
-                                                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                                                            <td className="whitespace-nowrap px-6 py-4 text-sm" style={{ color: "var(--text)" }}>
                                                                 {user.apartmentNumber} / {user.floor}
                                                             </td>
                                                             <td className="whitespace-nowrap px-6 py-4 text-sm">
                                                                 {user.status === "approved" ? (
-                                                                    <span className="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
+                                                                    <span className="badge-success inline-flex rounded-full px-2 py-1 text-xs font-medium">
                                                                         מאושר
                                                                     </span>
                                                                 ) : user.status === "pending" ? (
-                                                                    <span className="inline-flex rounded-full bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800">
+                                                                    <span className="badge-warning inline-flex rounded-full px-2 py-1 text-xs font-medium">
                                                                         ממתין
                                                                     </span>
                                                                 ) : user.status === "rejected" ? (
-                                                                    <span className="inline-flex rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-800">
+                                                                    <span className="badge-danger inline-flex rounded-full px-2 py-1 text-xs font-medium">
                                                                         נדחה
                                                                     </span>
                                                                 ) : (
-                                                                    <span className="inline-flex rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-800">
+                                                                    <span className="badge-muted inline-flex rounded-full px-2 py-1 text-xs font-medium">
                                                                         מושבת
                                                                     </span>
                                                                 )}
                                                             </td>
-                                                            <td className="whitespace-nowrap px-6 py-4 text-sm font-mono text-gray-500">
+                                                            <td className="whitespace-nowrap px-6 py-4 text-sm font-mono text-muted">
                                                                 {user.activeDeviceId ? (
-                                                                    <span className="text-green-600">
+                                                                    <span className="text-success">
                                                                         {user.activeDeviceId.substring(0, 8)}...
                                                                     </span>
                                                                 ) : (
-                                                                    <span className="text-gray-400">אין</span>
+                                                                    <span className="text-muted">אין</span>
                                                                 )}
                                                             </td>
-                                                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                                                            <td className="whitespace-nowrap px-6 py-4 text-sm text-muted">
                                                                 {new Date(user.createdAt).toLocaleString("he-IL")}
                                                             </td>
                                                             <td className="whitespace-nowrap px-6 py-4 text-sm">
@@ -589,13 +598,33 @@ export default function AdminPage() {
                                                                                 onClick={() =>
                                                                                     handleApproveUser(user.id)
                                                                                 }
-                                                                                className="rounded bg-green-600 px-3 py-1 text-xs font-medium text-white hover:bg-green-700"
+                                                                                className="rounded-theme-sm px-3 py-1 text-xs font-medium"
+                                                                                style={{
+                                                                                    backgroundColor: "var(--success)",
+                                                                                    color: "var(--primary-contrast)",
+                                                                                }}
+                                                                                onMouseEnter={(e) => {
+                                                                                    e.currentTarget.style.opacity = "0.9";
+                                                                                }}
+                                                                                onMouseLeave={(e) => {
+                                                                                    e.currentTarget.style.opacity = "1";
+                                                                                }}
                                                                             >
                                                                                 אישור
                                                                             </button>
                                                                             <button
                                                                                 onClick={() => openRejectModal(user)}
-                                                                                className="rounded bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700"
+                                                                                className="rounded-theme-sm px-3 py-1 text-xs font-medium"
+                                                                                style={{
+                                                                                    backgroundColor: "var(--danger)",
+                                                                                    color: "var(--primary-contrast)",
+                                                                                }}
+                                                                                onMouseEnter={(e) => {
+                                                                                    e.currentTarget.style.opacity = "0.9";
+                                                                                }}
+                                                                                onMouseLeave={(e) => {
+                                                                                    e.currentTarget.style.opacity = "1";
+                                                                                }}
                                                                             >
                                                                                 דחייה
                                                                             </button>
@@ -603,7 +632,17 @@ export default function AdminPage() {
                                                                     )}
                                                                     <button
                                                                         onClick={() => openEditModal(user)}
-                                                                        className="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700"
+                                                                        className="rounded-theme-sm px-3 py-1 text-xs font-medium"
+                                                                        style={{
+                                                                            backgroundColor: "var(--primary)",
+                                                                            color: "var(--primary-contrast)",
+                                                                        }}
+                                                                        onMouseEnter={(e) => {
+                                                                            e.currentTarget.style.backgroundColor = "var(--primary-hover)";
+                                                                        }}
+                                                                        onMouseLeave={(e) => {
+                                                                            e.currentTarget.style.backgroundColor = "var(--primary)";
+                                                                        }}
                                                                     >
                                                                         עריכה
                                                                     </button>
@@ -612,7 +651,17 @@ export default function AdminPage() {
                                                                             onClick={() =>
                                                                                 handleArchiveUser(user.id)
                                                                             }
-                                                                            className="rounded bg-gray-600 px-3 py-1 text-xs font-medium text-white hover:bg-gray-700"
+                                                                            className="rounded-theme-sm px-3 py-1 text-xs font-medium"
+                                                                            style={{
+                                                                                backgroundColor: "var(--muted)",
+                                                                                color: "var(--primary-contrast)",
+                                                                            }}
+                                                                            onMouseEnter={(e) => {
+                                                                                e.currentTarget.style.opacity = "0.9";
+                                                                            }}
+                                                                            onMouseLeave={(e) => {
+                                                                                e.currentTarget.style.opacity = "1";
+                                                                            }}
                                                                         >
                                                                             השבתה
                                                                         </button>
@@ -622,7 +671,17 @@ export default function AdminPage() {
                                                                             onClick={() =>
                                                                                 handleResetDevice(user.id)
                                                                             }
-                                                                            className="rounded bg-orange-600 px-3 py-1 text-xs font-medium text-white hover:bg-orange-700"
+                                                                            className="rounded-theme-sm px-3 py-1 text-xs font-medium"
+                                                                            style={{
+                                                                                backgroundColor: "var(--warning)",
+                                                                                color: "var(--primary-contrast)",
+                                                                            }}
+                                                                            onMouseEnter={(e) => {
+                                                                                e.currentTarget.style.opacity = "0.9";
+                                                                            }}
+                                                                            onMouseLeave={(e) => {
+                                                                                e.currentTarget.style.opacity = "1";
+                                                                            }}
                                                                         >
                                                                             איפוס מכשיר
                                                                         </button>
@@ -639,15 +698,16 @@ export default function AdminPage() {
 
                                 {/* Pagination */}
                                 {usersData && usersData.total > 0 && (
-                                    <div className="mt-4 flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3">
-                                        <div className="text-sm font-medium text-gray-700">
+                                    <div className="mt-4 flex items-center justify-between rounded-theme-md border border-theme bg-surface px-4 py-3">
+                                        <div className="text-sm font-medium" style={{ color: "var(--text)" }}>
                                             עמוד {usersData.page} מתוך {usersData.totalPages} ({usersData.total} משתמשים)
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <button
                                                 onClick={() => setUsersPage((p) => Math.max(1, p - 1))}
                                                 disabled={usersData.page === 1}
-                                                className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="rounded-theme-md border border-theme bg-surface px-3 py-2 text-sm font-medium hover:bg-surface-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                style={{ color: "var(--text)" }}
                                             >
                                                 הקודם
                                             </button>
@@ -658,7 +718,7 @@ export default function AdminPage() {
                                                             return (
                                                                 <span
                                                                     key={`ellipsis-${idx}`}
-                                                                    className="px-2 py-2 text-sm text-gray-500"
+                                                                    className="px-2 py-2 text-sm text-muted"
                                                                 >
                                                                     ...
                                                                 </span>
@@ -669,11 +729,12 @@ export default function AdminPage() {
                                                             <button
                                                                 key={page}
                                                                 onClick={() => setUsersPage(page)}
-                                                                className={`min-w-[2.5rem] rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                                                                className={`min-w-[2.5rem] rounded-theme-md border px-3 py-2 text-sm font-medium transition-colors ${
                                                                     isActive
-                                                                        ? "border-blue-500 bg-blue-600 text-white"
-                                                                        : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                                                                        ? "bg-primary text-primary-contrast"
+                                                                        : "border-theme bg-surface text-muted hover:bg-surface-2"
                                                                 }`}
+                                                                style={isActive ? {} : { color: "var(--muted)" }}
                                                             >
                                                                 {page}
                                                             </button>
@@ -688,7 +749,8 @@ export default function AdminPage() {
                                                     )
                                                 }
                                                 disabled={usersData.page === usersData.totalPages}
-                                                className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="rounded-theme-md border border-theme bg-surface px-3 py-2 text-sm font-medium hover:bg-surface-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                style={{ color: "var(--text)" }}
                                             >
                                                 הבא
                                             </button>
@@ -710,7 +772,8 @@ export default function AdminPage() {
                                 placeholder="חיפוש לפי אימייל..."
                                 value={logsEmailSearch}
                                 onChange={(e) => setLogsEmailSearch(e.target.value)}
-                                className="flex-1 min-w-[200px] rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 placeholder:text-gray-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="input-theme flex-1 min-w-[200px] px-4 py-2 text-sm placeholder:text-muted focus-theme"
+                                style={{ color: "var(--text)" }}
                             />
 
                             <select
@@ -719,7 +782,8 @@ export default function AdminPage() {
                                     setLogsOpenedBy(e.target.value as OpenedByFilter);
                                     setLogsPage(1);
                                 }}
-                                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="input-theme px-4 py-2 text-sm focus-theme"
+                                style={{ color: "var(--text)" }}
                             >
                                 <option value="all">הכל</option>
                                 <option value="user">משתמש</option>
@@ -732,7 +796,8 @@ export default function AdminPage() {
                                     setLogsLimit(Number(e.target.value));
                                     setLogsPage(1);
                                 }}
-                                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="input-theme px-4 py-2 text-sm focus-theme"
+                                style={{ color: "var(--text)" }}
                             >
                                 <option value={20}>20 לדף</option>
                                 <option value={50}>50 לדף</option>
@@ -744,45 +809,45 @@ export default function AdminPage() {
                         {/* Logs Table */}
                         {loading ? (
                             <div className="flex items-center justify-center py-12">
-                                <div className="text-lg text-gray-600">טוען...</div>
+                                <div className="text-lg text-muted">טוען...</div>
                             </div>
                         ) : error && error.includes("הרשאה") ? (
-                            <div className="rounded-lg bg-red-50 p-4 text-red-800">
-                                {error}
+                            <div className="rounded-theme-md border p-4" style={{ backgroundColor: "var(--danger)", borderColor: "var(--danger)", opacity: 0.1 }}>
+                                <p style={{ color: "var(--danger)" }}>{error}</p>
                             </div>
                         ) : logsData ? (
                             <>
-                                <div className="overflow-hidden rounded-lg bg-white shadow">
+                                <div className="overflow-hidden rounded-theme-lg bg-surface shadow-theme-md">
                                     <div className="overflow-x-auto">
-                                        <table className="min-w-full divide-y divide-gray-200">
-                                            <thead className="bg-gray-50">
+                                        <table className="min-w-full divide-y" style={{ borderColor: "var(--table-border)" }}>
+                                            <thead className="table-header">
                                                 <tr>
-                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
                                                         תאריך ושעה
                                                     </th>
-                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
                                                         נפתח על ידי
                                                     </th>
-                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
                                                         אימייל
                                                     </th>
-                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
                                                         מזהה מכשיר
                                                     </th>
-                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
                                                         IP
                                                     </th>
-                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
                                                         User Agent
                                                     </th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-gray-200 bg-white">
+                                            <tbody className="divide-y bg-surface" style={{ borderColor: "var(--table-border)" }}>
                                                 {logsData.items.length === 0 ? (
                                                     <tr>
                                                         <td
                                                             colSpan={6}
-                                                            className="px-6 py-4 text-center text-sm text-gray-500"
+                                                            className="px-6 py-4 text-center text-sm text-muted"
                                                         >
                                                             אין לוגים להצגה
                                                         </td>
@@ -791,28 +856,28 @@ export default function AdminPage() {
                                                     logsData.items.map((log) => (
                                                         <tr
                                                             key={log.id}
-                                                            className="hover:bg-gray-50"
+                                                            className="table-row"
                                                         >
-                                                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                                                            <td className="whitespace-nowrap px-6 py-4 text-sm text-muted">
                                                                 {new Date(log.createdAt).toLocaleString("he-IL")}
                                                             </td>
-                                                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                                                            <td className="whitespace-nowrap px-6 py-4 text-sm" style={{ color: "var(--text)" }}>
                                                                 {log.openedBy === "user"
                                                                     ? "משתמש"
                                                                     : "אדמין (דלת אחורית)"}
                                                             </td>
-                                                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                                                            <td className="whitespace-nowrap px-6 py-4 text-sm" style={{ color: "var(--text)" }}>
                                                                 {log.email || "-"}
                                                             </td>
-                                                            <td className="whitespace-nowrap px-6 py-4 text-sm font-mono text-gray-500">
+                                                            <td className="whitespace-nowrap px-6 py-4 text-sm font-mono text-muted">
                                                                 {log.deviceId
                                                                     ? log.deviceId.substring(0, 8) + "..."
                                                                     : "-"}
                                                             </td>
-                                                            <td className="whitespace-nowrap px-6 py-4 text-sm font-mono text-gray-500">
+                                                            <td className="whitespace-nowrap px-6 py-4 text-sm font-mono text-muted">
                                                                 {log.ip || "-"}
                                                             </td>
-                                                            <td className="px-6 py-4 text-sm text-gray-500">
+                                                            <td className="px-6 py-4 text-sm text-muted">
                                                                 <div className="max-w-xs truncate">
                                                                     {log.userAgent || "-"}
                                                                 </div>
@@ -827,15 +892,16 @@ export default function AdminPage() {
 
                                 {/* Pagination */}
                                 {logsData && logsData.total > 0 && (
-                                    <div className="mt-4 flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3">
-                                        <div className="text-sm font-medium text-gray-700">
+                                    <div className="mt-4 flex items-center justify-between rounded-theme-md border border-theme bg-surface px-4 py-3">
+                                        <div className="text-sm font-medium" style={{ color: "var(--text)" }}>
                                             עמוד {logsData.page} מתוך {logsData.totalPages} ({logsData.total} לוגים)
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <button
                                                 onClick={() => setLogsPage((p) => Math.max(1, p - 1))}
                                                 disabled={logsData.page === 1}
-                                                className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="rounded-theme-md border border-theme bg-surface px-3 py-2 text-sm font-medium hover:bg-surface-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                style={{ color: "var(--text)" }}
                                             >
                                                 הקודם
                                             </button>
@@ -846,7 +912,7 @@ export default function AdminPage() {
                                                             return (
                                                                 <span
                                                                     key={`ellipsis-${idx}`}
-                                                                    className="px-2 py-2 text-sm text-gray-500"
+                                                                    className="px-2 py-2 text-sm text-muted"
                                                                 >
                                                                     ...
                                                                 </span>
@@ -857,11 +923,12 @@ export default function AdminPage() {
                                                             <button
                                                                 key={page}
                                                                 onClick={() => setLogsPage(page)}
-                                                                className={`min-w-[2.5rem] rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                                                                className={`min-w-[2.5rem] rounded-theme-md border px-3 py-2 text-sm font-medium transition-colors ${
                                                                     isActive
-                                                                        ? "border-blue-500 bg-blue-600 text-white"
-                                                                        : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                                                                        ? "bg-primary text-primary-contrast"
+                                                                        : "border-theme bg-surface text-muted hover:bg-surface-2"
                                                                 }`}
+                                                                style={isActive ? {} : { color: "var(--muted)" }}
                                                             >
                                                                 {page}
                                                             </button>
@@ -876,7 +943,8 @@ export default function AdminPage() {
                                                     )
                                                 }
                                                 disabled={logsData.page === logsData.totalPages}
-                                                className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="rounded-theme-md border border-theme bg-surface px-3 py-2 text-sm font-medium hover:bg-surface-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                style={{ color: "var(--text)" }}
                                             >
                                                 הבא
                                             </button>
@@ -890,19 +958,20 @@ export default function AdminPage() {
 
                 {/* Reject Modal */}
                 {rejectModalOpen && selectedUser && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                        <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-                            <h3 className="mb-4 text-lg font-bold text-gray-900">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}>
+                        <div className="card-theme w-full max-w-md p-6 shadow-theme-lg">
+                            <h3 className="mb-4 text-lg font-bold" style={{ color: "var(--text)" }}>
                                 דחיית משתמש
                             </h3>
-                            <p className="mb-4 text-sm text-gray-600">
+                            <p className="mb-4 text-sm text-muted">
                                 אנא הזן סיבת דחייה עבור {selectedUser.email}
                             </p>
                             <textarea
                                 value={rejectionReason}
                                 onChange={(e) => setRejectionReason(e.target.value)}
                                 placeholder="סיבת דחייה..."
-                                className="mb-4 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="input-theme mb-4 w-full px-3 py-2 text-sm focus-theme"
+                                style={{ color: "var(--text)" }}
                                 rows={4}
                             />
                             <div className="flex gap-2">
@@ -912,13 +981,24 @@ export default function AdminPage() {
                                         setSelectedUser(null);
                                         setRejectionReason("");
                                     }}
-                                    className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                                    className="flex-1 rounded-theme-md border border-theme bg-surface px-4 py-2 text-sm font-medium hover:bg-surface-2"
+                                    style={{ color: "var(--text)" }}
                                 >
                                     ביטול
                                 </button>
                                 <button
                                     onClick={handleRejectUser}
-                                    className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+                                    className="flex-1 rounded-theme-md px-4 py-2 text-sm font-medium"
+                                    style={{
+                                        backgroundColor: "var(--danger)",
+                                        color: "var(--primary-contrast)",
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.opacity = "0.9";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.opacity = "1";
+                                    }}
                                 >
                                     דחייה
                                 </button>
@@ -929,14 +1009,14 @@ export default function AdminPage() {
 
                 {/* Edit Modal */}
                 {editModalOpen && selectedUser && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                        <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-                            <h3 className="mb-4 text-lg font-bold text-gray-900">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}>
+                        <div className="card-theme w-full max-w-md p-6 shadow-theme-lg">
+                            <h3 className="mb-4 text-lg font-bold" style={{ color: "var(--text)" }}>
                                 עריכת משתמש
                             </h3>
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700">
+                                    <label className="block text-sm font-medium" style={{ color: "var(--text)" }}>
                                         שם פרטי
                                     </label>
                                     <input
@@ -945,11 +1025,12 @@ export default function AdminPage() {
                                         onChange={(e) =>
                                             setEditFormData({ ...editFormData, firstName: e.target.value })
                                         }
-                                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="input-theme mt-1 w-full px-3 py-2 text-sm focus-theme"
+                                        style={{ color: "var(--text)" }}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700">
+                                    <label className="block text-sm font-medium" style={{ color: "var(--text)" }}>
                                         שם משפחה
                                     </label>
                                     <input
@@ -958,11 +1039,12 @@ export default function AdminPage() {
                                         onChange={(e) =>
                                             setEditFormData({ ...editFormData, lastName: e.target.value })
                                         }
-                                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="input-theme mt-1 w-full px-3 py-2 text-sm focus-theme"
+                                        style={{ color: "var(--text)" }}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700">
+                                    <label className="block text-sm font-medium" style={{ color: "var(--text)" }}>
                                         טלפון
                                     </label>
                                     <div className="mt-1 flex gap-2">
@@ -977,7 +1059,8 @@ export default function AdminPage() {
                                                     phoneNumber: digits,
                                                 });
                                             }}
-                                            className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className="input-theme flex-1 px-3 py-2 text-sm focus-theme"
+                                            style={{ color: "var(--text)" }}
                                             placeholder="1234567"
                                             maxLength={7}
                                         />
@@ -989,7 +1072,8 @@ export default function AdminPage() {
                                                     phonePrefix: e.target.value,
                                                 })
                                             }
-                                            className="w-24 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className="input-theme w-24 px-3 py-2 text-sm focus-theme"
+                                            style={{ color: "var(--text)" }}
                                         >
                                             <option value="">קידומת</option>
                                             {ISRAEL_PHONE_PREFIXES.map((prefix) => (
@@ -1002,12 +1086,12 @@ export default function AdminPage() {
                                     {editFormData.phonePrefix &&
                                         editFormData.phoneNumber &&
                                         !validatePhoneNumber(editFormData.phonePrefix, editFormData.phoneNumber) && (
-                                            <p className="mt-1 text-sm text-red-600">מספר טלפון לא תקין</p>
+                                            <p className="mt-1 text-sm text-danger">מספר טלפון לא תקין</p>
                                         )}
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700">
+                                        <label className="block text-sm font-medium" style={{ color: "var(--text)" }}>
                                             מספר דירה
                                         </label>
                                         <input
@@ -1016,11 +1100,12 @@ export default function AdminPage() {
                                             onChange={(e) =>
                                                 setEditFormData({ ...editFormData, apartmentNumber: e.target.value })
                                             }
-                                            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className="input-theme mt-1 w-full px-3 py-2 text-sm focus-theme"
+                                            style={{ color: "var(--text)" }}
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700">
+                                        <label className="block text-sm font-medium" style={{ color: "var(--text)" }}>
                                             קומה
                                         </label>
                                         <input
@@ -1029,12 +1114,13 @@ export default function AdminPage() {
                                             onChange={(e) =>
                                                 setEditFormData({ ...editFormData, floor: e.target.value })
                                             }
-                                            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className="input-theme mt-1 w-full px-3 py-2 text-sm focus-theme"
+                                            style={{ color: "var(--text)" }}
                                         />
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700">
+                                    <label className="block text-sm font-medium" style={{ color: "var(--text)" }}>
                                         סטטוס
                                     </label>
                                     <select
@@ -1045,7 +1131,8 @@ export default function AdminPage() {
                                                 status: e.target.value as "pending" | "approved" | "rejected" | "archived",
                                             })
                                         }
-                                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        className="input-theme mt-1 w-full px-3 py-2 text-sm focus-theme"
+                                        style={{ color: "var(--text)" }}
                                     >
                                         <option value="pending">ממתין</option>
                                         <option value="approved">מאושר</option>
@@ -1055,7 +1142,7 @@ export default function AdminPage() {
                                 </div>
                                 {editFormData.status === "rejected" && (
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700">
+                                        <label className="block text-sm font-medium" style={{ color: "var(--text)" }}>
                                             סיבת דחייה
                                         </label>
                                         <textarea
@@ -1064,7 +1151,8 @@ export default function AdminPage() {
                                                 setEditFormData({ ...editFormData, rejectionReason: e.target.value })
                                             }
                                             placeholder="סיבת דחייה..."
-                                            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className="input-theme mt-1 w-full px-3 py-2 text-sm focus-theme"
+                                            style={{ color: "var(--text)" }}
                                             rows={3}
                                         />
                                     </div>
@@ -1076,13 +1164,14 @@ export default function AdminPage() {
                                         setEditModalOpen(false);
                                         setSelectedUser(null);
                                     }}
-                                    className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                                    className="flex-1 rounded-theme-md border border-theme bg-surface px-4 py-2 text-sm font-medium hover:bg-surface-2"
+                                    style={{ color: "var(--text)" }}
                                 >
                                     ביטול
                                 </button>
                                 <button
                                     onClick={handleEditUser}
-                                    className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                                    className="btn-primary flex-1 px-4 py-2 text-sm font-medium"
                                 >
                                     שמור
                                 </button>

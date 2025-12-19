@@ -56,7 +56,8 @@ export function GateButton({ onOpen, disabled = false, loading }: GateButtonProp
             return (
                 <span className="flex items-center justify-center gap-2">
                     <svg
-                        className="h-5 w-5 animate-spin text-white"
+                        className="h-5 w-5 animate-spin"
+                        style={{ color: "var(--primary-contrast)" }}
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
                         viewBox="0 0 24 24"
@@ -84,7 +85,8 @@ export function GateButton({ onOpen, disabled = false, loading }: GateButtonProp
             return (
                 <span className="flex items-center justify-center gap-2">
                     <svg
-                        className="h-5 w-5 text-white"
+                        className="h-5 w-5"
+                        style={{ color: "var(--primary-contrast)" }}
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
                         viewBox="0 0 24 24"
@@ -117,7 +119,19 @@ export function GateButton({ onOpen, disabled = false, loading }: GateButtonProp
             disabled={isDisabled}
             aria-disabled={isDisabled}
             aria-busy={isLoading}
-            className="w-full rounded-lg bg-green-600 px-6 py-8 text-2xl font-bold text-white shadow-lg hover:bg-green-700 focus:outline-none focus:ring-4 focus:ring-green-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            className="w-full rounded-theme-lg px-6 py-8 text-2xl font-bold shadow-theme-lg focus-theme disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            style={{
+                backgroundColor: "var(--success)",
+                color: "var(--primary-contrast)",
+            }}
+            onMouseEnter={(e) => {
+                if (!isDisabled) {
+                    e.currentTarget.style.opacity = "0.9";
+                }
+            }}
+            onMouseLeave={(e) => {
+                e.currentTarget.style.opacity = isDisabled ? "0.5" : "1";
+            }}
             animate={status === "idle" ? "idle" : status}
             variants={variants}
         >

@@ -88,13 +88,13 @@ export default function RegisterPage() {
     };
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12">
+        <div className="flex min-h-screen items-center justify-center px-4 py-12" style={{ backgroundColor: "var(--bg)" }}>
             <div className="w-full max-w-md space-y-8">
                 <div>
-                    <h2 className="text-center text-3xl font-bold text-gray-900">
-                        <span className="text-gray-500 font-normal">מצפה 6-8</span> • הרשמה
+                    <h2 className="text-center text-3xl font-bold" style={{ color: "var(--text)" }}>
+                        <span style={{ color: "var(--muted)", fontWeight: "var(--font-weight-normal)" }}>מצפה 6-8</span> • הרשמה
                     </h2>
-                    <p className="mt-2 text-center text-sm text-gray-600">
+                    <p className="mt-2 text-center text-sm text-muted">
                         צור חשבון חדש
                     </p>
                 </div>
@@ -103,7 +103,8 @@ export default function RegisterPage() {
                         <div>
                             <label
                                 htmlFor="email"
-                                className="block text-sm font-medium text-gray-700"
+                                className="block text-sm font-medium"
+                                style={{ color: "var(--text)" }}
                             >
                                 אימייל
                             </label>
@@ -115,14 +116,16 @@ export default function RegisterPage() {
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                                className="input-theme mt-1 block w-full px-3 py-2 shadow-theme-sm placeholder:text-muted focus-theme"
+                                style={{ color: "var(--text)" }}
                                 placeholder="your@email.com"
                             />
                         </div>
                         <div>
                             <label
                                 htmlFor="password"
-                                className="block text-sm font-medium text-gray-700"
+                                className="block text-sm font-medium"
+                                style={{ color: "var(--text)" }}
                             >
                                 סיסמה
                             </label>
@@ -134,14 +137,16 @@ export default function RegisterPage() {
                                 required
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                                className="input-theme mt-1 block w-full px-3 py-2 shadow-theme-sm placeholder:text-muted focus-theme"
+                                style={{ color: "var(--text)" }}
                                 placeholder="••••••••"
                             />
                         </div>
                         <div>
                             <label
                                 htmlFor="firstName"
-                                className="block text-sm font-medium text-gray-700"
+                                className="block text-sm font-medium"
+                                style={{ color: "var(--text)" }}
                             >
                                 שם פרטי
                             </label>
@@ -153,14 +158,16 @@ export default function RegisterPage() {
                                 required
                                 value={firstName}
                                 onChange={(e) => setFirstName(e.target.value)}
-                                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                                className="input-theme mt-1 block w-full px-3 py-2 shadow-theme-sm placeholder:text-muted focus-theme"
+                                style={{ color: "var(--text)" }}
                                 placeholder="שם פרטי"
                             />
                         </div>
                         <div>
                             <label
                                 htmlFor="lastName"
-                                className="block text-sm font-medium text-gray-700"
+                                className="block text-sm font-medium"
+                                style={{ color: "var(--text)" }}
                             >
                                 שם משפחה
                             </label>
@@ -172,14 +179,16 @@ export default function RegisterPage() {
                                 required
                                 value={lastName}
                                 onChange={(e) => setLastName(e.target.value)}
-                                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                                className="input-theme mt-1 block w-full px-3 py-2 shadow-theme-sm placeholder:text-muted focus-theme"
+                                style={{ color: "var(--text)" }}
                                 placeholder="שם משפחה"
                             />
                         </div>
                         <div>
                             <label
                                 htmlFor="phone"
-                                className="block text-sm font-medium text-gray-700"
+                                className="block text-sm font-medium"
+                                style={{ color: "var(--text)" }}
                             >
                                 טלפון
                             </label>
@@ -196,7 +205,8 @@ export default function RegisterPage() {
                                         const digits = e.target.value.replace(/\D/g, "").replace(/^0+/, "");
                                         setPhoneNumber(digits);
                                     }}
-                                    className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                                    className="input-theme flex-1 px-3 py-2 shadow-theme-sm placeholder:text-muted focus-theme"
+                                    style={{ color: "var(--text)" }}
                                     placeholder="1234567"
                                     maxLength={7}
                                 />
@@ -206,7 +216,8 @@ export default function RegisterPage() {
                                     required
                                     value={phonePrefix}
                                     onChange={(e) => setPhonePrefix(e.target.value)}
-                                    className="w-24 rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                                    className="input-theme w-24 px-3 py-2 shadow-theme-sm focus-theme"
+                                    style={{ color: "var(--text)" }}
                                 >
                                     <option value="">קידומת</option>
                                     {ISRAEL_PHONE_PREFIXES.map((prefix) => (
@@ -217,14 +228,15 @@ export default function RegisterPage() {
                                 </select>
                             </div>
                             {phonePrefix && phoneNumber && !validatePhoneNumber(phonePrefix, phoneNumber) && (
-                                <p className="mt-1 text-sm text-red-600">מספר טלפון לא תקין</p>
+                                <p className="mt-1 text-sm" style={{ color: "var(--danger)" }}>מספר טלפון לא תקין</p>
                             )}
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label
                                     htmlFor="apartmentNumber"
-                                    className="block text-sm font-medium text-gray-700"
+                                    className="block text-sm font-medium"
+                                    style={{ color: "var(--text)" }}
                                 >
                                     מספר דירה
                                 </label>
@@ -235,14 +247,16 @@ export default function RegisterPage() {
                                     required
                                     value={apartmentNumber}
                                     onChange={(e) => setApartmentNumber(e.target.value)}
-                                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                                    className="input-theme mt-1 block w-full px-3 py-2 shadow-theme-sm placeholder:text-muted focus-theme"
+                                    style={{ color: "var(--text)" }}
                                     placeholder="1"
                                 />
                             </div>
                             <div>
                                 <label
                                     htmlFor="floor"
-                                    className="block text-sm font-medium text-gray-700"
+                                    className="block text-sm font-medium"
+                                    style={{ color: "var(--text)" }}
                                 >
                                     קומה
                                 </label>
@@ -253,7 +267,8 @@ export default function RegisterPage() {
                                     required
                                     value={floor}
                                     onChange={(e) => setFloor(e.target.value)}
-                                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                                    className="input-theme mt-1 block w-full px-3 py-2 shadow-theme-sm placeholder:text-muted focus-theme"
+                                    style={{ color: "var(--text)" }}
                                     placeholder="1"
                                 />
                             </div>
@@ -261,8 +276,8 @@ export default function RegisterPage() {
                     </div>
 
                     {showPendingNotice && (
-                        <div className="rounded-md bg-blue-50 p-4">
-                            <p className="text-sm text-blue-800">
+                        <div className="rounded-theme-md border p-4" style={{ backgroundColor: "var(--primary)", borderColor: "var(--primary)", opacity: 0.1 }}>
+                            <p className="text-sm" style={{ color: "var(--primary)" }}>
                                 נרשמת, ממתין לאישור אדמין
                             </p>
                         </div>
@@ -277,7 +292,7 @@ export default function RegisterPage() {
                                 !phoneNumber ||
                                 !validatePhoneNumber(phonePrefix, phoneNumber)
                             }
-                            className="w-full rounded-md bg-blue-600 px-4 py-3 text-base font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+                            className="btn-primary w-full px-4 py-3 text-base font-medium shadow-theme-sm disabled:opacity-50"
                         >
                             {loading ? "נרשם..." : "הירשם"}
                         </button>
@@ -286,7 +301,14 @@ export default function RegisterPage() {
                     <div className="text-center">
                         <Link
                             href="/login"
-                            className="text-sm font-medium text-blue-600 hover:text-blue-500"
+                            className="text-sm font-medium focus-theme"
+                            style={{ color: "var(--primary)" }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.opacity = "0.8";
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.opacity = "1";
+                            }}
                         >
                             יש לך חשבון? התחבר כאן
                         </Link>

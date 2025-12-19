@@ -114,12 +114,13 @@ export default function PendingPage() {
     };
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12">
+        <div className="flex min-h-screen items-center justify-center px-4 py-12" style={{ backgroundColor: "var(--bg)" }}>
                 <div className="w-full max-w-md space-y-8 text-center">
                     <div className="space-y-4">
-                        <div className="mx-auto h-16 w-16 rounded-full bg-yellow-100 flex items-center justify-center">
+                        <div className="mx-auto h-16 w-16 rounded-full flex items-center justify-center" style={{ backgroundColor: "var(--warning)", opacity: 0.2 }}>
                             <svg
-                                className="h-8 w-8 text-yellow-600"
+                                className="h-8 w-8"
+                                style={{ color: "var(--warning)" }}
                                 fill="none"
                                 viewBox="0 0 24 24"
                                 stroke="currentColor"
@@ -132,17 +133,17 @@ export default function PendingPage() {
                                 />
                             </svg>
                         </div>
-                            <h2 className="text-3xl font-bold text-gray-900">
-                                <span className="text-gray-500 font-normal">מצפה 6-8</span> • ממתין לאישור
+                            <h2 className="text-3xl font-bold" style={{ color: "var(--text)" }}>
+                                <span style={{ color: "var(--muted)", fontWeight: "var(--font-weight-normal)" }}>מצפה 6-8</span> • ממתין לאישור
                             </h2>
                         <div className="space-y-3 text-right">
-                            <p className="text-lg text-gray-700">
+                            <p className="text-lg" style={{ color: "var(--text)" }}>
                                 שלום! החשבון שלך נשלח לאישור על ידי מנהל המערכת.
                             </p>
-                            <p className="text-base text-gray-600">
+                            <p className="text-base text-muted">
                                 תהליך האישור יכול לקחת כמה דקות. ברגע שהחשבון יאושר, תוכל להשתמש בכל התכונות של האפליקציה.
                             </p>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-muted">
                                 תוכל לבדוק את סטטוס האישור בכל עת באמצעות הכפתור למטה.
                             </p>
                         </div>
@@ -152,12 +153,25 @@ export default function PendingPage() {
                         <button
                             onClick={handleCheckAgain}
                             disabled={checking}
-                            className="w-full rounded-lg bg-blue-600 px-6 py-4 text-lg font-bold text-white shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            className="w-full rounded-theme-lg px-6 py-4 text-lg font-bold shadow-theme-lg focus-theme disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            style={{
+                                backgroundColor: "var(--primary)",
+                                color: "var(--primary-contrast)",
+                            }}
+                            onMouseEnter={(e) => {
+                                if (!checking) {
+                                    e.currentTarget.style.backgroundColor = "var(--primary-hover)";
+                                }
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = "var(--primary)";
+                            }}
                         >
                             {checking ? (
                                 <span className="flex items-center justify-center">
                                     <svg
-                                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                                        className="animate-spin -ml-1 mr-3 h-5 w-5"
+                                        style={{ color: "var(--primary-contrast)" }}
                                         xmlns="http://www.w3.org/2000/svg"
                                         fill="none"
                                         viewBox="0 0 24 24"
@@ -185,7 +199,17 @@ export default function PendingPage() {
 
                         <button
                             onClick={logout}
-                            className="w-full rounded-lg bg-red-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all"
+                            className="w-full rounded-theme-md px-6 py-3 text-base font-medium shadow-theme-sm focus-theme transition-all"
+                            style={{
+                                backgroundColor: "var(--danger)",
+                                color: "var(--primary-contrast)",
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.opacity = "0.9";
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.opacity = "1";
+                            }}
                         >
                             התנתק
                         </button>

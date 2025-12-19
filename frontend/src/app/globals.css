@@ -1,32 +1,257 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
-
+/* Base RTL and font settings */
 html, body {
     direction: rtl;
     text-align: right;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* CSS Variables will be injected by ThemeContext */
+/* Base utility classes using CSS variables */
+body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+}
+
+/* Utility classes for theme-aware styling */
+.bg-surface {
+    background-color: var(--surface);
+}
+
+.bg-surface-2 {
+    background-color: var(--surface-2);
+}
+
+.text-muted {
+    color: var(--muted);
+}
+
+.border-theme {
+    border-color: var(--border);
+}
+
+.border-theme-strong {
+    border-color: var(--border-strong);
+}
+
+.shadow-theme-sm {
+    box-shadow: var(--shadow-sm);
+}
+
+.shadow-theme-md {
+    box-shadow: var(--shadow-md);
+}
+
+.shadow-theme-lg {
+    box-shadow: var(--shadow-lg);
+}
+
+.rounded-theme-sm {
+    border-radius: var(--radius-sm);
+}
+
+.rounded-theme-md {
+    border-radius: var(--radius-md);
+}
+
+.rounded-theme-lg {
+    border-radius: var(--radius-lg);
+}
+
+/* Focus styles - only show on keyboard navigation */
+.focus-theme:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+}
+
+/* Remove default focus outline for mouse clicks */
+*:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* Button styles using theme variables */
+.btn-primary {
+    background-color: var(--primary);
+    color: var(--primary-contrast);
+    border-radius: var(--radius-md);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+}
+
+.btn-primary:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+}
+
+/* Input styles */
+.input-theme {
+    background-color: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+}
+
+.input-theme:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+    border-color: var(--primary);
+}
+
+/* Card/surface styles */
+.card-theme {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Table styles */
+.table-header {
+    background-color: var(--table-header-bg);
+    color: var(--table-header-text);
+}
+
+.table-row:hover {
+    background-color: var(--table-row-hover);
+}
+
+.table-border {
+    border-color: var(--table-border);
+}
+
+/* Status colors */
+.text-success {
+    color: var(--success);
+}
+
+.text-danger {
+    color: var(--danger);
+}
+
+.text-warning {
+    color: var(--warning);
+}
+
+.bg-success {
+    background-color: var(--success);
+}
+
+.bg-danger {
+    background-color: var(--danger);
+}
+
+.bg-warning {
+    background-color: var(--warning);
+}
+
+/* Status badges with theme-aware backgrounds */
+/* Using pseudo-element for background to avoid opacity affecting text */
+.badge-success {
+    position: relative;
+    color: var(--success);
+    background-color: transparent;
+    font-weight: 600;
+    z-index: 1;
+}
+
+.badge-success::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-color: var(--success);
+    opacity: 0.25;
+    border-radius: inherit;
+    z-index: -1;
+}
+
+.badge-warning {
+    position: relative;
+    color: var(--warning);
+    background-color: transparent;
+    font-weight: 600;
+    z-index: 1;
+}
+
+.badge-warning::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-color: var(--warning);
+    opacity: 0.25;
+    border-radius: inherit;
+    z-index: -1;
+}
+
+.badge-danger {
+    position: relative;
+    color: var(--danger);
+    background-color: transparent;
+    font-weight: 600;
+    z-index: 1;
+}
+
+.badge-danger::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-color: var(--danger);
+    opacity: 0.25;
+    border-radius: inherit;
+    z-index: -1;
+}
+
+.badge-muted {
+    position: relative;
+    color: var(--muted);
+    background-color: transparent;
+    font-weight: 600;
+    z-index: 1;
+}
+
+.badge-muted::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-color: var(--muted);
+    opacity: 0.25;
+    border-radius: inherit;
+    z-index: -1;
+}
+
+/* Toast customization for theme compatibility */
+[data-sonner-toaster] {
+    --normal-bg: var(--surface);
+    --normal-border: var(--border);
+    --normal-text: var(--text);
+}
+
+/* React Hot Toast theme integration */
+div[role="status"] {
+    background-color: var(--surface) !important;
+    color: var(--text) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: var(--shadow-md) !important;
+}
+
+div[role="status"] button {
+    color: var(--text) !important;
+}
+
+/* Theme panel animation */
+.theme-panel {
+    animation: slideDown 150ms ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }

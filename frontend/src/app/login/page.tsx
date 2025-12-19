@@ -86,13 +86,13 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12">
+        <div className="flex min-h-screen items-center justify-center px-4 py-12" style={{ backgroundColor: "var(--bg)" }}>
             <div className="w-full max-w-md space-y-8">
                 <div>
-                    <h2 className="text-center text-3xl font-bold text-gray-900">
-                        <span className="text-gray-500 font-normal">מצפה 6-8</span> • התחברות
+                    <h2 className="text-center text-3xl font-bold" style={{ color: "var(--text)" }}>
+                        <span style={{ color: "var(--muted)", fontWeight: "var(--font-weight-normal)" }}>מצפה 6-8</span> • התחברות
                     </h2>
-                    <p className="mt-2 text-center text-sm text-gray-600">
+                    <p className="mt-2 text-center text-sm text-muted">
                         הכנס פרטי התחברות
                     </p>
                 </div>
@@ -101,7 +101,8 @@ export default function LoginPage() {
                         <div>
                             <label
                                 htmlFor="email"
-                                className="block text-sm font-medium text-gray-700"
+                                className="block text-sm font-medium"
+                                style={{ color: "var(--text)" }}
                             >
                                 אימייל
                             </label>
@@ -113,14 +114,16 @@ export default function LoginPage() {
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                                className="input-theme mt-1 block w-full px-3 py-2 shadow-theme-sm placeholder:text-muted focus-theme"
+                                style={{ color: "var(--text)" }}
                                 placeholder="your@email.com"
                             />
                         </div>
                         <div>
                             <label
                                 htmlFor="password"
-                                className="block text-sm font-medium text-gray-700"
+                                className="block text-sm font-medium"
+                                style={{ color: "var(--text)" }}
                             >
                                 סיסמה
                             </label>
@@ -132,7 +135,8 @@ export default function LoginPage() {
                                 required
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                                className="input-theme mt-1 block w-full px-3 py-2 shadow-theme-sm placeholder:text-muted focus-theme"
+                                style={{ color: "var(--text)" }}
                                 placeholder="••••••••"
                             />
                         </div>
@@ -142,7 +146,7 @@ export default function LoginPage() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full rounded-md bg-blue-600 px-4 py-3 text-base font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+                            className="btn-primary w-full px-4 py-3 text-base font-medium shadow-theme-sm disabled:opacity-50"
                         >
                             {loading ? "מתחבר..." : "התחבר"}
                         </button>
@@ -151,7 +155,14 @@ export default function LoginPage() {
                     <div className="text-center">
                         <Link
                             href="/register"
-                            className="text-sm font-medium text-blue-600 hover:text-blue-500"
+                            className="text-sm font-medium focus-theme"
+                            style={{ color: "var(--primary)" }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.opacity = "0.8";
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.opacity = "1";
+                            }}
                         >
                             אין לך חשבון? הירשם כאן
                         </Link>
