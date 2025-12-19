@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-    title: "פתיחת שער חניה",
+    title: "מצפה 6-8 • פתיחת שער חניה",
     description: "אפליקציה לפתיחת שער חניה",
 };
 

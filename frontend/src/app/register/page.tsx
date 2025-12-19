@@ -92,7 +92,7 @@ export default function RegisterPage() {
             <div className="w-full max-w-md space-y-8">
                 <div>
                     <h2 className="text-center text-3xl font-bold text-gray-900">
-                        הרשמה
+                        <span className="text-gray-500 font-normal">מצפה 6-8</span> • הרשמה
                     </h2>
                     <p className="mt-2 text-center text-sm text-gray-600">
                         צור חשבון חדש

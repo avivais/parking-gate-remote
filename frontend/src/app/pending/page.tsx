@@ -132,9 +132,9 @@ export default function PendingPage() {
                                 />
                             </svg>
                         </div>
-                        <h2 className="text-3xl font-bold text-gray-900">
-                            ממתין לאישור
-                        </h2>
+                            <h2 className="text-3xl font-bold text-gray-900">
+                                <span className="text-gray-500 font-normal">מצפה 6-8</span> • ממתין לאישור
+                            </h2>
                         <div className="space-y-3 text-right">
                             <p className="text-lg text-gray-700">
                                 שלום! החשבון שלך נשלח לאישור על ידי מנהל המערכת.
