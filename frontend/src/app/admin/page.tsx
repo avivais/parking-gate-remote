@@ -353,13 +353,6 @@ export default function AdminPage() {
     return (
         <div className="min-h-screen bg-gray-50 px-4 py-8">
             <div className="mx-auto max-w-7xl">
-                <div className="mb-6">
-                    <h1 className="text-3xl font-bold text-gray-900">ניהול</h1>
-                    <p className="mt-2 text-sm text-gray-600">
-                        ניהול משתמשים ולוגים
-                    </p>
-                </div>
-
                 {/* Tabs */}
                 <div className="mb-6 border-b border-gray-200">
                     <nav className="-mb-px flex gap-4">
