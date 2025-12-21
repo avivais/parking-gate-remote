@@ -11,7 +11,7 @@ interface AppTopBarProps {
 function getPageTitle(pathname: string): string {
     switch (pathname) {
         case "/":
-            return "מצפה 6-8 · פתיחת שער";
+            return "מצפה 6-8 · פתח שער";
         case "/admin":
             return "מצפה 6-8 · ניהול";
         case "/me":
