@@ -95,9 +95,19 @@ body {
 }
 
 .input-theme:focus-visible {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 2px;
+    outline: none;
     border-color: var(--primary);
+    border-width: 2px;
+    /* Prevent "double border" look from box-shadows on focused inputs */
+    box-shadow: none !important;
+}
+
+/* If an input also has `.focus-theme`, force-disable the outline so we don't get a second ring */
+.input-theme.focus-theme:focus-visible,
+select.input-theme.focus-theme:focus-visible,
+textarea.input-theme.focus-theme:focus-visible {
+    outline: none !important;
+    outline-offset: 0 !important;
 }
 
 /* Card/surface styles */
