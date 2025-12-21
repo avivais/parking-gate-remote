@@ -12,6 +12,7 @@ import { randomUUID } from 'crypto';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { UpdateMeDto } from './dto/update-me.dto';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { JwtPayload, UserRole } from './auth.types';
 
@@ -335,5 +336,41 @@ export class AuthService {
         }
 
         await this.usersService.clearSession(userId);
+    }
+
+    async updateMe(userId: string, updateDto: UpdateMeDto): Promise<User> {
+        const user = await this.usersService.findById(userId);
+
+        if (!user) {
+            throw new UnauthorizedException('משתמש לא נמצא');
+        }
+
+        // Build update data - only include fields that are provided
+        const updateData: Partial<User> = {};
+
+        if (updateDto.firstName !== undefined) {
+            updateData.firstName = updateDto.firstName;
+        }
+        if (updateDto.lastName !== undefined) {
+            updateData.lastName = updateDto.lastName;
+        }
+        if (updateDto.phone !== undefined) {
+            updateData.phone = updateDto.phone;
+        }
+        if (updateDto.apartmentNumber !== undefined) {
+            updateData.apartmentNumber = updateDto.apartmentNumber;
+        }
+        if (updateDto.floor !== undefined) {
+            updateData.floor = updateDto.floor;
+        }
+
+        const updatedUser = await this.usersService.updateUser(userId, updateData);
+
+        if (!updatedUser) {
+            throw new UnauthorizedException('משתמש לא נמצא');
+        }
+
+        // Return sanitized user (password hash is not selected by default)
+        return updatedUser.toObject();
     }
 }

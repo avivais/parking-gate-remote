@@ -1,23 +1,18 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
 import { apiRequest, ApiError, AUTH_UNAUTHORIZED, AUTH_FORBIDDEN } from "@/lib/api";
 import { GateButton } from "@/components/GateButton";
-import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import * as haptics from "@/lib/haptics";
 import toast from "react-hot-toast";
 
 type FeedbackState = "idle" | "loading" | "success" | "error";
 
 export default function HomePage() {
-    const { user, logout } = useAuth();
     const router = useRouter();
     const [status, setStatus] = useState<FeedbackState>("idle");
     const [isOffline, setIsOffline] = useState(false);
-    const [showThemeSettings, setShowThemeSettings] = useState(false);
-    const settingsPanelRef = useRef<HTMLDivElement>(null);
 
     // Offline detection
     useEffect(() => {
@@ -34,31 +29,6 @@ export default function HomePage() {
             window.removeEventListener("offline", updateOnlineStatus);
         };
     }, []);
-
-    // Click outside and ESC handling for theme settings panel
-    useEffect(() => {
-        if (!showThemeSettings) return;
-
-        const handleClickOutside = (e: MouseEvent) => {
-            if (settingsPanelRef.current && !settingsPanelRef.current.contains(e.target as Node)) {
-                setShowThemeSettings(false);
-            }
-        };
-
-        const handleEsc = (e: KeyboardEvent) => {
-            if (e.key === "Escape") {
-                setShowThemeSettings(false);
-            }
-        };
-
-        document.addEventListener("mousedown", handleClickOutside);
-        document.addEventListener("keydown", handleEsc);
-
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-            document.removeEventListener("keydown", handleEsc);
-        };
-    }, [showThemeSettings]);
 
     const handleOpenGate = useCallback(async () => {
         if (status === "loading" || isOffline) return;
@@ -106,57 +76,8 @@ export default function HomePage() {
 
     return (
         <div className="flex min-h-screen flex-col" style={{ backgroundColor: "var(--bg)" }}>
-            <div className="flex-1 flex items-center justify-center px-4 py-12">
-                <div className="w-full max-w-md space-y-8">
-                    <div className="text-center relative">
-                        <button
-                            onClick={() => setShowThemeSettings(!showThemeSettings)}
-                            className={`absolute left-0 top-0 rounded-theme-md p-2 transition-colors ${
-                                showThemeSettings ? "bg-surface-2" : "hover:bg-surface-2"
-                            }`}
-                            aria-label="הגדרות עיצוב"
-                            aria-expanded={showThemeSettings}
-                        >
-                            <svg
-                                className="w-5 h-5"
-                                style={{ color: showThemeSettings ? "var(--primary)" : "var(--muted)" }}
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                                />
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                                />
-                            </svg>
-                        </button>
-                        {showThemeSettings && (
-                            <div
-                                ref={settingsPanelRef}
-                                className="theme-panel absolute left-0 top-12 z-50 rounded-theme-md border border-theme bg-surface shadow-theme-lg p-4"
-                            >
-                                <ThemeSwitcher />
-                            </div>
-                        )}
-                        <h1 className="text-3xl font-bold" style={{ color: "var(--text)" }}>
-                            <span style={{ color: "var(--muted)", fontWeight: "var(--font-weight-normal)" }}>מצפה 6-8</span> • פתיחת שער חניה
-                        </h1>
-                        {user && (
-                            <p className="mt-2 text-sm" style={{ color: "var(--muted)" }}>
-                                שלום, {user.email}
-                            </p>
-                        )}
-                    </div>
-
-                    <div className="space-y-6">
+            <div className="flex-1 flex items-center justify-center px-4 pt-20 pb-12">
+                <div className="w-full max-w-md space-y-6">
                         {isOffline && (
                             <div className="rounded-theme-md border px-4 py-3 text-center" style={{ backgroundColor: "var(--warning)", borderColor: "var(--warning)", opacity: 0.1 }}>
                                 <p className="text-sm font-medium" style={{ color: "var(--warning)" }}>
@@ -201,44 +122,6 @@ export default function HomePage() {
                                 נכשל, נסה שוב
                             </div>
                         )}
-
-                        <div className="flex gap-4">
-                            {user?.role === "admin" && (
-                                <a
-                                    href="/admin"
-                                    className="flex-1 rounded-theme-md px-4 py-3 text-center font-medium focus-theme"
-                                    style={{
-                                        backgroundColor: "var(--primary)",
-                                        color: "var(--primary-contrast)",
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        e.currentTarget.style.backgroundColor = "var(--primary-hover)";
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.backgroundColor = "var(--primary)";
-                                    }}
-                                >
-                                    ניהול
-                                </a>
-                            )}
-                            <button
-                                onClick={logout}
-                                className="flex-1 rounded-theme-md px-4 py-3 font-medium focus-theme"
-                                style={{
-                                    backgroundColor: "var(--danger)",
-                                    color: "var(--primary-contrast)",
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.opacity = "0.9";
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.opacity = "1";
-                                }}
-                            >
-                                התנתק
-                            </button>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>

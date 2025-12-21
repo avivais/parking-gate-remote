@@ -2,6 +2,7 @@ import {
     Body,
     Controller,
     Get,
+    Patch,
     Post,
     Request,
     Res,
@@ -13,6 +14,7 @@ import { Response } from 'express';
 import { AuthService, MeResponse } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { UpdateMeDto } from './dto/update-me.dto';
 import { User } from '../users/schemas/user.schema';
 import { Request as ExpressRequest } from 'express';
 import { ApprovedGuard } from './approved.guard';
@@ -118,5 +120,14 @@ export class AuthController {
         res.clearCookie('refresh_token', { path: '/api/auth' });
 
         return { success: true };
+    }
+
+    @UseGuards(AuthGuard('jwt'), ApprovedGuard)
+    @Patch('users/me')
+    async updateMe(
+        @Request() req: AuthenticatedRequest,
+        @Body() updateDto: UpdateMeDto,
+    ): Promise<User> {
+        return this.authService.updateMe(req.user.userId, updateDto);
     }
 }

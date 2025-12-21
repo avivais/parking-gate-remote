@@ -351,7 +351,7 @@ export default function AdminPage() {
     };
 
     return (
-        <div className="min-h-screen px-4 py-8" style={{ backgroundColor: "var(--bg)" }}>
+        <div className="px-4 py-8">
             <div className="mx-auto max-w-7xl">
                 {/* Tabs */}
                 <div className="mb-6 border-b border-theme">

@@ -60,8 +60,8 @@ export function NavigationGuard({ children }: { children: React.ReactNode }) {
     // Show loading screen while auth state is resolving
     if (!isReady || loading) {
         return (
-            <div className="flex min-h-screen items-center justify-center bg-gray-50">
-                <div className="text-lg">טוען...</div>
+            <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: "var(--bg)" }}>
+                <div className="text-lg" style={{ color: "var(--text)" }}>טוען...</div>
             </div>
         );
     }

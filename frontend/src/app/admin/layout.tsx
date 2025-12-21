@@ -1,10 +1,4 @@
-import type { Metadata } from "next";
-import { AdminHeader } from "@/components/admin/AdminHeader";
-
-export const metadata: Metadata = {
-    title: "מצפה 6-8 • ניהול",
-    description: "ניהול משתמשים ולוגים",
-};
+"use client";
 
 export default function AdminLayout({
     children,
@@ -12,10 +6,11 @@ export default function AdminLayout({
     children: React.ReactNode;
 }) {
     return (
-        <>
-            <AdminHeader />
-            {children}
-        </>
+        <div className="min-h-screen" style={{ backgroundColor: "var(--bg)" }}>
+            <div className="pt-14">
+                {children}
+            </div>
+        </div>
     );
 }
 

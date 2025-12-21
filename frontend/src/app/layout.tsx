@@ -4,6 +4,7 @@ import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "@/context/AuthContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { NavigationGuard } from "@/components/NavigationGuard";
+import { AppTopBarWrapper } from "@/components/AppTopBarWrapper";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -34,6 +35,7 @@ export default function RootLayout({
                 <ThemeProvider>
                     <AuthProvider>
                         <NavigationGuard>
+                            <AppTopBarWrapper />
                             {children}
                         </NavigationGuard>
                         <Toaster position="top-center" />
