@@ -271,7 +271,15 @@ export default function AdminPage() {
         // Combine prefix and number
         const fullPhone = `${editFormData.phonePrefix}${editFormData.phoneNumber}`;
 
-        const updateData: any = {
+        const updateData: {
+            firstName: string;
+            lastName: string;
+            phone: string;
+            apartmentNumber: number;
+            floor: number;
+            status: "pending" | "approved" | "rejected" | "archived";
+            rejectionReason?: string | null;
+        } = {
             firstName: editFormData.firstName,
             lastName: editFormData.lastName,
             phone: fullPhone,
@@ -352,13 +360,13 @@ export default function AdminPage() {
 
     return (
         <div className="px-4 py-8">
-            <div className="mx-auto max-w-7xl">
+            <div className="mx-auto max-w-7xl w-full">
                 {/* Tabs */}
-                <div className="mb-6 border-b border-theme">
-                    <nav className="-mb-px flex gap-4">
+                <div className="mb-6">
+                    <nav className="flex gap-2 md:gap-4 border-b border-theme">
                         <button
                             onClick={() => setActiveTab("users")}
-                            className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+                            className={`border-b-2 px-3 md:px-4 py-2 text-xs md:text-sm font-medium transition-colors whitespace-nowrap -mb-px ${
                                 activeTab === "users"
                                     ? "border-primary text-primary"
                                     : "border-transparent text-muted hover:border-theme hover:text-text"
@@ -369,7 +377,7 @@ export default function AdminPage() {
                         </button>
                         <button
                             onClick={() => setActiveTab("logs")}
-                            className={`border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+                            className={`border-b-2 px-3 md:px-4 py-2 text-xs md:text-sm font-medium transition-colors whitespace-nowrap -mb-px ${
                                 activeTab === "logs"
                                     ? "border-primary text-primary"
                                     : "border-transparent text-muted hover:border-theme hover:text-text"
@@ -391,15 +399,16 @@ export default function AdminPage() {
                 {/* Users Tab */}
                 {activeTab === "users" && (
                     <div className="space-y-4">
-                        {/* Filters */}
-                        <div className="flex flex-wrap gap-4">
-                            <div className="flex gap-2">
+                        {/* Filters - Mobile: vertical, Desktop: horizontal */}
+                        <div className="flex flex-col md:flex-row gap-4">
+                            {/* Status Filter Buttons - Mobile: wrap, Desktop: no wrap */}
+                            <div className="flex flex-wrap gap-2 md:flex-nowrap">
                                 <button
                                     onClick={() => {
                                         setUsersStatusFilter("pending");
                                         setUsersPage(1);
                                     }}
-                                    className={`rounded-theme-md px-4 py-2 text-sm font-medium transition-colors ${
+                                    className={`rounded-theme-md px-3 py-2 text-xs md:text-sm font-medium transition-colors whitespace-nowrap ${
                                         usersStatusFilter === "pending"
                                             ? "bg-primary text-primary-contrast"
                                             : "bg-surface-2 text-muted hover:bg-surface"
@@ -413,7 +422,7 @@ export default function AdminPage() {
                                         setUsersStatusFilter("approved");
                                         setUsersPage(1);
                                     }}
-                                    className={`rounded-theme-md px-4 py-2 text-sm font-medium transition-colors ${
+                                    className={`rounded-theme-md px-3 py-2 text-xs md:text-sm font-medium transition-colors whitespace-nowrap ${
                                         usersStatusFilter === "approved"
                                             ? "bg-primary text-primary-contrast"
                                             : "bg-surface-2 text-muted hover:bg-surface"
@@ -427,7 +436,7 @@ export default function AdminPage() {
                                         setUsersStatusFilter("rejected");
                                         setUsersPage(1);
                                     }}
-                                    className={`rounded-theme-md px-4 py-2 text-sm font-medium transition-colors ${
+                                    className={`rounded-theme-md px-3 py-2 text-xs md:text-sm font-medium transition-colors whitespace-nowrap ${
                                         usersStatusFilter === "rejected"
                                             ? "bg-primary text-primary-contrast"
                                             : "bg-surface-2 text-muted hover:bg-surface"
@@ -441,7 +450,7 @@ export default function AdminPage() {
                                         setUsersStatusFilter("archived");
                                         setUsersPage(1);
                                     }}
-                                    className={`rounded-theme-md px-4 py-2 text-sm font-medium transition-colors ${
+                                    className={`rounded-theme-md px-3 py-2 text-xs md:text-sm font-medium transition-colors whitespace-nowrap ${
                                         usersStatusFilter === "archived"
                                             ? "bg-primary text-primary-contrast"
                                             : "bg-surface-2 text-muted hover:bg-surface"
@@ -455,7 +464,7 @@ export default function AdminPage() {
                                         setUsersStatusFilter("all");
                                         setUsersPage(1);
                                     }}
-                                    className={`rounded-theme-md px-4 py-2 text-sm font-medium transition-colors ${
+                                    className={`rounded-theme-md px-3 py-2 text-xs md:text-sm font-medium transition-colors whitespace-nowrap ${
                                         usersStatusFilter === "all"
                                             ? "bg-primary text-primary-contrast"
                                             : "bg-surface-2 text-muted hover:bg-surface"
@@ -466,27 +475,30 @@ export default function AdminPage() {
                                 </button>
                             </div>
 
-                            <input
-                                type="text"
-                                placeholder="חיפוש לפי אימייל, טלפון או שם..."
-                                value={usersSearchQuery}
-                                onChange={(e) => setUsersSearchQuery(e.target.value)}
-                                className="input-theme flex-1 min-w-[200px] px-4 py-2 text-sm placeholder:text-muted focus-theme"
-                                style={{ color: "var(--text)" }}
-                            />
+                            {/* Search and Limit - Mobile: full width, Desktop: flex */}
+                            <div className="flex flex-col sm:flex-row gap-2 md:gap-4 flex-1">
+                                <input
+                                    type="text"
+                                    placeholder="חיפוש לפי אימייל, טלפון או שם..."
+                                    value={usersSearchQuery}
+                                    onChange={(e) => setUsersSearchQuery(e.target.value)}
+                                    className="input-theme flex-1 w-full px-4 py-2 text-sm placeholder:text-muted focus-theme"
+                                    style={{ color: "var(--text)" }}
+                                />
 
-                            <select
-                                value={usersLimit}
-                                onChange={(e) => {
-                                    setUsersLimit(Number(e.target.value));
-                                    setUsersPage(1);
-                                }}
-                                className="input-theme px-4 py-2 text-sm focus-theme"
-                                style={{ color: "var(--text)" }}
-                            >
-                                <option value={20}>20 לדף</option>
-                                <option value={50}>50 לדף</option>
-                            </select>
+                                <select
+                                    value={usersLimit}
+                                    onChange={(e) => {
+                                        setUsersLimit(Number(e.target.value));
+                                        setUsersPage(1);
+                                    }}
+                                    className="input-theme px-4 py-2 text-sm focus-theme w-full sm:w-auto"
+                                    style={{ color: "var(--text)" }}
+                                >
+                                    <option value={20}>20 לדף</option>
+                                    <option value={50}>50 לדף</option>
+                                </select>
+                            </div>
                         </div>
 
                         {/* Users Table */}
@@ -500,7 +512,133 @@ export default function AdminPage() {
                             </div>
                         ) : usersData ? (
                             <>
-                                <div className="overflow-hidden rounded-theme-lg bg-surface shadow-theme-md">
+                                {/* Mobile: Cards View */}
+                                <div className="md:hidden space-y-3">
+                                    {usersData.items.length === 0 ? (
+                                        <div className="rounded-theme-md border p-4 text-center" style={{ backgroundColor: "var(--surface)", borderColor: "var(--border)" }}>
+                                            <p className="text-sm text-muted">אין משתמשים להצגה</p>
+                                        </div>
+                                    ) : (
+                                        usersData.items.map((user) => (
+                                            <div
+                                                key={user.id}
+                                                className="rounded-theme-md border p-4 space-y-3"
+                                                style={{ backgroundColor: "var(--surface)", borderColor: "var(--border)" }}
+                                            >
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex-1">
+                                                        <h3 className="text-sm font-semibold" style={{ color: "var(--text)" }}>
+                                                            {user.firstName} {user.lastName}
+                                                        </h3>
+                                                        <p className="text-xs text-muted mt-1">{user.email}</p>
+                                                    </div>
+                                                    <div>
+                                                        {user.status === "approved" ? (
+                                                            <span className="badge-success inline-flex rounded-full px-2 py-1 text-xs font-medium">
+                                                                מאושר
+                                                            </span>
+                                                        ) : user.status === "pending" ? (
+                                                            <span className="badge-warning inline-flex rounded-full px-2 py-1 text-xs font-medium">
+                                                                ממתין
+                                                            </span>
+                                                        ) : user.status === "rejected" ? (
+                                                            <span className="badge-danger inline-flex rounded-full px-2 py-1 text-xs font-medium">
+                                                                נדחה
+                                                            </span>
+                                                        ) : (
+                                                            <span className="badge-muted inline-flex rounded-full px-2 py-1 text-xs font-medium">
+                                                                מושבת
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-1 text-xs">
+                                                    <div className="flex justify-between">
+                                                        <span className="text-muted">טלפון:</span>
+                                                        <span style={{ color: "var(--text)" }}>{user.phone}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-muted">דירה + קומה:</span>
+                                                        <span style={{ color: "var(--text)" }}>{user.apartmentNumber} / {user.floor}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-muted">מכשיר פעיל:</span>
+                                                        <span className={user.activeDeviceId ? "text-success" : "text-muted"}>
+                                                            {user.activeDeviceId ? `${user.activeDeviceId.substring(0, 8)}...` : "אין"}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-muted">תאריך יצירה:</span>
+                                                        <span className="text-muted">{new Date(user.createdAt).toLocaleString("he-IL")}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-wrap gap-2 pt-2 border-t" style={{ borderColor: "var(--border)" }}>
+                                                    {user.status === "pending" && (
+                                                        <>
+                                                            <button
+                                                                onClick={() => handleApproveUser(user.id)}
+                                                                className="rounded-theme-sm px-3 py-1.5 text-xs font-medium flex-1"
+                                                                style={{
+                                                                    backgroundColor: "var(--success)",
+                                                                    color: "var(--primary-contrast)",
+                                                                }}
+                                                            >
+                                                                אישור
+                                                            </button>
+                                                            <button
+                                                                onClick={() => openRejectModal(user)}
+                                                                className="rounded-theme-sm px-3 py-1.5 text-xs font-medium flex-1"
+                                                                style={{
+                                                                    backgroundColor: "var(--danger)",
+                                                                    color: "var(--primary-contrast)",
+                                                                }}
+                                                            >
+                                                                דחייה
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                    <button
+                                                        onClick={() => openEditModal(user)}
+                                                        className="rounded-theme-sm px-3 py-1.5 text-xs font-medium"
+                                                        style={{
+                                                            backgroundColor: "var(--primary)",
+                                                            color: "var(--primary-contrast)",
+                                                        }}
+                                                    >
+                                                        עריכה
+                                                    </button>
+                                                    {user.status !== "archived" && (
+                                                        <button
+                                                            onClick={() => handleArchiveUser(user.id)}
+                                                            className="rounded-theme-sm px-3 py-1.5 text-xs font-medium"
+                                                            style={{
+                                                                backgroundColor: "var(--muted)",
+                                                                color: "var(--primary-contrast)",
+                                                            }}
+                                                        >
+                                                            השבתה
+                                                        </button>
+                                                    )}
+                                                    {user.activeDeviceId && (
+                                                        <button
+                                                            onClick={() => handleResetDevice(user.id)}
+                                                            className="rounded-theme-sm px-3 py-1.5 text-xs font-medium"
+                                                            style={{
+                                                                backgroundColor: "var(--warning)",
+                                                                color: "var(--primary-contrast)",
+                                                            }}
+                                                        >
+                                                            איפוס מכשיר
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+
+                                {/* Desktop: Table View */}
+                                <div className="hidden md:block overflow-hidden rounded-theme-lg bg-surface shadow-theme-md">
                                     <div className="overflow-x-auto">
                                         <table className="min-w-full divide-y" style={{ borderColor: "var(--table-border)" }}>
                                             <thead className="table-header">
@@ -698,27 +836,27 @@ export default function AdminPage() {
 
                                 {/* Pagination */}
                                 {usersData && usersData.total > 0 && (
-                                    <div className="mt-4 flex items-center justify-between rounded-theme-md border border-theme bg-surface px-4 py-3">
-                                        <div className="text-sm font-medium" style={{ color: "var(--text)" }}>
+                                    <div className="mt-4 flex flex-col md:flex-row items-center justify-between gap-3 rounded-theme-md border border-theme bg-surface px-4 py-3">
+                                        <div className="text-xs md:text-sm font-medium text-center md:text-right" style={{ color: "var(--text)" }}>
                                             עמוד {usersData.page} מתוך {usersData.totalPages} ({usersData.total} משתמשים)
                                         </div>
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 flex-wrap justify-center">
                                             <button
                                                 onClick={() => setUsersPage((p) => Math.max(1, p - 1))}
                                                 disabled={usersData.page === 1}
-                                                className="rounded-theme-md border border-theme bg-surface px-3 py-2 text-sm font-medium hover:bg-surface-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="rounded-theme-md border border-theme bg-surface px-3 py-2 text-xs md:text-sm font-medium hover:bg-surface-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                                 style={{ color: "var(--text)" }}
                                             >
                                                 הקודם
                                             </button>
-                                            <div className="flex gap-1">
+                                            <div className="flex gap-1 flex-wrap justify-center">
                                                 {getPageNumbers(usersData.page, usersData.totalPages).map(
                                                     (page, idx) => {
                                                         if (page === "ellipsis") {
                                                             return (
                                                                 <span
                                                                     key={`ellipsis-${idx}`}
-                                                                    className="px-2 py-2 text-sm text-muted"
+                                                                    className="px-2 py-2 text-xs md:text-sm text-muted"
                                                                 >
                                                                     ...
                                                                 </span>
@@ -729,7 +867,7 @@ export default function AdminPage() {
                                                             <button
                                                                 key={page}
                                                                 onClick={() => setUsersPage(page)}
-                                                                className={`min-w-[2.5rem] rounded-theme-md border px-3 py-2 text-sm font-medium transition-colors ${
+                                                                className={`min-w-[2rem] md:min-w-[2.5rem] rounded-theme-md border px-2 md:px-3 py-2 text-xs md:text-sm font-medium transition-colors ${
                                                                     isActive
                                                                         ? "bg-primary text-primary-contrast"
                                                                         : "border-theme bg-surface text-muted hover:bg-surface-2"
@@ -749,7 +887,7 @@ export default function AdminPage() {
                                                     )
                                                 }
                                                 disabled={usersData.page === usersData.totalPages}
-                                                className="rounded-theme-md border border-theme bg-surface px-3 py-2 text-sm font-medium hover:bg-surface-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="rounded-theme-md border border-theme bg-surface px-3 py-2 text-xs md:text-sm font-medium hover:bg-surface-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                                 style={{ color: "var(--text)" }}
                                             >
                                                 הבא
@@ -765,14 +903,14 @@ export default function AdminPage() {
                 {/* Logs Tab */}
                 {activeTab === "logs" && (
                     <div className="space-y-4">
-                        {/* Filters */}
-                        <div className="flex flex-wrap gap-4">
+                        {/* Filters - Mobile: vertical, Desktop: horizontal */}
+                        <div className="flex flex-col sm:flex-row gap-2 md:gap-4">
                             <input
                                 type="text"
                                 placeholder="חיפוש לפי אימייל..."
                                 value={logsEmailSearch}
                                 onChange={(e) => setLogsEmailSearch(e.target.value)}
-                                className="input-theme flex-1 min-w-[200px] px-4 py-2 text-sm placeholder:text-muted focus-theme"
+                                className="input-theme flex-1 w-full px-4 py-2 text-sm placeholder:text-muted focus-theme"
                                 style={{ color: "var(--text)" }}
                             />
 
@@ -782,7 +920,7 @@ export default function AdminPage() {
                                     setLogsOpenedBy(e.target.value as OpenedByFilter);
                                     setLogsPage(1);
                                 }}
-                                className="input-theme px-4 py-2 text-sm focus-theme"
+                                className="input-theme px-4 py-2 text-sm focus-theme w-full sm:w-auto"
                                 style={{ color: "var(--text)" }}
                             >
                                 <option value="all">הכל</option>
@@ -796,7 +934,7 @@ export default function AdminPage() {
                                     setLogsLimit(Number(e.target.value));
                                     setLogsPage(1);
                                 }}
-                                className="input-theme px-4 py-2 text-sm focus-theme"
+                                className="input-theme px-4 py-2 text-sm focus-theme w-full sm:w-auto"
                                 style={{ color: "var(--text)" }}
                             >
                                 <option value={20}>20 לדף</option>
@@ -817,7 +955,59 @@ export default function AdminPage() {
                             </div>
                         ) : logsData ? (
                             <>
-                                <div className="overflow-hidden rounded-theme-lg bg-surface shadow-theme-md">
+                                {/* Mobile: Cards View */}
+                                <div className="md:hidden space-y-3">
+                                    {logsData.items.length === 0 ? (
+                                        <div className="rounded-theme-md border p-4 text-center" style={{ backgroundColor: "var(--surface)", borderColor: "var(--border)" }}>
+                                            <p className="text-sm text-muted">אין לוגים להצגה</p>
+                                        </div>
+                                    ) : (
+                                        logsData.items.map((log) => (
+                                            <div
+                                                key={log.id}
+                                                className="rounded-theme-md border p-4 space-y-2"
+                                                style={{ backgroundColor: "var(--surface)", borderColor: "var(--border)" }}
+                                            >
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex-1">
+                                                        <p className="text-xs text-muted">{new Date(log.createdAt).toLocaleString("he-IL")}</p>
+                                                        <p className="text-sm font-semibold mt-1" style={{ color: "var(--text)" }}>
+                                                            {log.email || "-"}
+                                                        </p>
+                                                    </div>
+                                                    <span className="text-xs px-2 py-1 rounded-theme-sm" style={{
+                                                        backgroundColor: log.openedBy === "user" ? "var(--primary)" : "var(--warning)",
+                                                        color: "var(--primary-contrast)",
+                                                        opacity: 0.8
+                                                    }}>
+                                                        {log.openedBy === "user" ? "משתמש" : "אדמין"}
+                                                    </span>
+                                                </div>
+                                                <div className="space-y-1 text-xs">
+                                                    <div className="flex justify-between">
+                                                        <span className="text-muted">מזהה מכשיר:</span>
+                                                        <span className="font-mono text-muted">
+                                                            {log.deviceId ? `${log.deviceId.substring(0, 8)}...` : "-"}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-muted">IP:</span>
+                                                        <span className="font-mono text-muted">{log.ip || "-"}</span>
+                                                    </div>
+                                                    {log.userAgent && (
+                                                        <div className="pt-1 border-t" style={{ borderColor: "var(--border)" }}>
+                                                            <span className="text-muted block mb-1">User Agent:</span>
+                                                            <span className="text-muted text-xs break-all">{log.userAgent}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+
+                                {/* Desktop: Table View */}
+                                <div className="hidden md:block overflow-hidden rounded-theme-lg bg-surface shadow-theme-md">
                                     <div className="overflow-x-auto">
                                         <table className="min-w-full divide-y" style={{ borderColor: "var(--table-border)" }}>
                                             <thead className="table-header">
@@ -892,27 +1082,27 @@ export default function AdminPage() {
 
                                 {/* Pagination */}
                                 {logsData && logsData.total > 0 && (
-                                    <div className="mt-4 flex items-center justify-between rounded-theme-md border border-theme bg-surface px-4 py-3">
-                                        <div className="text-sm font-medium" style={{ color: "var(--text)" }}>
+                                    <div className="mt-4 flex flex-col md:flex-row items-center justify-between gap-3 rounded-theme-md border border-theme bg-surface px-4 py-3">
+                                        <div className="text-xs md:text-sm font-medium text-center md:text-right" style={{ color: "var(--text)" }}>
                                             עמוד {logsData.page} מתוך {logsData.totalPages} ({logsData.total} לוגים)
                                         </div>
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 flex-wrap justify-center">
                                             <button
                                                 onClick={() => setLogsPage((p) => Math.max(1, p - 1))}
                                                 disabled={logsData.page === 1}
-                                                className="rounded-theme-md border border-theme bg-surface px-3 py-2 text-sm font-medium hover:bg-surface-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="rounded-theme-md border border-theme bg-surface px-3 py-2 text-xs md:text-sm font-medium hover:bg-surface-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                                 style={{ color: "var(--text)" }}
                                             >
                                                 הקודם
                                             </button>
-                                            <div className="flex gap-1">
+                                            <div className="flex gap-1 flex-wrap justify-center">
                                                 {getPageNumbers(logsData.page, logsData.totalPages).map(
                                                     (page, idx) => {
                                                         if (page === "ellipsis") {
                                                             return (
                                                                 <span
                                                                     key={`ellipsis-${idx}`}
-                                                                    className="px-2 py-2 text-sm text-muted"
+                                                                    className="px-2 py-2 text-xs md:text-sm text-muted"
                                                                 >
                                                                     ...
                                                                 </span>
@@ -923,7 +1113,7 @@ export default function AdminPage() {
                                                             <button
                                                                 key={page}
                                                                 onClick={() => setLogsPage(page)}
-                                                                className={`min-w-[2.5rem] rounded-theme-md border px-3 py-2 text-sm font-medium transition-colors ${
+                                                                className={`min-w-[2rem] md:min-w-[2.5rem] rounded-theme-md border px-2 md:px-3 py-2 text-xs md:text-sm font-medium transition-colors ${
                                                                     isActive
                                                                         ? "bg-primary text-primary-contrast"
                                                                         : "border-theme bg-surface text-muted hover:bg-surface-2"
@@ -943,7 +1133,7 @@ export default function AdminPage() {
                                                     )
                                                 }
                                                 disabled={logsData.page === logsData.totalPages}
-                                                className="rounded-theme-md border border-theme bg-surface px-3 py-2 text-sm font-medium hover:bg-surface-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="rounded-theme-md border border-theme bg-surface px-3 py-2 text-xs md:text-sm font-medium hover:bg-surface-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                                 style={{ color: "var(--text)" }}
                                             >
                                                 הבא

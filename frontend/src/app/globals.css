@@ -4,6 +4,7 @@
 html, body {
     direction: rtl;
     text-align: right;
+    overflow-x: hidden;
 }
 
 /* CSS Variables will be injected by ThemeContext */
