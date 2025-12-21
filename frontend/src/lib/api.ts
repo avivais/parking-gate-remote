@@ -101,10 +101,32 @@ export async function apiRequest<T>(
         ? path
         : `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 
+    // Generate X-Request-Id for POST /gate/open if not already provided
+    const isGateOpen = path === "/gate/open" && method === "POST";
+    let requestId: string | undefined;
+
+    if (isGateOpen) {
+        // Check if X-Request-Id is already in headers
+        const existingRequestId = (headers as Record<string, string>)?.["X-Request-Id"] ||
+                                  (headers as Record<string, string>)?.["x-request-id"];
+
+        if (existingRequestId) {
+            requestId = existingRequestId;
+        } else {
+            // Generate new UUID
+            requestId = crypto.randomUUID();
+        }
+    }
+
     const finalHeaders: Record<string, string> = {
         Accept: "application/json",
         ...(headers as Record<string, string>),
     };
+
+    // Add X-Request-Id for gate/open requests
+    if (isGateOpen && requestId) {
+        finalHeaders["X-Request-Id"] = requestId;
+    }
 
     if (body !== undefined) {
         finalHeaders["Content-Type"] = "application/json";
@@ -134,7 +156,11 @@ export async function apiRequest<T>(
 
         if (newToken) {
             // Retry the original request with the new token
+            // Preserve X-Request-Id on retry
             finalHeaders["Authorization"] = `Bearer ${newToken}`;
+            if (isGateOpen && requestId) {
+                finalHeaders["X-Request-Id"] = requestId;
+            }
 
             try {
                 response = await fetch(url, {

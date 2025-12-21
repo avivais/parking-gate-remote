@@ -1,44 +1,164 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { GateLog, GateLogDocument } from './schemas/gate-log.schema';
+import {
+    GateRequest,
+    GateRequestDocument,
+} from './schemas/gate-request.schema';
 import { GetLogsQueryDto, OpenedByFilter } from '../admin/dto/get-logs-query.dto';
+import { GateDeviceService } from './gate-device.service';
+import {
+    GateLogStatus,
+    GateLogMcuMetadata,
+} from './schemas/gate-log.schema';
 
 @Injectable()
 export class GateService {
     constructor(
         @InjectModel(GateLog.name)
         private readonly gateLogModel: Model<GateLogDocument>,
+        @InjectModel(GateRequest.name)
+        private readonly gateRequestModel: Model<GateRequestDocument>,
+        private readonly gateDeviceService: GateDeviceService,
     ) {}
 
+    async checkAndRegisterRequestId(
+        requestId: string,
+        userId: string,
+    ): Promise<void> {
+        try {
+            await this.gateRequestModel.create({
+                requestId,
+                userId,
+                createdAt: new Date(),
+            });
+        } catch (error: any) {
+            if (error.code === 11000) {
+                // Duplicate key error
+                throw new ConflictException('בקשה כפולה זוהתה');
+            }
+            throw error;
+        }
+    }
+
     async openByUser(params: {
+        requestId: string;
         userId: string;
         email: string;
         deviceId: string;
+        sessionId?: string;
         ip?: string;
         userAgent?: string;
     }): Promise<{ success: true }> {
-        await this.gateLogModel.create({
-            userId: params.userId,
-            email: params.email,
-            deviceId: params.deviceId,
-            ip: params.ip,
-            userAgent: params.userAgent,
-            openedBy: 'user',
-        });
+        const startTime = Date.now();
+
+        let status: GateLogStatus = 'failed';
+        let failureReason: string | undefined;
+        let mcuMetadata: GateLogMcuMetadata = {
+            attempted: false,
+            timeout: false,
+            retries: 0,
+        };
+
+        try {
+            // Check for replay
+            await this.checkAndRegisterRequestId(params.requestId, params.userId);
+
+            // Call MCU service
+            const mcuResult = await this.gateDeviceService.openGate(
+                params.requestId,
+                params.userId,
+            );
+            mcuMetadata = mcuResult.metadata;
+
+            status = 'success';
+        } catch (error: any) {
+            if (error instanceof ConflictException) {
+                status = 'blocked_replay';
+                failureReason = error.message;
+            } else {
+                status = 'failed';
+                failureReason =
+                    error.message || 'שגיאה לא ידועה בפתיחת השער';
+                mcuMetadata = {
+                    attempted: true,
+                    timeout: error.name === 'GatewayTimeoutException',
+                    retries: 0,
+                };
+            }
+            throw error;
+        } finally {
+            const durationMs = Date.now() - startTime;
+
+            // Log the attempt
+            await this.gateLogModel.create({
+                requestId: params.requestId,
+                userId: params.userId,
+                email: params.email,
+                deviceId: params.deviceId,
+                sessionId: params.sessionId,
+                ip: params.ip,
+                userAgent: params.userAgent,
+                openedBy: 'user',
+                status,
+                failureReason,
+                durationMs,
+                mcu: mcuMetadata,
+            });
+        }
 
         return { success: true };
     }
 
     async openByAdminBackdoor(params: {
+        requestId?: string;
         ip?: string;
         userAgent?: string;
     }): Promise<{ success: true }> {
-        await this.gateLogModel.create({
-            ip: params.ip,
-            userAgent: params.userAgent,
-            openedBy: 'admin-backdoor',
-        });
+        const startTime = Date.now();
+        const requestId = params.requestId || `admin-${Date.now()}-${Math.random()}`;
+
+        let status: GateLogStatus = 'failed';
+        let failureReason: string | undefined;
+        let mcuMetadata: GateLogMcuMetadata = {
+            attempted: false,
+            timeout: false,
+            retries: 0,
+        };
+
+        try {
+            // Call MCU service (admin backdoor doesn't need replay protection)
+            const mcuResult = await this.gateDeviceService.openGate(
+                requestId,
+                'admin-backdoor',
+            );
+            mcuMetadata = mcuResult.metadata;
+
+            status = 'success';
+        } catch (error: any) {
+            status = 'failed';
+            failureReason = error.message || 'שגיאה לא ידועה בפתיחת השער';
+            mcuMetadata = {
+                attempted: true,
+                timeout: error.name === 'GatewayTimeoutException',
+                retries: 0,
+            };
+            throw error;
+        } finally {
+            const durationMs = Date.now() - startTime;
+
+            await this.gateLogModel.create({
+                requestId,
+                ip: params.ip,
+                userAgent: params.userAgent,
+                openedBy: 'admin-backdoor',
+                status,
+                failureReason,
+                durationMs,
+                mcu: mcuMetadata,
+            });
+        }
 
         return { success: true };
     }
