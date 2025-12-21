@@ -40,7 +40,7 @@ export default function HomePage() {
             await apiRequest("/gate/open", { method: "POST" });
 
             haptics.success();
-            toast.success("השער נפתח ✅");
+            toast.success("השער נפתח");
             setStatus("success");
             setTimeout(() => setStatus("idle"), 2000);
         } catch (err) {
@@ -92,26 +92,6 @@ export default function HomePage() {
                             disabled={isOffline}
                         />
 
-                        {status === "success" && (
-                            <div className="rounded-theme-md border px-4 py-3 text-center" style={{ backgroundColor: "var(--success)", borderColor: "var(--success)", opacity: 0.1 }}>
-                                <p className="text-sm font-medium flex items-center justify-center gap-2" style={{ color: "var(--success)" }}>
-                                    <svg
-                                        className="w-5 h-5"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M5 13l4 4L19 7"
-                                        />
-                                    </svg>
-                                    נפתח בהצלחה
-                                </p>
-                            </div>
-                        )}
                         {status === "loading" && (
                             <div className="text-center min-h-[24px] text-sm" style={{ color: "var(--muted)" }}>
                                 פותח שער…
