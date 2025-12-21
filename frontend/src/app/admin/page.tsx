@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { apiRequest, ApiError, AUTH_FORBIDDEN } from "@/lib/api";
 import { ISRAEL_PHONE_PREFIXES, parsePhone, validatePhoneNumber } from "@/lib/phone";
 import type {
@@ -68,6 +68,7 @@ export default function AdminPage() {
     // Modal state
     const [rejectModalOpen, setRejectModalOpen] = useState(false);
     const [editModalOpen, setEditModalOpen] = useState(false);
+    const [editModalConfirmClose, setEditModalConfirmClose] = useState(false);
     const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
     const [rejectionReason, setRejectionReason] = useState("");
     const [editFormData, setEditFormData] = useState({
@@ -339,6 +340,47 @@ export default function AdminPage() {
             rejectionReason: user.rejectionReason || "",
         });
         setEditModalOpen(true);
+        setEditModalConfirmClose(false);
+    };
+
+    // Check if form has changes
+    const editFormHasChanges = useMemo(() => {
+        if (!selectedUser) return false;
+        const parsedPhone = parsePhone(selectedUser.phone);
+        const currentPhone = editFormData.phonePrefix + editFormData.phoneNumber;
+        const originalPhone = parsedPhone.prefix + parsedPhone.number;
+        return (
+            editFormData.firstName !== selectedUser.firstName ||
+            editFormData.lastName !== selectedUser.lastName ||
+            currentPhone !== originalPhone ||
+            editFormData.apartmentNumber !== selectedUser.apartmentNumber.toString() ||
+            editFormData.floor !== selectedUser.floor.toString() ||
+            editFormData.status !== selectedUser.status ||
+            (editFormData.status === "rejected" && editFormData.rejectionReason !== (selectedUser.rejectionReason || ""))
+        );
+    }, [selectedUser, editFormData]);
+
+    // Close edit modal with confirmation if needed
+    const closeEditModal = () => {
+        if (editFormHasChanges) {
+            setEditModalConfirmClose(true);
+        } else {
+            setEditModalOpen(false);
+            setSelectedUser(null);
+            setEditModalConfirmClose(false);
+        }
+    };
+
+    // Confirm close edit modal (discard changes)
+    const confirmCloseEditModal = () => {
+        setEditModalOpen(false);
+        setSelectedUser(null);
+        setEditModalConfirmClose(false);
+    };
+
+    // Cancel close edit modal (keep editing)
+    const cancelCloseEditModal = () => {
+        setEditModalConfirmClose(false);
     };
 
     // Handle reset device
@@ -1199,11 +1241,49 @@ export default function AdminPage() {
 
                 {/* Edit Modal */}
                 {editModalOpen && selectedUser && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}>
-                        <div className="card-theme w-full max-w-md p-6 shadow-theme-lg">
-                            <h3 className="mb-4 text-lg font-bold" style={{ color: "var(--text)" }}>
-                                עריכת משתמש
-                            </h3>
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center"
+                        style={{
+                            backgroundColor: "rgba(0, 0, 0, 0.5)",
+                            backdropFilter: "blur(4px)",
+                            WebkitBackdropFilter: "blur(4px)",
+                        }}
+                        onClick={(e) => {
+                            if (e.target === e.currentTarget) {
+                                closeEditModal();
+                            }
+                        }}
+                    >
+                        <div
+                            className="bg-surface border-t border-b border-theme w-full max-w-md p-6 shadow-theme-lg"
+                            style={{ borderRadius: 0 }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-bold" style={{ color: "var(--text)" }}>
+                                    עריכת משתמש
+                                </h3>
+                                <button
+                                    onClick={closeEditModal}
+                                    className="p-1 hover:bg-surface-2 transition-colors"
+                                    aria-label="סגור"
+                                >
+                                    <svg
+                                        className="w-6 h-6"
+                                        style={{ color: "var(--muted)" }}
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M6 18L18 6M6 6l12 12"
+                                        />
+                                    </svg>
+                                </button>
+                            </div>
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium" style={{ color: "var(--text)" }}>
@@ -1350,20 +1430,77 @@ export default function AdminPage() {
                             </div>
                             <div className="mt-6 flex gap-2">
                                 <button
-                                    onClick={() => {
-                                        setEditModalOpen(false);
-                                        setSelectedUser(null);
-                                    }}
+                                    onClick={closeEditModal}
                                     className="flex-1 rounded-theme-md border border-theme bg-surface px-4 py-2 text-sm font-medium hover:bg-surface-2"
-                                    style={{ color: "var(--text)" }}
+                                    style={{
+                                        color: "var(--text)",
+                                    }}
                                 >
                                     ביטול
                                 </button>
                                 <button
                                     onClick={handleEditUser}
-                                    className="btn-primary flex-1 px-4 py-2 text-sm font-medium"
+                                    disabled={!editFormHasChanges}
+                                    className="flex-1 rounded-theme-md px-4 py-2 text-sm font-medium transition-colors"
+                                    style={{
+                                        backgroundColor: editFormHasChanges ? "var(--primary)" : "var(--muted)",
+                                        color: "var(--primary-contrast)",
+                                        opacity: editFormHasChanges ? 1 : 0.6,
+                                        cursor: editFormHasChanges ? "pointer" : "not-allowed",
+                                    }}
                                 >
-                                    שמור
+                                    עדכן
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Edit Modal Close Confirmation */}
+                {editModalConfirmClose && (
+                    <div
+                        className="fixed inset-0 z-[60] flex items-center justify-center"
+                        style={{
+                            backgroundColor: "rgba(0, 0, 0, 0.5)",
+                            backdropFilter: "blur(4px)",
+                            WebkitBackdropFilter: "blur(4px)",
+                        }}
+                        onClick={(e) => {
+                            if (e.target === e.currentTarget) {
+                                cancelCloseEditModal();
+                            }
+                        }}
+                    >
+                        <div
+                            className="bg-surface border-t border-b border-theme w-full max-w-md p-6 shadow-theme-lg"
+                            style={{ borderRadius: 0 }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <h3 className="mb-4 text-lg font-bold" style={{ color: "var(--text)" }}>
+                                שינויים שלא נשמרו
+                            </h3>
+                            <p className="mb-6 text-sm" style={{ color: "var(--text)" }}>
+                                יש לך שינויים שלא נשמרו. האם אתה בטוח שברצונך לסגור?
+                            </p>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={cancelCloseEditModal}
+                                    className="flex-1 rounded-theme-md border border-theme bg-surface px-4 py-2 text-sm font-medium hover:bg-surface-2"
+                                    style={{
+                                        color: "var(--text)",
+                                    }}
+                                >
+                                    המשך עריכה
+                                </button>
+                                <button
+                                    onClick={confirmCloseEditModal}
+                                    className="flex-1 rounded-theme-md px-4 py-2 text-sm font-medium"
+                                    style={{
+                                        backgroundColor: "var(--danger)",
+                                        color: "var(--primary-contrast)",
+                                    }}
+                                >
+                                    סגור ללא שמירה
                                 </button>
                             </div>
                         </div>
