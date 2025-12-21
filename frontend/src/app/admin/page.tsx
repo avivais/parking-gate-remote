@@ -1255,7 +1255,7 @@ export default function AdminPage() {
                         }}
                     >
                         <div
-                            className="bg-surface border-t border-b border-theme w-full max-w-md p-6 shadow-theme-lg"
+                            className="bg-surface modal-border-responsive w-full max-w-md p-6 shadow-theme-lg"
                             style={{ borderRadius: 0 }}
                             onClick={(e) => e.stopPropagation()}
                         >
@@ -1431,7 +1431,7 @@ export default function AdminPage() {
                             <div className="mt-6 flex gap-2">
                                 <button
                                     onClick={closeEditModal}
-                                    className="flex-1 rounded-theme-md border border-theme bg-surface px-4 py-2 text-sm font-medium hover:bg-surface-2"
+                                    className="modal-outline-btn flex-1 rounded-theme-md border border-theme bg-surface px-4 py-2 text-sm font-medium hover:bg-surface-2"
                                     style={{
                                         color: "var(--text)",
                                     }}
@@ -1472,7 +1472,7 @@ export default function AdminPage() {
                         }}
                     >
                         <div
-                            className="bg-surface border-t border-b border-theme w-full max-w-md p-6 shadow-theme-lg"
+                            className="bg-surface modal-border-responsive w-full max-w-md p-6 shadow-theme-lg"
                             style={{ borderRadius: 0 }}
                             onClick={(e) => e.stopPropagation()}
                         >
@@ -1485,7 +1485,7 @@ export default function AdminPage() {
                             <div className="flex gap-2">
                                 <button
                                     onClick={cancelCloseEditModal}
-                                    className="flex-1 rounded-theme-md border border-theme bg-surface px-4 py-2 text-sm font-medium hover:bg-surface-2"
+                                    className="modal-outline-btn flex-1 rounded-theme-md border border-theme bg-surface px-4 py-2 text-sm font-medium hover:bg-surface-2"
                                     style={{
                                         color: "var(--text)",
                                     }}

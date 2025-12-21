@@ -256,6 +256,30 @@ html[data-theme="pro"][data-mode="dark"] .input-theme {
     border-color: rgba(160, 174, 192, 0.42); /* based on pro-dark muted (#a0aec0) */
 }
 
+/* Pro theme dark mode: outlined buttons inside modals need higher border contrast */
+html[data-theme="pro"][data-mode="dark"] .modal-outline-btn {
+    /* Higher contrast than inputs: outlined buttons need to read clearly on pro-dark surface */
+    border-color: rgba(247, 250, 252, 0.35) !important; /* based on pro-dark text (#f7fafc) */
+}
+
+/* Modal border behavior:
+   - When modal is effectively full-width (mobile), avoid left/right borders.
+   - When viewport is wider than the modal max width, show full border (incl. sides). */
+.modal-border-responsive {
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    border-left: 0;
+    border-right: 0;
+}
+
+/* max-w-md is 28rem = 448px. When viewport is wider than that, modal will no longer be 100% width. */
+@media (min-width: 460px) {
+    .modal-border-responsive {
+        border-left: 1px solid var(--border);
+        border-right: 1px solid var(--border);
+    }
+}
+
 /* Auto-complete browser styling - prevent white background */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
