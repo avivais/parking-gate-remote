@@ -239,21 +239,21 @@ textarea.input-theme.focus-theme:focus-visible {
     --normal-text: var(--text);
 }
 
-/* React Hot Toast theme integration */
-div[role="status"] {
-    background-color: var(--surface) !important;
-    color: var(--text) !important;
-    border: 1px solid var(--border) !important;
-    box-shadow: var(--shadow-md) !important;
-    border-radius: var(--radius-md) !important;
+/* React Hot Toast theme integration
+   We style via <Toaster toastOptions> (see layout.tsx) to avoid inner layer mismatches.
+   Keep only a minimal safety net to prevent nested default backgrounds. */
+.toast-theme > div,
+.toast-theme > div > div {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
 }
 
-div[role="status"] button {
-    color: var(--text) !important;
-}
-
-div[role="status"] svg {
-    color: var(--text) !important;
+/* Pro theme dark mode: increase input border contrast (without changing global borders) */
+html[data-theme="pro"][data-mode="dark"] .input-theme {
+    /* Stronger than --border / --border-strong in pro-dark to ensure 1px borders are visible */
+    border-color: rgba(160, 174, 192, 0.42); /* based on pro-dark muted (#a0aec0) */
 }
 
 /* Auto-complete browser styling - prevent white background */

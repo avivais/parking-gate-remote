@@ -38,7 +38,31 @@ export default function RootLayout({
                             <AppTopBarWrapper />
                             {children}
                         </NavigationGuard>
-                        <Toaster position="top-center" />
+                        <Toaster
+                            position="top-center"
+                            toastOptions={{
+                                className: "toast-theme",
+                                style: {
+                                    background: "var(--surface)",
+                                    color: "var(--text)",
+                                    border: "1px solid var(--border)",
+                                    borderRadius: "var(--radius-md)",
+                                    boxShadow: "var(--shadow-md)",
+                                },
+                                success: {
+                                    iconTheme: {
+                                        primary: "var(--success)",
+                                        secondary: "var(--surface)",
+                                    },
+                                },
+                                error: {
+                                    iconTheme: {
+                                        primary: "var(--danger)",
+                                        secondary: "var(--surface)",
+                                    },
+                                },
+                            }}
+                        />
                     </AuthProvider>
                 </ThemeProvider>
             </body>
