@@ -66,7 +66,10 @@ export class UsersService {
             .exec();
     }
 
-    async updateUser(userId: string, updateData: Partial<User>): Promise<UserDocument | null> {
+    async updateUser(
+        userId: string,
+        updateData: Partial<User>,
+    ): Promise<UserDocument | null> {
         return this.userModel
             .findByIdAndUpdate(userId, updateData, { new: true })
             .exec();
@@ -121,15 +124,23 @@ export class UsersService {
     }
 
     async countUsers(filter: any): Promise<number> {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         return this.userModel.countDocuments(filter).exec();
     }
 
-    async findUsersPaginated(filter: any, skip: number, limit: number): Promise<UserDocument[]> {
-        return this.userModel
-            .find(filter)
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit)
-            .exec();
+    async findUsersPaginated(
+        filter: any,
+        skip: number,
+        limit: number,
+    ): Promise<UserDocument[]> {
+        return (
+            this.userModel
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+                .find(filter)
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .exec()
+        );
     }
 }

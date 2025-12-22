@@ -16,30 +16,44 @@ import { UserStatus } from '../../users/schemas/user.schema';
 
 @ValidatorConstraint({ name: 'rejectionReasonRequired', async: false })
 export class RejectionReasonValidator implements ValidatorConstraintInterface {
-    validate(rejectionReason: string | null | undefined, args: ValidationArguments): boolean {
+    validate(
+        rejectionReason: string | null | undefined,
+        args: ValidationArguments,
+    ): boolean {
         const obj = args.object as UpdateUserDto;
         if (obj.status === 'rejected') {
-            return rejectionReason !== null && rejectionReason !== undefined && rejectionReason.trim().length > 0;
+            return (
+                rejectionReason !== null &&
+                rejectionReason !== undefined &&
+                rejectionReason.trim().length > 0
+            );
         }
         return true;
     }
 
-    defaultMessage(_args: ValidationArguments): string {
+    defaultMessage(): string {
         return 'סיבת דחייה נדרשת כאשר הסטטוס הוא "נדחה"';
     }
 }
 
 @ValidatorConstraint({ name: 'rejectionReasonMustBeNull', async: false })
 export class RejectionReasonNullValidator implements ValidatorConstraintInterface {
-    validate(rejectionReason: string | null | undefined, args: ValidationArguments): boolean {
+    validate(
+        rejectionReason: string | null | undefined,
+        args: ValidationArguments,
+    ): boolean {
         const obj = args.object as UpdateUserDto;
         if (obj.status && obj.status !== 'rejected') {
-            return rejectionReason === null || rejectionReason === undefined || rejectionReason.trim().length === 0;
+            return (
+                rejectionReason === null ||
+                rejectionReason === undefined ||
+                rejectionReason.trim().length === 0
+            );
         }
         return true;
     }
 
-    defaultMessage(_args: ValidationArguments): string {
+    defaultMessage(): string {
         return 'סיבת דחייה חייבת להיות ריקה כאשר הסטטוס אינו "נדחה"';
     }
 }
@@ -78,11 +92,12 @@ export class UpdateUserDto {
     status?: UserStatus;
 
     @IsOptional()
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     @ValidateIf((o) => o.status === 'rejected')
     @Validate(RejectionReasonValidator)
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
     @ValidateIf((o) => o.status && o.status !== 'rejected')
     @Validate(RejectionReasonNullValidator)
     @IsString()
     rejectionReason?: string | null;
 }
-

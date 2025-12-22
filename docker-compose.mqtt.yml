@@ -1,0 +1,34 @@
+services:
+    mosquitto:
+        image: eclipse-mosquitto:2.0
+        container_name: parking-mosquitto
+        restart: always
+        ports:
+            - "1883:1883"  # Non-TLS (dev only)
+            - "8883:8883"  # TLS (prepared)
+        volumes:
+            - ./mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+            - ./mqtt/passwordfile:/mosquitto/config/passwordfile:ro
+            - ./mqtt/aclfile:/mosquitto/config/aclfile:ro
+            - ./mqtt/certs:/mosquitto/certs:ro
+            - mosquitto_data:/mosquitto/data
+            - mosquitto_log:/mosquitto/log
+        environment:
+            - MQTT_USERNAME=${MQTT_USERNAME:-pgr_server}
+            - MQTT_PASSWORD=${MQTT_PASSWORD:-pgr_dev_password_change_me}
+        networks:
+            - parking_net
+        logging:
+            driver: "json-file"
+            options:
+                max-size: "10m"
+                max-file: "3"
+
+networks:
+    parking_net:
+        external: true
+
+volumes:
+    mosquitto_data:
+    mosquitto_log:
+

@@ -1,4 +1,4 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, Inject } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { GateLog, GateLogDocument } from './schemas/gate-log.schema';
@@ -6,12 +6,12 @@ import {
     GateRequest,
     GateRequestDocument,
 } from './schemas/gate-request.schema';
-import { GetLogsQueryDto, OpenedByFilter } from '../admin/dto/get-logs-query.dto';
-import { GateDeviceService } from './gate-device.service';
 import {
-    GateLogStatus,
-    GateLogMcuMetadata,
-} from './schemas/gate-log.schema';
+    GetLogsQueryDto,
+    OpenedByFilter,
+} from '../admin/dto/get-logs-query.dto';
+import { IGateDeviceService } from './gate-device.interface';
+import { GateLogStatus, GateLogMcuMetadata } from './schemas/gate-log.schema';
 
 @Injectable()
 export class GateService {
@@ -20,7 +20,8 @@ export class GateService {
         private readonly gateLogModel: Model<GateLogDocument>,
         @InjectModel(GateRequest.name)
         private readonly gateRequestModel: Model<GateRequestDocument>,
-        private readonly gateDeviceService: GateDeviceService,
+        @Inject('IGateDeviceService')
+        private readonly gateDeviceService: IGateDeviceService,
     ) {}
 
     async checkAndRegisterRequestId(
@@ -33,8 +34,13 @@ export class GateService {
                 userId,
                 createdAt: new Date(),
             });
-        } catch (error: any) {
-            if (error.code === 11000) {
+        } catch (error: unknown) {
+            if (
+                error &&
+                typeof error === 'object' &&
+                'code' in error &&
+                error.code === 11000
+            ) {
                 // Duplicate key error
                 throw new ConflictException('בקשה כפולה זוהתה');
             }
@@ -63,7 +69,10 @@ export class GateService {
 
         try {
             // Check for replay
-            await this.checkAndRegisterRequestId(params.requestId, params.userId);
+            await this.checkAndRegisterRequestId(
+                params.requestId,
+                params.userId,
+            );
 
             // Call MCU service
             const mcuResult = await this.gateDeviceService.openGate(
@@ -73,17 +82,22 @@ export class GateService {
             mcuMetadata = mcuResult.metadata;
 
             status = 'success';
-        } catch (error: any) {
+        } catch (error: unknown) {
             if (error instanceof ConflictException) {
                 status = 'blocked_replay';
                 failureReason = error.message;
             } else {
                 status = 'failed';
-                failureReason =
-                    error.message || 'שגיאה לא ידועה בפתיחת השער';
+                const errorMessage =
+                    error instanceof Error
+                        ? error.message
+                        : 'שגיאה לא ידועה בפתיחת השער';
+                failureReason = errorMessage;
                 mcuMetadata = {
                     attempted: true,
-                    timeout: error.name === 'GatewayTimeoutException',
+                    timeout:
+                        error instanceof Error &&
+                        error.name === 'GatewayTimeoutException',
                     retries: 0,
                 };
             }
@@ -117,7 +131,8 @@ export class GateService {
         userAgent?: string;
     }): Promise<{ success: true }> {
         const startTime = Date.now();
-        const requestId = params.requestId || `admin-${Date.now()}-${Math.random()}`;
+        const requestId =
+            params.requestId || `admin-${Date.now()}-${Math.random()}`;
 
         let status: GateLogStatus = 'failed';
         let failureReason: string | undefined;
@@ -136,12 +151,18 @@ export class GateService {
             mcuMetadata = mcuResult.metadata;
 
             status = 'success';
-        } catch (error: any) {
+        } catch (error: unknown) {
             status = 'failed';
-            failureReason = error.message || 'שגיאה לא ידועה בפתיחת השער';
+            const errorMessage =
+                error instanceof Error
+                    ? error.message
+                    : 'שגיאה לא ידועה בפתיחת השער';
+            failureReason = errorMessage;
             mcuMetadata = {
                 attempted: true,
-                timeout: error.name === 'GatewayTimeoutException',
+                timeout:
+                    error instanceof Error &&
+                    error.name === 'GatewayTimeoutException',
                 retries: 0,
             };
             throw error;
@@ -187,10 +208,18 @@ export class GateService {
         total: number;
         totalPages: number;
     }> {
-        const { email, openedBy = OpenedByFilter.ALL, page = 1, limit = 50 } = query;
+        const {
+            email,
+            openedBy = OpenedByFilter.ALL,
+            page = 1,
+            limit = 50,
+        } = query;
 
         // Build filter
-        const filter: any = {};
+        const filter: {
+            email?: { $regex: string; $options: string };
+            openedBy?: string;
+        } = {};
 
         if (email) {
             filter.email = { $regex: email, $options: 'i' };
@@ -215,15 +244,25 @@ export class GateService {
             .exec();
 
         // Transform to response format
-        const items = logs.map((log: any) => ({
-            id: log._id.toString(),
-            openedBy: log.openedBy,
-            email: log.email,
-            deviceId: log.deviceId,
-            ip: log.ip,
-            userAgent: log.userAgent,
-            createdAt: log.createdAt ? new Date(log.createdAt).toISOString() : new Date().toISOString(),
-        }));
+        const items = logs.map((log) => {
+            const logWithTimestamps = log as typeof log & {
+                createdAt?: Date | string;
+                updatedAt?: Date | string;
+            };
+            const createdAt = logWithTimestamps.createdAt
+                ? new Date(logWithTimestamps.createdAt).toISOString()
+                : new Date().toISOString();
+
+            return {
+                id: log._id.toString(),
+                openedBy: log.openedBy,
+                email: log.email,
+                deviceId: log.deviceId,
+                ip: log.ip,
+                userAgent: log.userAgent,
+                createdAt,
+            };
+        });
 
         return {
             items,

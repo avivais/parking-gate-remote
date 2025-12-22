@@ -1,4 +1,11 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+import {
+    Injectable,
+    NotFoundException,
+    BadRequestException,
+} from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { GateService } from '../gate/gate.service';
 import { GetUsersQueryDto, UserStatusFilter } from './dto/get-users-query.dto';
@@ -52,7 +59,12 @@ export class AdminService {
     ) {}
 
     async getUsers(query: GetUsersQueryDto): Promise<PaginatedUsersResponse> {
-        const { status = UserStatusFilter.PENDING, q, page = 1, limit = 20 } = query;
+        const {
+            status = UserStatusFilter.PENDING,
+            q,
+            page = 1,
+            limit = 20,
+        } = query;
 
         // Build filter
         const filter: any = {};
@@ -77,7 +89,11 @@ export class AdminService {
         const totalPages = Math.ceil(total / limit);
 
         // Fetch users
-        const users = await this.usersService.findUsersPaginated(filter, skip, limit);
+        const users = await this.usersService.findUsersPaginated(
+            filter,
+            skip,
+            limit,
+        );
 
         // Transform to response format
         const items = users.map((user) => {
@@ -94,8 +110,12 @@ export class AdminService {
                 apartmentNumber: user.apartmentNumber,
                 floor: user.floor,
                 activeDeviceId: user.activeDeviceId || null,
-                createdAt: userDoc.createdAt ? new Date(userDoc.createdAt).toISOString() : new Date().toISOString(),
-                updatedAt: userDoc.updatedAt ? new Date(userDoc.updatedAt).toISOString() : new Date().toISOString(),
+                createdAt: userDoc.createdAt
+                    ? new Date(userDoc.createdAt).toISOString()
+                    : new Date().toISOString(),
+                updatedAt: userDoc.updatedAt
+                    ? new Date(userDoc.updatedAt).toISOString()
+                    : new Date().toISOString(),
             };
         });
 
@@ -108,7 +128,10 @@ export class AdminService {
         };
     }
 
-    async updateUser(userId: string, updateDto: UpdateUserDto): Promise<{
+    async updateUser(
+        userId: string,
+        updateDto: UpdateUserDto,
+    ): Promise<{
         id: string;
         email: string;
         role: 'user' | 'admin';
@@ -153,7 +176,11 @@ export class AdminService {
             updateData.status = updateDto.status;
 
             // If status becomes rejected/archived/pending: clear activeDeviceId (force logout)
-            if (updateDto.status === 'rejected' || updateDto.status === 'archived' || updateDto.status === 'pending') {
+            if (
+                updateDto.status === 'rejected' ||
+                updateDto.status === 'archived' ||
+                updateDto.status === 'pending'
+            ) {
                 updateData.activeDeviceId = null;
                 // Also clear session
                 await this.usersService.clearSession(userId);
@@ -161,8 +188,13 @@ export class AdminService {
 
             // Handle rejectionReason based on status
             if (updateDto.status === 'rejected') {
-                if (!updateDto.rejectionReason || updateDto.rejectionReason.trim().length === 0) {
-                    throw new BadRequestException('סיבת דחייה נדרשת כאשר הסטטוס הוא "נדחה"');
+                if (
+                    !updateDto.rejectionReason ||
+                    updateDto.rejectionReason.trim().length === 0
+                ) {
+                    throw new BadRequestException(
+                        'סיבת דחייה נדרשת כאשר הסטטוס הוא "נדחה"',
+                    );
                 }
                 updateData.rejectionReason = updateDto.rejectionReason;
             } else {
@@ -172,8 +204,13 @@ export class AdminService {
         } else if (updateDto.rejectionReason !== undefined) {
             // If only rejectionReason is being updated (without status change)
             if (existingUser.status === 'rejected') {
-                if (!updateDto.rejectionReason || updateDto.rejectionReason.trim().length === 0) {
-                    throw new BadRequestException('סיבת דחייה נדרשת כאשר הסטטוס הוא "נדחה"');
+                if (
+                    !updateDto.rejectionReason ||
+                    updateDto.rejectionReason.trim().length === 0
+                ) {
+                    throw new BadRequestException(
+                        'סיבת דחייה נדרשת כאשר הסטטוס הוא "נדחה"',
+                    );
                 }
                 updateData.rejectionReason = updateDto.rejectionReason;
             } else {
@@ -182,7 +219,10 @@ export class AdminService {
         }
 
         // Update user
-        const updatedUser = await this.usersService.updateUser(userId, updateData);
+        const updatedUser = await this.usersService.updateUser(
+            userId,
+            updateData,
+        );
 
         if (!updatedUser) {
             throw new NotFoundException('משתמש לא נמצא');
@@ -201,8 +241,12 @@ export class AdminService {
             apartmentNumber: updatedUser.apartmentNumber,
             floor: updatedUser.floor,
             activeDeviceId: updatedUser.activeDeviceId || null,
-            createdAt: userDoc.createdAt ? new Date(userDoc.createdAt).toISOString() : new Date().toISOString(),
-            updatedAt: userDoc.updatedAt ? new Date(userDoc.updatedAt).toISOString() : new Date().toISOString(),
+            createdAt: userDoc.createdAt
+                ? new Date(userDoc.createdAt).toISOString()
+                : new Date().toISOString(),
+            updatedAt: userDoc.updatedAt
+                ? new Date(userDoc.updatedAt).toISOString()
+                : new Date().toISOString(),
         };
     }
 
@@ -243,8 +287,12 @@ export class AdminService {
             apartmentNumber: user.apartmentNumber,
             floor: user.floor,
             activeDeviceId: null,
-            createdAt: userDoc.createdAt ? new Date(userDoc.createdAt).toISOString() : new Date().toISOString(),
-            updatedAt: userDoc.updatedAt ? new Date(userDoc.updatedAt).toISOString() : new Date().toISOString(),
+            createdAt: userDoc.createdAt
+                ? new Date(userDoc.createdAt).toISOString()
+                : new Date().toISOString(),
+            updatedAt: userDoc.updatedAt
+                ? new Date(userDoc.updatedAt).toISOString()
+                : new Date().toISOString(),
         };
     }
 
@@ -252,4 +300,3 @@ export class AdminService {
         return this.gateService.getLogsPaginated(query);
     }
 }
-

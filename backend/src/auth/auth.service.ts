@@ -264,7 +264,7 @@ export class AuthService {
         }
 
         const accessToken = this.buildAccessToken(
-            user as UserDocument,
+            user,
             payload.deviceId,
             newSid,
         );
@@ -364,7 +364,10 @@ export class AuthService {
             updateData.floor = updateDto.floor;
         }
 
-        const updatedUser = await this.usersService.updateUser(userId, updateData);
+        const updatedUser = await this.usersService.updateUser(
+            userId,
+            updateData,
+        );
 
         if (!updatedUser) {
             throw new UnauthorizedException('משתמש לא נמצא');

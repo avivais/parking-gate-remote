@@ -9,6 +9,8 @@ import { UsersModule } from '../users/users.module';
 import { GateController } from './gate.controller';
 import { GateService } from './gate.service';
 import { GateDeviceService } from './gate-device.service';
+import { MqttGateDeviceService } from './mqtt-gate-device.service';
+import { IGateDeviceService } from './gate-device.interface';
 import { GateExceptionFilter } from './gate-exception.filter';
 import { GateLog, GateLogSchema } from './schemas/gate-log.schema';
 import { GateRequest, GateRequestSchema } from './schemas/gate-request.schema';
@@ -28,6 +30,25 @@ import { GateRequest, GateRequestSchema } from './schemas/gate-request.schema';
     providers: [
         GateService,
         GateDeviceService,
+        MqttGateDeviceService,
+        {
+            provide: 'IGateDeviceService',
+            useFactory: (
+                configService: ConfigService,
+                stubService: GateDeviceService,
+                mqttService: MqttGateDeviceService,
+            ): IGateDeviceService => {
+                const mode = configService.get<string>(
+                    'GATE_DEVICE_MODE',
+                    'stub',
+                );
+                if (mode === 'mqtt') {
+                    return mqttService;
+                }
+                return stubService;
+            },
+            inject: [ConfigService, GateDeviceService, MqttGateDeviceService],
+        },
         {
             provide: APP_FILTER,
             useClass: GateExceptionFilter,
@@ -52,6 +73,8 @@ export class GateModule implements OnModuleInit {
 
         // Update TTL index after connection is established
         try {
+            // readyState: 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
             if (this.connection.readyState === 1) {
                 // Connection is ready
                 const collection = this.connection.collection('gaterequests');

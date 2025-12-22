@@ -1,0 +1,12 @@
+# MQTT Configuration Files
+mqtt/passwordfile
+mqtt/data/
+mqtt/certs/*.crt
+mqtt/certs/*.key
+mqtt/certs/*.pem
+mqtt/certs/*.csr
+mqtt/certs/*.srl
+
+# Keep certs directory structure
+!mqtt/certs/.gitkeep
+

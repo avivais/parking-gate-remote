@@ -19,8 +19,4 @@ export const GateRequestSchema = SchemaFactory.createForClass(GateRequest);
 
 // Create TTL index on createdAt with default 30 seconds
 // This will be updated dynamically in GateModule based on config
-GateRequestSchema.index(
-    { createdAt: 1 },
-    { expireAfterSeconds: 30 },
-);
-
+GateRequestSchema.index({ createdAt: 1 }, { expireAfterSeconds: 30 });

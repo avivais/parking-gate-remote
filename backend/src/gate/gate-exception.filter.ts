@@ -37,7 +37,9 @@ export class GateExceptionFilter implements ExceptionFilter {
         // Only handle gate/open endpoint
         if (request.path !== '/api/gate/open' || request.method !== 'POST') {
             if (exception instanceof HttpException) {
-                response.status(exception.getStatus()).json(exception.getResponse());
+                response
+                    .status(exception.getStatus())
+                    .json(exception.getResponse());
             } else {
                 response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
                     statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -57,7 +59,9 @@ export class GateExceptionFilter implements ExceptionFilter {
                 ? exception.message
                 : 'שגיאת שרת';
 
-        const requestId = (request.headers['x-request-id'] as string) || `error-${Date.now()}`;
+        const requestId =
+            (request.headers['x-request-id'] as string) ||
+            `error-${Date.now()}`;
         const userId = request.user?.userId;
         const deviceId = request.user?.deviceId;
         const sessionId = request.user?.sid;
@@ -94,4 +98,3 @@ export class GateExceptionFilter implements ExceptionFilter {
         });
     }
 }
-

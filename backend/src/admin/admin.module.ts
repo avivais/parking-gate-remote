@@ -10,4 +10,3 @@ import { GateModule } from '../gate/gate.module';
     providers: [AdminService],
 })
 export class AdminModule {}
-

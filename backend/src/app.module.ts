@@ -24,7 +24,10 @@ import { AdminModule } from './admin/admin.module';
                 throttlers: [
                     {
                         ttl: 60000, // 1 minute
-                        limit: configService.get<number>('GATE_RATE_LIMIT_PER_MINUTE', 6),
+                        limit: configService.get<number>(
+                            'GATE_RATE_LIMIT_PER_MINUTE',
+                            6,
+                        ),
                     },
                 ],
             }),

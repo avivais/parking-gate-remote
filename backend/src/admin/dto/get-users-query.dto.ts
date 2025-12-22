@@ -31,6 +31,3 @@ export class GetUsersQueryDto {
     @Max(100)
     limit?: number = 20;
 }
-
-
-

@@ -1,4 +1,11 @@
-import { IsEmail, IsNotEmpty, MinLength, IsString, IsNumber, Matches } from 'class-validator';
+import {
+    IsEmail,
+    IsNotEmpty,
+    MinLength,
+    IsString,
+    IsNumber,
+    Matches,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class RegisterDto {
@@ -34,4 +41,3 @@ export class RegisterDto {
     @IsNotEmpty({ message: 'קומה היא שדה חובה' })
     floor: number;
 }
-

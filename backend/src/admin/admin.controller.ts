@@ -27,7 +27,10 @@ export class AdminController {
     }
 
     @Patch('users/:id')
-    async updateUser(@Param('id') id: string, @Body() updateDto: UpdateUserDto) {
+    async updateUser(
+        @Param('id') id: string,
+        @Body() updateDto: UpdateUserDto,
+    ) {
         return this.adminService.updateUser(id, updateDto);
     }
 
@@ -41,5 +44,3 @@ export class AdminController {
         return this.adminService.getLogs(query);
     }
 }
-
-

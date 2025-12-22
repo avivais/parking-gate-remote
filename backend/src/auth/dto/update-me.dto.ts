@@ -1,4 +1,10 @@
-import { IsOptional, IsString, IsNotEmpty, IsNumber, Matches } from 'class-validator';
+import {
+    IsOptional,
+    IsString,
+    IsNotEmpty,
+    IsNumber,
+    Matches,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class UpdateMeDto {
@@ -30,4 +36,3 @@ export class UpdateMeDto {
     @IsNotEmpty({ message: 'קומה היא שדה חובה' })
     floor?: number;
 }
-

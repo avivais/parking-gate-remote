@@ -59,21 +59,16 @@ export class GateController {
         // ApprovedGuard כבר בדק user קיים/מאושר/סשן-מכשיר, אז זה בעיקר ביטחון נוסף
         const email = user?.email ?? '';
 
-        try {
-            return await this.gateService.openByUser({
-                requestId,
-                userId: req.user.userId,
-                email,
-                deviceId: req.user.deviceId,
-                sessionId: req.user.sid,
-                ip: req.ip,
-                userAgent: req.get('user-agent') ?? undefined,
-            });
-        } catch (error) {
-            // Errors are already logged in gateService
-            // Re-throw to let NestJS handle the response
-            throw error;
-        }
+        // Errors are already logged in gateService
+        return await this.gateService.openByUser({
+            requestId,
+            userId: req.user.userId,
+            email,
+            deviceId: req.user.deviceId,
+            sessionId: req.user.sid,
+            ip: req.ip,
+            userAgent: req.get('user-agent') ?? undefined,
+        });
     }
 
     // דלת אחורית: /api/gate/admin-open?key=XXXX

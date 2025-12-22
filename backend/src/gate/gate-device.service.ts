@@ -4,6 +4,7 @@ import {
     GatewayTimeoutException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { IGateDeviceService } from './gate-device.interface';
 
 export interface McuCallResult {
     ok: true;
@@ -16,7 +17,7 @@ export interface McuCallMetadata {
 }
 
 @Injectable()
-export class GateDeviceService {
+export class GateDeviceService implements IGateDeviceService {
     private readonly timeoutMs: number;
     private readonly retryCount: number;
     private readonly retryDelayMs: number;
@@ -34,6 +35,10 @@ export class GateDeviceService {
         requestId: string,
         userId: string,
     ): Promise<{ result: McuCallResult; metadata: McuCallMetadata }> {
+        // Parameters are required by interface but unused in stub implementation
+        void requestId;
+        void userId;
+
         const metadata: McuCallMetadata = {
             attempted: true,
             timeout: false,
@@ -49,7 +54,7 @@ export class GateDeviceService {
             }
 
             try {
-                const result = await this.callMcuWithTimeout(requestId, userId);
+                const result = await this.callMcuWithTimeout();
                 return { result, metadata };
             } catch (error) {
                 lastError = error as Error;
@@ -75,20 +80,14 @@ export class GateDeviceService {
         throw new BadGatewayException('שגיאה בתקשורת עם מכשיר השער');
     }
 
-    private async callMcuWithTimeout(
-        requestId: string,
-        userId: string,
-    ): Promise<McuCallResult> {
+    private async callMcuWithTimeout(): Promise<McuCallResult> {
         return Promise.race([
-            this.simulateMcuCall(requestId, userId),
+            this.simulateMcuCall(),
             this.createTimeoutPromise(),
         ]);
     }
 
-    private async simulateMcuCall(
-        _requestId: string,
-        _userId: string,
-    ): Promise<McuCallResult> {
+    private async simulateMcuCall(): Promise<McuCallResult> {
         // Simulate MCU call with random delay between 100-500ms
         const delay = Math.floor(Math.random() * 400) + 100;
 
@@ -118,4 +117,3 @@ export class GateDeviceService {
         return new Promise((resolve) => setTimeout(resolve, ms));
     }
 }
-
