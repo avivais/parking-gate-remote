@@ -66,7 +66,7 @@ JWT_EXPIRES_IN=15m
 GATE_DEVICE_MODE=stub
 
 # MCU Settings (used by both stub and MQTT modes)
-MCU_TIMEOUT_MS=2500
+MCU_TIMEOUT_MS=5000
 MCU_RETRY_COUNT=1
 MCU_RETRY_DELAY_MS=250
 
@@ -238,7 +238,7 @@ done
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `GATE_DEVICE_MODE` | `stub` | Device communication mode: `stub` or `mqtt` |
-| `MCU_TIMEOUT_MS` | `2500` | Timeout for MCU operations (ms) |
+| `MCU_TIMEOUT_MS` | `5000` | Timeout for MCU operations (ms) |
 | `MCU_RETRY_COUNT` | `1` | Number of retry attempts |
 | `MCU_RETRY_DELAY_MS` | `250` | Delay between retries (ms) |
 | `MQTT_URL` | `mqtt://localhost:1883` | MQTT broker URL |

@@ -182,7 +182,7 @@ done
 ### Expected Behavior
 - MCU stub simulates call with 100-500ms delay
 - 5% chance of failure (BadGatewayException)
-- Timeout after 2500ms (configurable)
+- Timeout after 5000ms (configurable)
 - Retries on failure (1 retry by default)
 
 ### Steps

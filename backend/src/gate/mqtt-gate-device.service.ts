@@ -51,7 +51,7 @@ export class MqttGateDeviceService
     private connectionPromise: Promise<void> | null = null;
 
     constructor(private readonly configService: ConfigService) {
-        this.timeoutMs = this.configService.get<number>('MCU_TIMEOUT_MS', 2500);
+        this.timeoutMs = this.configService.get<number>('MCU_TIMEOUT_MS', 5000);
         this.retryCount = this.configService.get<number>('MCU_RETRY_COUNT', 1);
         this.retryDelayMs = this.configService.get<number>(
             'MCU_RETRY_DELAY_MS',
