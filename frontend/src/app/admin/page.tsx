@@ -3,14 +3,16 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { apiRequest, ApiError, AUTH_FORBIDDEN } from "@/lib/api";
 import { ISRAEL_PHONE_PREFIXES, parsePhone, validatePhoneNumber } from "@/lib/phone";
+import { formatRelativeTime } from "@/lib/time";
 import type {
     PaginatedUsersResponse,
     PaginatedLogsResponse,
     AdminUser,
+    DeviceStatusResponse,
 } from "@/types/auth";
 import toast from "react-hot-toast";
 
-type Tab = "users" | "logs";
+type Tab = "users" | "logs" | "devices";
 
 type UserStatusFilter = "pending" | "approved" | "rejected" | "archived" | "all";
 
@@ -89,6 +91,9 @@ export default function AdminPage() {
     const [logsOpenedBy, setLogsOpenedBy] = useState<OpenedByFilter>("all");
     const [logsPage, setLogsPage] = useState(1);
     const [logsLimit, setLogsLimit] = useState(50);
+
+    // Device status state
+    const [deviceStatusData, setDeviceStatusData] = useState<DeviceStatusResponse | null>(null);
 
     // Debounce users search
     useEffect(() => {
@@ -176,14 +181,41 @@ export default function AdminPage() {
         }
     }, [logsEmailDebounced, logsOpenedBy, logsPage, logsLimit]);
 
+    // Load device status
+    const loadDeviceStatus = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const data = await apiRequest<DeviceStatusResponse>("/admin/device-status");
+            setDeviceStatusData(data);
+        } catch (err) {
+            if (err instanceof ApiError) {
+                if (err.message === AUTH_FORBIDDEN || err.status === 403) {
+                    setError("אין לך הרשאה לצפות בסטטוס מכשירים");
+                } else {
+                    setError(err.message || "שגיאה בטעינת סטטוס מכשירים");
+                }
+            } else {
+                setError("שגיאה בטעינת סטטוס מכשירים");
+            }
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
     // Load data when tab or filters change
     useEffect(() => {
         if (activeTab === "users") {
             loadUsers();
-        } else {
+        } else if (activeTab === "logs") {
             loadLogs();
+        } else if (activeTab === "devices") {
+            loadDeviceStatus();
+            // Refresh device status every 10 seconds
+            const interval = setInterval(loadDeviceStatus, 10000);
+            return () => clearInterval(interval);
         }
-    }, [activeTab, loadUsers, loadLogs]);
+    }, [activeTab, loadUsers, loadLogs, loadDeviceStatus]);
 
     // Handle approve user
     const handleApproveUser = async (userId: string) => {
@@ -427,6 +459,17 @@ export default function AdminPage() {
                             style={activeTab === "logs" ? { borderColor: "var(--primary)", color: "var(--primary)" } : {}}
                         >
                             לוגים
+                        </button>
+                        <button
+                            onClick={() => setActiveTab("devices")}
+                            className={`border-b-2 px-3 md:px-4 py-2 text-xs md:text-sm font-medium transition-colors whitespace-nowrap -mb-px ${
+                                activeTab === "devices"
+                                    ? "border-primary text-primary"
+                                    : "border-transparent text-muted hover:border-theme hover:text-text"
+                            }`}
+                            style={activeTab === "devices" ? { borderColor: "var(--primary)", color: "var(--primary)" } : {}}
+                        >
+                            מכשירים
                         </button>
                     </nav>
                 </div>
@@ -1183,6 +1226,157 @@ export default function AdminPage() {
                                         </div>
                                     </div>
                                 )}
+                            </>
+                        ) : null}
+                    </div>
+                )}
+
+                {/* Devices Tab */}
+                {activeTab === "devices" && (
+                    <div className="space-y-4">
+                        {loading ? (
+                            <div className="flex items-center justify-center py-12">
+                                <div className="text-lg text-muted">טוען...</div>
+                            </div>
+                        ) : error && error.includes("הרשאה") ? (
+                            <div className="rounded-theme-md border p-4" style={{ backgroundColor: "var(--danger)", borderColor: "var(--danger)", opacity: 0.1 }}>
+                                <p style={{ color: "var(--danger)" }}>{error}</p>
+                            </div>
+                        ) : deviceStatusData ? (
+                            <>
+                                {/* Mobile: Cards View */}
+                                <div className="md:hidden space-y-3">
+                                    {deviceStatusData.items.length === 0 ? (
+                                        <div className="rounded-theme-md border p-4 text-center" style={{ backgroundColor: "var(--surface)", borderColor: "var(--border)" }}>
+                                            <p className="text-sm text-muted">אין מכשירים להצגה</p>
+                                        </div>
+                                    ) : (
+                                        deviceStatusData.items.map((device) => (
+                                            <div
+                                                key={device.deviceId}
+                                                className="rounded-theme-md border p-4 space-y-3"
+                                                style={{ backgroundColor: "var(--surface)", borderColor: "var(--border)" }}
+                                            >
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex-1">
+                                                        <h3 className="text-sm font-semibold" style={{ color: "var(--text)" }}>
+                                                            {device.deviceId}
+                                                        </h3>
+                                                    </div>
+                                                    <div>
+                                                        {device.online ? (
+                                                            <span className="badge-success inline-flex rounded-full px-2 py-1 text-xs font-medium">
+                                                                מקוון
+                                                            </span>
+                                                        ) : (
+                                                            <span className="badge-danger inline-flex rounded-full px-2 py-1 text-xs font-medium">
+                                                                לא מקוון
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-1 text-xs">
+                                                    <div className="flex justify-between">
+                                                        <span className="text-muted">נראה לאחרונה:</span>
+                                                        <span style={{ color: "var(--text)" }}>{formatRelativeTime(device.lastSeenAt)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-muted">עודכן:</span>
+                                                        <span className="text-muted">{new Date(device.updatedAt).toLocaleString("he-IL")}</span>
+                                                    </div>
+                                                    {device.rssi !== undefined && (
+                                                        <div className="flex justify-between">
+                                                            <span className="text-muted">RSSI:</span>
+                                                            <span style={{ color: "var(--text)" }}>{device.rssi} dBm</span>
+                                                        </div>
+                                                    )}
+                                                    {device.fwVersion && (
+                                                        <div className="flex justify-between">
+                                                            <span className="text-muted">גרסת תוכנה:</span>
+                                                            <span style={{ color: "var(--text)" }}>{device.fwVersion}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+
+                                {/* Desktop: Table View */}
+                                <div className="hidden md:block overflow-hidden rounded-theme-lg bg-surface shadow-theme-md">
+                                    <div className="overflow-x-auto">
+                                        <table className="min-w-full divide-y" style={{ borderColor: "var(--table-border)" }}>
+                                            <thead className="table-header">
+                                                <tr>
+                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
+                                                        מזהה מכשיר
+                                                    </th>
+                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
+                                                        סטטוס
+                                                    </th>
+                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
+                                                        נראה לאחרונה
+                                                    </th>
+                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
+                                                        עודכן
+                                                    </th>
+                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
+                                                        RSSI
+                                                    </th>
+                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
+                                                        גרסת תוכנה
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y bg-surface" style={{ borderColor: "var(--table-border)" }}>
+                                                {deviceStatusData.items.length === 0 ? (
+                                                    <tr>
+                                                        <td
+                                                            colSpan={6}
+                                                            className="px-6 py-4 text-center text-sm text-muted"
+                                                        >
+                                                            אין מכשירים להצגה
+                                                        </td>
+                                                    </tr>
+                                                ) : (
+                                                    deviceStatusData.items.map((device) => (
+                                                        <tr
+                                                            key={device.deviceId}
+                                                            className="table-row"
+                                                        >
+                                                            <td className="whitespace-nowrap px-6 py-4 text-sm font-mono" style={{ color: "var(--text)" }}>
+                                                                {device.deviceId}
+                                                            </td>
+                                                            <td className="whitespace-nowrap px-6 py-4 text-sm">
+                                                                {device.online ? (
+                                                                    <span className="badge-success inline-flex rounded-full px-2 py-1 text-xs font-medium">
+                                                                        מקוון
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="badge-danger inline-flex rounded-full px-2 py-1 text-xs font-medium">
+                                                                        לא מקוון
+                                                                    </span>
+                                                                )}
+                                                            </td>
+                                                            <td className="whitespace-nowrap px-6 py-4 text-sm" style={{ color: "var(--text)" }}>
+                                                                {formatRelativeTime(device.lastSeenAt)}
+                                                            </td>
+                                                            <td className="whitespace-nowrap px-6 py-4 text-sm text-muted">
+                                                                {new Date(device.updatedAt).toLocaleString("he-IL")}
+                                                            </td>
+                                                            <td className="whitespace-nowrap px-6 py-4 text-sm text-muted">
+                                                                {device.rssi !== undefined ? `${device.rssi} dBm` : "-"}
+                                                            </td>
+                                                            <td className="whitespace-nowrap px-6 py-4 text-sm text-muted">
+                                                                {device.fwVersion || "-"}
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
                             </>
                         ) : null}
                     </div>

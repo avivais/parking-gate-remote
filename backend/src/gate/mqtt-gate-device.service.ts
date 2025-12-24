@@ -7,9 +7,12 @@ import {
     Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import mqtt from 'mqtt';
 import { IGateDeviceService } from './gate-device.interface';
 import { McuCallResult, McuCallMetadata } from './gate-device.service';
+import { DeviceStatus } from './schemas/device-status.schema';
 
 interface MqttCommandMessage {
     requestId: string;
@@ -51,7 +54,11 @@ export class MqttGateDeviceService
     private isConnected = false;
     private connectionPromise: Promise<void> | null = null;
 
-    constructor(private readonly configService: ConfigService) {
+    constructor(
+        private readonly configService: ConfigService,
+        @InjectModel(DeviceStatus.name)
+        private readonly deviceStatusModel: Model<DeviceStatus>,
+    ) {
         this.timeoutMs = this.configService.get<number>('MCU_TIMEOUT_MS', 5000);
         this.retryCount = this.configService.get<number>('MCU_RETRY_COUNT', 1);
         this.retryDelayMs = this.configService.get<number>(
@@ -252,9 +259,54 @@ export class MqttGateDeviceService
         }
     }
 
-    private handleStatusMessage(status: unknown): void {
-        // Log status messages but don't act on them for now
-        this.logger.debug(`Received status message: ${JSON.stringify(status)}`);
+    private async handleStatusMessage(status: unknown): Promise<void> {
+        try {
+            const statusPayload = status as {
+                deviceId?: string;
+                online?: boolean;
+                updatedAt?: number;
+                rssi?: number;
+                fwVersion?: string;
+                [key: string]: unknown;
+            };
+
+            // Validate required fields
+            if (
+                !statusPayload.deviceId ||
+                typeof statusPayload.online !== 'boolean' ||
+                !statusPayload.updatedAt ||
+                typeof statusPayload.updatedAt !== 'number'
+            ) {
+                this.logger.warn(
+                    `Invalid status message: missing required fields (deviceId, online, updatedAt)`,
+                );
+                return;
+            }
+
+            // Upsert device status
+            await this.deviceStatusModel.findOneAndUpdate(
+                { deviceId: statusPayload.deviceId },
+                {
+                    deviceId: statusPayload.deviceId,
+                    online: statusPayload.online,
+                    updatedAt: statusPayload.updatedAt,
+                    lastSeenAt: new Date(),
+                    rssi: statusPayload.rssi,
+                    fwVersion: statusPayload.fwVersion,
+                    raw: statusPayload,
+                },
+                { upsert: true, new: true },
+            );
+
+            this.logger.log(
+                `Updated device status for ${statusPayload.deviceId}: online=${statusPayload.online}`,
+            );
+        } catch (error) {
+            const err = error as Error;
+            this.logger.error(
+                `Failed to persist device status: ${err.message}`,
+            );
+        }
     }
 
     async openGate(

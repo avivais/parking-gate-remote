@@ -6,12 +6,18 @@ import {
     NotFoundException,
     BadRequestException,
 } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { UsersService } from '../users/users.service';
 import { GateService } from '../gate/gate.service';
 import { GetUsersQueryDto, UserStatusFilter } from './dto/get-users-query.dto';
 import { GetLogsQueryDto } from './dto/get-logs-query.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserStatus } from '../users/schemas/user.schema';
+import {
+    DeviceStatus,
+    DeviceStatusDocument,
+} from '../gate/schemas/device-status.schema';
 
 export interface PaginatedUsersResponse {
     items: Array<{
@@ -51,11 +57,25 @@ export interface PaginatedLogsResponse {
     totalPages: number;
 }
 
+export interface DeviceStatusResponse {
+    items: Array<{
+        deviceId: string;
+        online: boolean;
+        updatedAt: number;
+        lastSeenAt: string;
+        rssi?: number;
+        fwVersion?: string;
+    }>;
+    total: number;
+}
+
 @Injectable()
 export class AdminService {
     constructor(
         private readonly usersService: UsersService,
         private readonly gateService: GateService,
+        @InjectModel(DeviceStatus.name)
+        private readonly deviceStatusModel: Model<DeviceStatusDocument>,
     ) {}
 
     async getUsers(query: GetUsersQueryDto): Promise<PaginatedUsersResponse> {
@@ -298,5 +318,31 @@ export class AdminService {
 
     async getLogs(query: GetLogsQueryDto): Promise<PaginatedLogsResponse> {
         return this.gateService.getLogsPaginated(query);
+    }
+
+    async getDeviceStatuses(): Promise<DeviceStatusResponse> {
+        const devices = await this.deviceStatusModel
+            .find({})
+            .sort({ lastSeenAt: -1 })
+            .lean();
+
+        const items = devices.map((device) => {
+            const deviceDoc = device as any;
+            return {
+                deviceId: device.deviceId,
+                online: device.online,
+                updatedAt: device.updatedAt,
+                lastSeenAt: deviceDoc.lastSeenAt
+                    ? new Date(device.lastSeenAt).toISOString()
+                    : new Date().toISOString(),
+                rssi: device.rssi,
+                fwVersion: device.fwVersion,
+            };
+        });
+
+        return {
+            items,
+            total: items.length,
+        };
     }
 }

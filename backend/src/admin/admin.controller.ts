@@ -43,4 +43,9 @@ export class AdminController {
     async getLogs(@Query() query: GetLogsQueryDto) {
         return this.adminService.getLogs(query);
     }
+
+    @Get('device-status')
+    async getDeviceStatus() {
+        return this.adminService.getDeviceStatuses();
+    }
 }

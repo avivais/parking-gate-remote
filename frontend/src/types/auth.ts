@@ -90,3 +90,17 @@ export interface PaginatedLogsResponse {
     totalPages: number;
 }
 
+export interface DeviceStatus {
+    deviceId: string;
+    online: boolean;
+    updatedAt: number;
+    lastSeenAt: string;
+    rssi?: number;
+    fwVersion?: string;
+}
+
+export interface DeviceStatusResponse {
+    items: DeviceStatus[];
+    total: number;
+}
+

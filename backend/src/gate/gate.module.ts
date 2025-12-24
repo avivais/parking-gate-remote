@@ -14,6 +14,7 @@ import { IGateDeviceService } from './gate-device.interface';
 import { GateExceptionFilter } from './gate-exception.filter';
 import { GateLog, GateLogSchema } from './schemas/gate-log.schema';
 import { GateRequest, GateRequestSchema } from './schemas/gate-request.schema';
+import { DeviceStatus, DeviceStatusSchema } from './schemas/device-status.schema';
 
 @Module({
     imports: [
@@ -24,6 +25,7 @@ import { GateRequest, GateRequestSchema } from './schemas/gate-request.schema';
         MongooseModule.forFeature([
             { name: GateLog.name, schema: GateLogSchema },
             { name: GateRequest.name, schema: GateRequestSchema },
+            { name: DeviceStatus.name, schema: DeviceStatusSchema },
         ]),
     ],
     controllers: [GateController],
@@ -54,7 +56,7 @@ import { GateRequest, GateRequestSchema } from './schemas/gate-request.schema';
             useClass: GateExceptionFilter,
         },
     ],
-    exports: [GateService],
+    exports: [GateService, MongooseModule],
 })
 export class GateModule implements OnModuleInit {
     constructor(

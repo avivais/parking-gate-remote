@@ -1,0 +1,34 @@
+services:
+    mcu-sim:
+        build:
+            context: ./mcu-sim
+            dockerfile: Dockerfile
+        container_name: parking-mcu-sim
+        restart: unless-stopped
+        environment:
+            - MQTT_URL=mqtt://mosquitto:1883
+            - MQTT_CMD_TOPIC=${MQTT_CMD_TOPIC:-pgr/mitspe6/gate/cmd}
+            - MQTT_ACK_TOPIC=${MQTT_ACK_TOPIC:-pgr/mitspe6/gate/ack}
+            - MQTT_STATUS_TOPIC=${MQTT_STATUS_TOPIC:-pgr/mitspe6/gate/status}
+            - MQTT_DEVICE_USERNAME=${MQTT_DEVICE_USERNAME:-pgr_device_mitspe6}
+            - MQTT_DEVICE_PASSWORD=${MQTT_DEVICE_PASSWORD}
+            - MCU_DEVICE_ID=${MCU_DEVICE_ID:-mitspe6-gate-001}
+            - MCU_ACK_DELAY_MS=${MCU_ACK_DELAY_MS:-100}
+            - MCU_ACK_MODE=${MCU_ACK_MODE:-success}
+            - MCU_STATUS_INTERVAL_MS=${MCU_STATUS_INTERVAL_MS:-5000}
+            - MCU_FW_VERSION=${MCU_FW_VERSION:-sim-0.1.0}
+            - MCU_RSSI=${MCU_RSSI:--65}
+        networks:
+            - parking_net
+        depends_on:
+            - mosquitto
+        logging:
+            driver: "json-file"
+            options:
+                max-size: "10m"
+                max-file: "3"
+
+networks:
+    parking_net:
+        external: true
+
