@@ -56,7 +56,7 @@ Published by the backend when a gate operation is requested.
 
 **MQTT Settings:**
 - **QoS**: 1 (at least once delivery)
-- **Retain**: false (messages are not retained)
+- **Retain**: false
 
 **Field Descriptions:**
 - `requestId`: Unique identifier for the request (UUID format). Used for matching commands with acknowledgments.
@@ -96,6 +96,7 @@ Published by the MCU in response to a command message.
 
 **MQTT Settings:**
 - **QoS**: 1 (at least once delivery)
+- **Retain**: false
 
 **Field Descriptions:**
 - `requestId`: Must match the `requestId` from the corresponding command message.
@@ -130,24 +131,32 @@ Published by the MCU for status updates. Currently, the backend only logs these 
 
 **MQTT Settings:**
 - **QoS**: 1 (at least once delivery)
+- **Retain**: false
 
 ## Timing Rules
 
 ### Backend Timeout
 
 - **Configuration**: `MCU_TIMEOUT_MS` environment variable
-- **Default**: 5000ms (5 seconds)
+- **Code Default**: 5000ms (5 seconds)
 - **Behavior**: If no ACK is received within the timeout period, the backend throws a `GatewayTimeoutException` and does not retry the command.
 
 ### Retry Logic
 
-- **Retry Count**: `MCU_RETRY_COUNT` environment variable (default: 1)
-  - This means the backend will attempt the command up to `MCU_RETRY_COUNT + 1` times total (initial attempt + retries).
-- **Retry Delay**: `MCU_RETRY_DELAY_MS` environment variable (default: 250ms in code, recommended 500ms for cellular networks)
-  - Delay between retry attempts.
+- **Retry Count**: `MCU_RETRY_COUNT` environment variable
+  - **Code Default**: 1
+  - Total attempts: `MCU_RETRY_COUNT + 1` (initial attempt + retries)
+- **Retry Delay**: `MCU_RETRY_DELAY_MS` environment variable
+  - **Code Default**: 250ms
+  - **Recommended for Cellular Networks**: 500ms
+  - Delay between retry attempts
 - **Retry Conditions**:
-  - Retries are only attempted for non-timeout errors (e.g., connection failures, publish errors).
-  - Timeout errors do not trigger retries; they fail immediately.
+  - **Retries occur for**:
+    - Publish errors (MQTT publish callback error → `BadGatewayException`)
+    - ACK `ok: false` (MCU error response → `BadGatewayException`)
+    - Connection errors (MQTT broker connection failure → `BadGatewayException`)
+  - **No retries for**:
+    - Timeout (no ACK received within `MCU_TIMEOUT_MS` → `GatewayTimeoutException`, fails immediately)
 
 ### Late ACK Handling
 
@@ -163,11 +172,37 @@ Published by the MCU for status updates. Currently, the backend only logs these 
   - Subsequent ACKs for the same `requestId` are ignored (the `requestId` is removed from pending requests after the first ACK).
   - If an ACK arrives for a `requestId` that is not in the pending requests map, it is logged at DEBUG level and ignored.
 
-### Repeated Commands with Same requestId
+### RequestId Uniqueness and Idempotency
 
-- **Safety**: It is safe to publish multiple command messages with the same `requestId`.
+- **Backend Requirement**: The backend MUST generate a unique `requestId` (UUID) for each gate operation. The `GateRequest` MongoDB schema enforces uniqueness at the API level (`backend/src/gate/schemas/gate-request.schema.ts`).
+- **MCU Requirement**: The MCU MUST be idempotent for duplicate delivery of the same `requestId`. MQTT QoS 1 guarantees at-least-once delivery, so the same command may be delivered multiple times. The MCU must handle this gracefully (e.g., ignore duplicate `requestId` values or ensure the operation is safe to repeat).
 - **Backend Behavior**: The backend tracks pending requests by `requestId` in a Map. If a command with the same `requestId` is published while a previous one is still pending, the new command will overwrite the pending request entry.
-- **Replay Protection**: Replay protection is handled at the API level via the `GateRequest` MongoDB schema (`backend/src/gate/schemas/gate-request.schema.ts`), which enforces a unique `requestId` constraint with a TTL index. This prevents duplicate `requestId` values from being processed through the API endpoint.
+- **Replay Protection**: Replay protection is handled at the API level via the `GateRequest` MongoDB schema, which enforces a unique `requestId` constraint with a TTL index (see TTL Window section below). This prevents duplicate `requestId` values from being processed through the API endpoint within the TTL window.
+
+### GateRequest TTL Window
+
+- **Default TTL**: 30 seconds
+- **Configuration**: `GATE_REQUEST_TTL_SECONDS` environment variable (optional)
+- **Implementation**: MongoDB TTL index on `createdAt` field (`backend/src/gate/schemas/gate-request.schema.ts` line 22, `backend/src/gate/gate.module.ts` lines 69-90)
+- **Behavior**: After the TTL expires, the `requestId` is removed from the `GateRequest` collection, allowing the same `requestId` to be used again (for replay protection reset). The TTL index is dynamically updated on application startup based on the `GATE_REQUEST_TTL_SECONDS` configuration.
+
+## Environment Variables
+
+All MQTT and MCU configuration is controlled via environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `GATE_DEVICE_MODE` | `stub` | Device communication mode: `stub` or `mqtt` |
+| `MCU_TIMEOUT_MS` | `5000` | Timeout for MCU operations in milliseconds (code default) |
+| `MCU_RETRY_COUNT` | `1` | Number of retry attempts (code default) |
+| `MCU_RETRY_DELAY_MS` | `250` | Delay between retries in milliseconds (code default). Recommended: `500` for cellular networks |
+| `MQTT_URL` | `mqtt://localhost:1883` | MQTT broker URL |
+| `MQTT_USERNAME` | `pgr_server` | MQTT username for backend connection |
+| `MQTT_PASSWORD` | *(none)* | MQTT password (must be set, no default) |
+| `MQTT_CMD_TOPIC` | `pgr/mitspe6/gate/cmd` | Command topic (backend → MCU) |
+| `MQTT_ACK_TOPIC` | `pgr/mitspe6/gate/ack` | Acknowledgment topic (MCU → backend) |
+| `MQTT_STATUS_TOPIC` | `pgr/mitspe6/gate/status` | Status topic (MCU → backend) |
+| `GATE_REQUEST_TTL_SECONDS` | `30` | TTL window for requestId replay protection in seconds (optional) |
 
 ## Implementation Checklists
 
