@@ -7,7 +7,7 @@ import {
     Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as mqtt from 'mqtt';
+import mqtt from 'mqtt';
 import { IGateDeviceService } from './gate-device.interface';
 import { McuCallResult, McuCallMetadata } from './gate-device.service';
 
@@ -15,6 +15,7 @@ interface MqttCommandMessage {
     requestId: string;
     command: 'open';
     userId: string;
+    issuedAt: number;
 }
 
 interface MqttAckMessage {
@@ -36,7 +37,7 @@ export class MqttGateDeviceService
     implements IGateDeviceService, OnModuleInit, OnModuleDestroy
 {
     private readonly logger = new Logger(MqttGateDeviceService.name);
-    private client: mqtt.MqttClient | null = null;
+    private client: any = null;
     private readonly timeoutMs: number;
     private readonly retryCount: number;
     private readonly retryDelayMs: number;
@@ -93,6 +94,7 @@ export class MqttGateDeviceService
             try {
                 this.logger.log(`Connecting to MQTT broker at ${this.mqttUrl}`);
 
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
                 this.client = mqtt.connect(this.mqttUrl, {
                     username: this.mqttUsername,
                     password: this.mqttPassword,
@@ -101,16 +103,18 @@ export class MqttGateDeviceService
                     connectTimeout: 10000,
                 });
 
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
                 this.client.on('connect', () => {
                     this.isConnected = true;
                     this.logger.log('MQTT client connected');
 
                     // Subscribe to ACK and status topics
-                    const topics: mqtt.ISubscriptionMap = {
+                    const topics = {
                         [this.ackTopic]: { qos: 1 },
                         [this.statusTopic]: { qos: 1 },
                     };
 
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
                     this.client!.subscribe(topics, (err: Error | null) => {
                         if (err) {
                             const errMessage =
@@ -134,24 +138,29 @@ export class MqttGateDeviceService
                     });
                 });
 
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
                 this.client.on('message', (topic: string, message: Buffer) => {
                     this.handleMessage(topic, message);
                 });
 
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
                 this.client.on('error', (error: Error) => {
                     this.logger.error(`MQTT client error: ${error.message}`);
                     this.isConnected = false;
                 });
 
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
                 this.client.on('close', () => {
                     this.logger.warn('MQTT client connection closed');
                     this.isConnected = false;
                 });
 
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
                 this.client.on('reconnect', () => {
                     this.logger.log('MQTT client reconnecting...');
                 });
 
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
                 this.client.on('offline', () => {
                     this.logger.warn('MQTT client offline');
                     this.isConnected = false;
@@ -185,6 +194,7 @@ export class MqttGateDeviceService
 
         if (this.client) {
             return new Promise<void>((resolve) => {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
                 this.client!.end(false, {}, () => {
                     this.logger.log('MQTT client disconnected');
                     this.client = null;
@@ -216,7 +226,7 @@ export class MqttGateDeviceService
     private handleAckMessage(ack: MqttAckMessage): void {
         const pending = this.pendingRequests.get(ack.requestId);
         if (!pending) {
-            this.logger.warn(
+            this.logger.debug(
                 `Received ACK for unknown requestId: ${ack.requestId}`,
             );
             return;
@@ -327,6 +337,7 @@ export class MqttGateDeviceService
                 requestId,
                 command: 'open',
                 userId,
+                issuedAt: Date.now(),
             };
 
             const timeout = setTimeout(() => {
@@ -351,6 +362,7 @@ export class MqttGateDeviceService
 
             this.pendingRequests.set(requestId, pending);
 
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
             this.client.publish(
                 this.cmdTopic,
                 JSON.stringify(command),

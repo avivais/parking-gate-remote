@@ -105,6 +105,10 @@ Frontend will run on `http://localhost:3000`
 
 When `GATE_DEVICE_MODE=mqtt`, the backend communicates with the gate device via MQTT instead of using the stub implementation.
 
+### Protocol Specification
+
+For detailed MQTT protocol documentation, see [docs/mqtt-protocol.md](docs/mqtt-protocol.md).
+
 ### Message Format
 
 **Command Message** (published to `pgr/mitspe6/gate/cmd`):
