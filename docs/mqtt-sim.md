@@ -42,7 +42,9 @@ mosquitto_passwd mqtt/passwordfile pgr_device_mitspe6
 
 ### 3. Start MCU Simulator
 
-Start the simulator with the required environment variables:
+You have two options:
+
+**Option A: Start mosquitto separately first (recommended for development)**
 
 ```bash
 # Set device password (required)
@@ -53,11 +55,40 @@ export MCU_ACK_MODE=success  # success | fail | timeout | jitter
 export MCU_DEVICE_ID=mitspe6-gate-001
 export MCU_STATUS_INTERVAL_MS=5000
 
-# Start simulator
+# Start simulator (mosquitto must already be running)
 docker compose -f docker-compose.sim.yml up --build
 ```
 
-Or set environment variables in a `.env` file or directly in `docker-compose.sim.yml`.
+**Option B: Start both services together (with dependency orchestration)**
+
+```bash
+# Set device password (required)
+export MQTT_DEVICE_PASSWORD=your_device_password_here
+
+# Start both mosquitto and simulator together
+# The dependency ensures mosquitto starts before the simulator
+docker compose -f docker-compose.mqtt.yml -f docker-compose.sim.yml up --build
+```
+
+**Important Notes:**
+
+1. **Why `depends_on` doesn't work when running separately:**
+   - Docker Compose validates `depends_on` at **compose file parse time**, not at runtime
+   - When you run `docker compose -f docker-compose.sim.yml up`, Compose only reads that file
+   - It looks for a service named `mosquitto` in the current project and fails if not found
+   - This happens **before** checking if mosquitto is already running as a container
+   - The simulator now includes a wait script that checks for mosquitto readiness before connecting
+
+2. **MQTT URL configuration:**
+   - Default: `mqtt://parking-mosquitto:1883` (uses container name for separate runs)
+   - When using both files together, you can override: `MQTT_URL=mqtt://mosquitto:1883` (uses service name)
+   - The simulator will automatically wait for the broker to be ready
+
+3. **Port exposure:**
+   - The simulator doesn't need to expose any ports - it only communicates with mosquitto over the internal Docker network
+   - Mosquitto exposes ports 1883/8883 to the host for external clients (backend, testing tools)
+
+You can also set environment variables in a `.env` file or directly in `docker-compose.sim.yml`.
 
 ## Configuration
 

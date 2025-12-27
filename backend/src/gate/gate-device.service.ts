@@ -77,7 +77,7 @@ export class GateDeviceService implements IGateDeviceService {
             throw lastError;
         }
 
-        throw new BadGatewayException('שגיאה בתקשורת עם מכשיר השער');
+        throw new BadGatewayException('שגיאה בתקשורת עם השער');
     }
 
     private async callMcuWithTimeout(): Promise<McuCallResult> {
@@ -95,7 +95,7 @@ export class GateDeviceService implements IGateDeviceService {
 
         // Simulate occasional failures (5% chance)
         if (Math.random() < 0.05) {
-            throw new BadGatewayException('שגיאה בתקשורת עם מכשיר השער');
+            throw new BadGatewayException('שגיאה בתקשורת עם השער');
         }
 
         return { ok: true };
@@ -106,7 +106,7 @@ export class GateDeviceService implements IGateDeviceService {
             setTimeout(() => {
                 reject(
                     new GatewayTimeoutException(
-                        'תקשורת עם מכשיר השער ארכה יותר מדי זמן',
+                        'תקשורת עם השער ארכה יותר מדי זמן',
                     ),
                 );
             }, this.timeoutMs);

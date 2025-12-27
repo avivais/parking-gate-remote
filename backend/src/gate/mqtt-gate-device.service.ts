@@ -221,7 +221,12 @@ export class MqttGateDeviceService
             if (topic === this.ackTopic) {
                 this.handleAckMessage(payload as MqttAckMessage);
             } else if (topic === this.statusTopic) {
-                this.handleStatusMessage(payload);
+                // Fire and forget - handle errors internally
+                this.handleStatusMessage(payload).catch((error) => {
+                    this.logger.error(
+                        `Unhandled error in handleStatusMessage: ${error}`,
+                    );
+                });
             }
         } catch (error) {
             this.logger.warn(
@@ -261,6 +266,8 @@ export class MqttGateDeviceService
 
     private async handleStatusMessage(status: unknown): Promise<void> {
         try {
+            this.logger.debug(`Received status message: ${JSON.stringify(status)}`);
+
             const statusPayload = status as {
                 deviceId?: string;
                 online?: boolean;
@@ -278,7 +285,7 @@ export class MqttGateDeviceService
                 typeof statusPayload.updatedAt !== 'number'
             ) {
                 this.logger.warn(
-                    `Invalid status message: missing required fields (deviceId, online, updatedAt)`,
+                    `Invalid status message: missing required fields (deviceId, online, updatedAt). Received: ${JSON.stringify(status)}`,
                 );
                 return;
             }
@@ -329,7 +336,7 @@ export class MqttGateDeviceService
                     `Failed to connect to MQTT broker: ${err.message}`,
                 );
                 throw new BadGatewayException(
-                    'שגיאה בתקשורת עם מכשיר השער: לא ניתן להתחבר ל-MQTT broker',
+                    'שגיאה בתקשורת עם השער: לא ניתן להתחבר ל-MQTT broker',
                 );
             }
         }
@@ -372,7 +379,7 @@ export class MqttGateDeviceService
             throw lastError;
         }
 
-        throw new BadGatewayException('שגיאה בתקשורת עם מכשיר השער');
+        throw new BadGatewayException('שגיאה בתקשורת עם השער');
     }
 
     private publishCommandAndWaitForAck(
@@ -398,7 +405,7 @@ export class MqttGateDeviceService
                     this.pendingRequests.delete(requestId);
                     pending.reject(
                         new GatewayTimeoutException(
-                            'תקשורת עם מכשיר השער ארכה יותר מדי זמן',
+                            'תקשורת עם השער ארכה יותר מדי זמן',
                         ),
                     );
                 }
@@ -433,7 +440,7 @@ export class MqttGateDeviceService
                         );
                         reject(
                             new BadGatewayException(
-                                'שגיאה בשליחת פקודה למכשיר השער',
+                                'שגיאה בשליחת פקודה להשער',
                             ),
                         );
                         return;

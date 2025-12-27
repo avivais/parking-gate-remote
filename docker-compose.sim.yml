@@ -6,7 +6,7 @@ services:
         container_name: parking-mcu-sim
         restart: unless-stopped
         environment:
-            - MQTT_URL=mqtt://mosquitto:1883
+            - MQTT_URL=mqtt://parking-mosquitto:1883
             - MQTT_CMD_TOPIC=${MQTT_CMD_TOPIC:-pgr/mitspe6/gate/cmd}
             - MQTT_ACK_TOPIC=${MQTT_ACK_TOPIC:-pgr/mitspe6/gate/ack}
             - MQTT_STATUS_TOPIC=${MQTT_STATUS_TOPIC:-pgr/mitspe6/gate/status}
@@ -20,8 +20,6 @@ services:
             - MCU_RSSI=${MCU_RSSI:--65}
         networks:
             - parking_net
-        depends_on:
-            - mosquitto
         logging:
             driver: "json-file"
             options:

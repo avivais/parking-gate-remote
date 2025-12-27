@@ -184,7 +184,7 @@ mosquitto_sub -h localhost -p 1883 \
 
 **Expected:**
 - Status: 504 Gateway Timeout
-- Error message: "תקשורת עם מכשיר השער ארכה יותר מדי זמן"
+- Error message: "תקשורת עם השער ארכה יותר מדי זמן"
 - GateLog shows `mcu.timeout: true`
 
 ### Test 5: Retry Logic
