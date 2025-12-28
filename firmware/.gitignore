@@ -1,0 +1,8 @@
+.pio/
+# VSCode/Cursor - ignore user-specific files, but keep extensions.json for team recommendations
+.vscode/.browse.vc.db
+.vscode/c_cpp_properties.json
+.vscode/launch.json
+.vscode/tasks.json
+# Keep .vscode/extensions.json (useful for team)
+
