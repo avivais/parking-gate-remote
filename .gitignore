@@ -10,3 +10,6 @@ mqtt/certs/*.srl
 # Keep certs directory structure
 !mqtt/certs/.gitkeep
 
+# VSCode/Cursor workspace settings (user-specific)
+.vscode/
+
