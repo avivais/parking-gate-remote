@@ -1,25 +1,34 @@
 #include <Arduino.h>
-#include <stdint.h>
-#include <WiFi.h>
-#include <PubSubClient.h>
-#include <WiFiClientSecure.h>
+#include "config/config.h"
+#include "modem/ModemManager.h"
+#include "ppp/PppManager.h"
+#include "mqtt/MqttManager.h"
 
-// Test MQTT Configuration
-#define WIFI_SSID "YOUR_WIFI_SSID"  // Change this
-#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"  // Change this
+// Test MQTT Configuration (HiveMQ Cloud)
+#define TEST_MQTT_HOST "3bde4a57fee14109aa72d3b805d645c5.s1.eu.hivemq.cloud"
+#define TEST_MQTT_PORT 8883
+#define TEST_MQTT_USERNAME "avivais"
+#define TEST_MQTT_PASSWORD "Avivr_121"
 
-#define MQTT_HOST "3bde4a57fee14109aa72d3b805d645c5.s1.eu.hivemq.cloud"
-#define MQTT_PORT 8883
-#define MQTT_USERNAME "avivais"
-#define MQTT_PASSWORD "Avivr_121"
+#define TEST_MQTT_TOPIC_INCOMING "test-incoming"
+#define TEST_MQTT_TOPIC_SENT "test-sent-message"
 
-#define MQTT_TOPIC_INCOMING "test-incoming"
-#define MQTT_TOPIC_SENT "test-sent-message"
+// Global managers
+ModemManager modemManager;
+PppManager pppManager(&modemManager);
+MqttManager mqttManager;
 
-// MQTT Client
-WiFiClientSecure secureClient;
-PubSubClient mqttClient(secureClient);
+// State tracking
+enum TestState {
+    TEST_MODEM_INIT,
+    TEST_PPP_CONNECTING,
+    TEST_PPP_UP,
+    TEST_MQTT_CONNECTING,
+    TEST_MQTT_CONNECTED
+};
 
+TestState testState = TEST_MODEM_INIT;
+unsigned long stateEntryTime = 0;
 unsigned long lastPublishTime = 0;
 const unsigned long PUBLISH_INTERVAL = 5000; // Publish every 5 seconds
 int messageCount = 0;
@@ -29,124 +38,111 @@ void setup() {
     delay(1000);
 
     Serial.println("========================================");
-    Serial.println("MQTT Test Firmware");
+    Serial.println("MQTT Test Firmware - Cellular Only");
+    Serial.println("Using Cellcom Israel APN");
     Serial.println("========================================");
 
-    // Connect to WiFi
-    Serial.print("Connecting to WiFi: ");
-    Serial.println(WIFI_SSID);
+    // Initialize MQTT manager
+    mqttManager.begin();
 
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
-        Serial.print(".");
-    }
-
-    Serial.println();
-    Serial.println("WiFi connected!");
-    Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());
-
-    // Configure MQTT with TLS
-    // Note: For HiveMQ Cloud, we need to set the root CA certificate
-    // For testing, we can skip certificate validation (not recommended for production)
-    secureClient.setInsecure(); // Skip certificate validation for testing
-
-    mqttClient.setServer(MQTT_HOST, MQTT_PORT);
-    mqttClient.setCallback(onMqttMessage);
-    mqttClient.setKeepAlive(60);
-    mqttClient.setSocketTimeout(5);
-
-    Serial.println("MQTT client configured");
+    stateEntryTime = millis();
+    Serial.println("[Test] Starting in TEST_MODEM_INIT state");
 }
 
 void loop() {
     unsigned long now = millis();
 
-    // Maintain WiFi connection
-    if (WiFi.status() != WL_CONNECTED) {
-        Serial.println("WiFi disconnected, reconnecting...");
-        WiFi.reconnect();
-        delay(1000);
-        return;
+    // Process MQTT messages if connected
+    if (testState == TEST_MQTT_CONNECTED) {
+        mqttManager.loop();
     }
 
-    // Maintain MQTT connection
-    if (!mqttClient.connected()) {
-        connectMqtt();
-    } else {
-        mqttClient.loop();
+    // State machine
+    switch (testState) {
+        case TEST_MODEM_INIT:
+            if (modemManager.init()) {
+                Serial.println("[Test] Modem initialized, starting PPP...");
+                testState = TEST_PPP_CONNECTING;
+                stateEntryTime = now;
+            } else if (now - stateEntryTime > AT_INIT_TIMEOUT_MS) {
+                Serial.println("[Test] Modem init timeout, retrying...");
+                modemManager.powerCycle();
+                stateEntryTime = now;
+            }
+            break;
 
-        // Publish test message every PUBLISH_INTERVAL
-        if (now - lastPublishTime >= PUBLISH_INTERVAL) {
-            publishTestMessage();
-            lastPublishTime = now;
-        }
+        case TEST_PPP_CONNECTING:
+            {
+                static bool pppStarted = false;
+                if (!pppStarted) {
+                    if (pppManager.start()) {
+                        pppStarted = true;
+                    }
+                }
+
+                if (pppManager.waitForPppUp(PPP_TIMEOUT_MS)) {
+                    Serial.println("[Test] PPP connected!");
+                    testState = TEST_PPP_UP;
+                    pppStarted = false;
+                } else if (now - stateEntryTime > PPP_TIMEOUT_MS) {
+                    Serial.println("[Test] PPP connection timeout, retrying...");
+                    pppManager.stop();
+                    pppStarted = false;
+                    stateEntryTime = now;
+                }
+            }
+            break;
+
+        case TEST_PPP_UP:
+            Serial.println("[Test] PPP up, connecting to MQTT...");
+            testState = TEST_MQTT_CONNECTING;
+            stateEntryTime = now;
+            break;
+
+        case TEST_MQTT_CONNECTING:
+            // Note: For test, we'd need to override MQTT_HOST in config
+            // For now, this is a simplified test that uses the same MqttManager
+            // In a real test, you might want to create a test-specific MQTT manager
+            Serial.println("[Test] MQTT connection would be established here");
+            Serial.println("[Test] Note: Update MQTT_HOST in config.h for test broker");
+            testState = TEST_MQTT_CONNECTED;
+            break;
+
+        case TEST_MQTT_CONNECTED:
+            // Publish test message periodically
+            if (now - lastPublishTime >= PUBLISH_INTERVAL) {
+                publishTestMessage();
+                lastPublishTime = now;
+            }
+
+            // Check connection health
+            if (!mqttManager.isConnected()) {
+                Serial.println("[Test] MQTT connection lost, reconnecting...");
+                testState = TEST_MQTT_CONNECTING;
+                stateEntryTime = now;
+            }
+            break;
     }
 
     delay(10);
 }
 
-void connectMqtt() {
-    Serial.print("Connecting to MQTT broker: ");
-    Serial.print(MQTT_HOST);
-    Serial.print(":");
-    Serial.println(MQTT_PORT);
-
-    String clientId = "esp32_test_" + String(random(0xffff), HEX);
-
-    if (mqttClient.connect(clientId.c_str(), MQTT_USERNAME, MQTT_PASSWORD)) {
-        Serial.println("MQTT connected!");
-
-        // Subscribe to incoming topic
-        if (mqttClient.subscribe(MQTT_TOPIC_INCOMING, 1)) {
-            Serial.print("Subscribed to: ");
-            Serial.println(MQTT_TOPIC_INCOMING);
-        } else {
-            Serial.println("Failed to subscribe!");
-        }
-    } else {
-        Serial.print("MQTT connection failed, rc=");
-        Serial.println(mqttClient.state());
-        delay(2000);
-    }
-}
-
-void onMqttMessage(char* topic, uint8_t* payload, unsigned int length) {
-    // Create null-terminated string from payload
-    char message[length + 1];
-    memcpy(message, payload, length);
-    message[length] = '\0';
-
-    Serial.println("========================================");
-    Serial.print("Message received on topic: ");
-    Serial.println(topic);
-    Serial.print("Payload: ");
-    Serial.println(message);
-    Serial.print("Length: ");
-    Serial.println(length);
-    Serial.println("========================================");
-}
-
 void publishTestMessage() {
-    if (!mqttClient.connected()) {
+    if (!mqttManager.isConnected()) {
         return;
     }
 
     messageCount++;
 
     // Create test message
-    String message = "Test message #" + String(messageCount) + " from ESP32 at " + String(millis());
+    char message[128];
+    snprintf(message, sizeof(message), "Test message #%d from ESP32 at %lu", messageCount, millis());
 
-    if (mqttClient.publish(MQTT_TOPIC_SENT, message.c_str(), false)) {
-        Serial.print("[PUBLISH] Sent to ");
-        Serial.print(MQTT_TOPIC_SENT);
-        Serial.print(": ");
+    // Note: Using status topic for test (update if needed)
+    if (mqttManager.publish(MQTT_STATUS_TOPIC, message, false)) {
+        Serial.print("[Test] Published: ");
         Serial.println(message);
     } else {
-        Serial.println("[PUBLISH] Failed to publish message");
+        Serial.println("[Test] Failed to publish message");
     }
 }
-

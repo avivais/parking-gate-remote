@@ -4,12 +4,9 @@
 #include <Arduino.h>
 #include <stdint.h>
 #include <PubSubClient.h>
+#include <Client.h>
 #include "config/config.h"
 #include "util/Backoff.h"
-
-// Forward declaration for WiFiClient
-// WiFi.h will be included in .cpp file
-class WiFiClient;
 
 /**
  * MQTT client manager with automatic reconnection and failure tracking.
@@ -92,7 +89,7 @@ public:
     Backoff& getBackoff();
 
 private:
-    WiFiClient* wifiClient;
+    Client* networkClient;
     PubSubClient mqttClient;
     Backoff backoff;
     bool connected;

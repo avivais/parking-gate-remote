@@ -1,13 +1,17 @@
 #include "MqttManager.h"
+// Note: WiFiClient on ESP32 implements the Client interface and works with ANY network interface
+// including PPP. We are NOT using WiFi - this is just the standard Client implementation for ESP32.
 #include <WiFi.h>
 
 MqttManager* MqttManager::instance = nullptr;
 
-// Static WiFiClient instance
-static WiFiClient staticWifiClient;
+// Static network client instance
+// WiFiClient is used here as it's ESP32's standard Client implementation that works with PPP
+// No WiFi initialization or WiFi-specific code is used
+static WiFiClient staticNetworkClient;
 
 MqttManager::MqttManager()
-    : wifiClient(&staticWifiClient), mqttClient(staticWifiClient), backoff(BACKOFF_BASE_MS, BACKOFF_MAX_MS),
+    : networkClient(&staticNetworkClient), mqttClient(staticNetworkClient), backoff(BACKOFF_BASE_MS, BACKOFF_MAX_MS),
       connected(false), mqttFailStreak(0), lastConnectAttempt(0),
       lastStatusPublish(0), commandCallback(nullptr) {
     instance = this;
