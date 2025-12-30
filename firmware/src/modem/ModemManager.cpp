@@ -1,17 +1,11 @@
 #include "ModemManager.h"
 
 ModemManager::ModemManager()
-    : modemSerial(MODEM_UART_NUM), ready(false), initStartTime(0), initState(INIT_POWER_ON) {
-    pinMode(MODEM_PWR_PIN, OUTPUT);
-    pinMode(MODEM_RESET_PIN, OUTPUT);
-    pinMode(MODEM_PWRKEY_PIN, OUTPUT);
-
-    // Initialize pins to default states
-    digitalWrite(MODEM_PWR_PIN, LOW);
-    digitalWrite(MODEM_RESET_PIN, HIGH);  // Reset is active LOW
-    digitalWrite(MODEM_PWRKEY_PIN, LOW);
-
-    modemSerial.begin(MODEM_UART_BAUD, SERIAL_8N1, MODEM_RX_PIN, MODEM_TX_PIN);
+    : modemSerial(1), ready(false), initStartTime(0), initState(INIT_POWER_ON) {
+    // Use Serial1 (UART 1) to match POC
+    // Defer hardware initialization to avoid blocking in constructor
+    // Hardware will be initialized in init() method
+    // This prevents watchdog resets during object construction
 }
 
 bool ModemManager::init() {
@@ -19,8 +13,100 @@ bool ModemManager::init() {
 
     switch (initState) {
         case INIT_POWER_ON:
+            // Initialize hardware on first call (deferred from constructor)
+            // Follow the working POC sequence exactly
+            Serial.println("[Modem] Initializing hardware...");
+            Serial.flush();
+            yield();
+
+            // STEP 1: Initialize Serial FIRST (before GPIO) - matches POC
+            Serial.println("[Modem] Initializing UART (Serial1)...");
+            Serial.print("[Modem] TX: ");
+            Serial.print(MODEM_TX_PIN);
+            Serial.print(", RX: ");
+            Serial.print(MODEM_RX_PIN);
+            Serial.print(", Baud: ");
+            Serial.println(MODEM_UART_BAUD);
+            Serial.flush();
+            yield();
+
+            modemSerial.begin(MODEM_UART_BAUD, SERIAL_8N1, MODEM_RX_PIN, MODEM_TX_PIN);
+            yield();
+            delay(2000);  // Give modem time to start (matches POC)
+            yield();
+
+            Serial.println("[Modem] UART initialized");
+            Serial.flush();
+            yield();
+
+            // STEP 2: Configure BOARD_POWERON_PIN (must be HIGH for modem power)
+            #ifdef BOARD_POWERON_PIN
+            Serial.println("[Modem] Setting BOARD_POWERON_PIN HIGH...");
+            Serial.flush();
+            yield();
+            pinMode(BOARD_POWERON_PIN, OUTPUT);
+            yield();
+            digitalWrite(BOARD_POWERON_PIN, HIGH);
+            yield();
+            delay(100);
+            yield();
+            #endif
+
+            // STEP 3: Reset modem sequence (matches POC)
+            Serial.println("[Modem] Resetting modem...");
+            Serial.flush();
+            yield();
+            pinMode(MODEM_RESET_PIN, OUTPUT);
+            yield();
+            digitalWrite(MODEM_RESET_PIN, !MODEM_RESET_LEVEL);
+            yield();
+            delay(100);
+            yield();
+            digitalWrite(MODEM_RESET_PIN, MODEM_RESET_LEVEL);
+            yield();
+            delay(2600);  // Matches POC delay
+            yield();
+            digitalWrite(MODEM_RESET_PIN, !MODEM_RESET_LEVEL);
+            yield();
+            delay(100);
+            yield();
+
+            // STEP 4: Set DTR pin LOW (prevents sleep state)
+            #ifdef MODEM_DTR_PIN
+            Serial.println("[Modem] Setting MODEM_DTR_PIN LOW...");
+            Serial.flush();
+            yield();
+            pinMode(MODEM_DTR_PIN, OUTPUT);
+            yield();
+            digitalWrite(MODEM_DTR_PIN, LOW);
+            yield();
+            delay(100);
+            yield();
+            #endif
+
+            // STEP 5: Power on sequence (matches POC)
             Serial.println("[Modem] Powering on modem...");
-            powerOn();
+            Serial.flush();
+            yield();
+            pinMode(BOARD_PWRKEY_PIN, OUTPUT);
+            yield();
+            digitalWrite(BOARD_PWRKEY_PIN, LOW);
+            yield();
+            delay(100);
+            yield();
+            digitalWrite(BOARD_PWRKEY_PIN, HIGH);
+            yield();
+            delay(MODEM_POWERON_PULSE_WIDTH_MS);
+            yield();
+            digitalWrite(BOARD_PWRKEY_PIN, LOW);
+            yield();
+            delay(100);
+            yield();
+
+            Serial.println("[Modem] Hardware initialized, waiting for modem to boot...");
+            Serial.flush();
+            yield();
+
             initState = INIT_WAIT_POWER;
             initStartTime = now;
             break;
@@ -166,21 +252,70 @@ bool ModemManager::waitForResponse(const char* expectedResponse, unsigned long t
     return false;
 }
 
+String ModemManager::sendATCommandGetResponse(const char* cmd, const char* expectedResponse, unsigned long timeoutMs) {
+    flushSerial();
+    modemSerial.print(cmd);
+    modemSerial.print("\r\n");
+
+    unsigned long startTime = millis();
+    String response = "";
+
+    while (millis() - startTime < timeoutMs) {
+        while (modemSerial.available()) {
+            char c = modemSerial.read();
+            response += c;
+
+            // Check for expected response
+            if (response.indexOf(expectedResponse) >= 0) {
+                // Continue reading until OK or ERROR
+                delay(100);  // Wait for remaining data
+                while (modemSerial.available()) {
+                    response += (char)modemSerial.read();
+                }
+                return response;
+            }
+
+            // Check for ERROR
+            if (response.indexOf("ERROR") >= 0) {
+                return response;  // Return error response
+            }
+        }
+        delay(10);
+    }
+
+    return response;  // Return whatever we got (may be empty on timeout)
+}
+
 void ModemManager::powerOn() {
-    digitalWrite(MODEM_PWR_PIN, HIGH);
+    // Power on sequence matches POC
+    // Note: BOARD_POWERON_PIN is set HIGH in init() sequence
+    // This method is kept for compatibility but power-on is done in init()
+    yield();
+    digitalWrite(BOARD_PWRKEY_PIN, LOW);
+    yield();
     delay(100);
-    digitalWrite(MODEM_PWRKEY_PIN, HIGH);
-    delay(500);
-    digitalWrite(MODEM_PWRKEY_PIN, LOW);
+    yield();
+    digitalWrite(BOARD_PWRKEY_PIN, HIGH);
+    yield();
+    delay(MODEM_POWERON_PULSE_WIDTH_MS);
+    yield();
+    digitalWrite(BOARD_PWRKEY_PIN, LOW);
+    yield();
 }
 
 void ModemManager::powerOff() {
-    digitalWrite(MODEM_PWR_PIN, LOW);
-    digitalWrite(MODEM_PWRKEY_PIN, LOW);
+    #ifdef BOARD_POWERON_PIN
+    digitalWrite(BOARD_POWERON_PIN, LOW);
+    #endif
+    digitalWrite(BOARD_PWRKEY_PIN, LOW);
 }
 
 void ModemManager::resetPin() {
-    digitalWrite(MODEM_RESET_PIN, LOW);
+    digitalWrite(MODEM_RESET_PIN, !MODEM_RESET_LEVEL);
+    delay(100);
+    digitalWrite(MODEM_RESET_PIN, MODEM_RESET_LEVEL);
+    delay(2600);  // Matches POC delay
+    digitalWrite(MODEM_RESET_PIN, !MODEM_RESET_LEVEL);
 }
 
 void ModemManager::flushSerial() {

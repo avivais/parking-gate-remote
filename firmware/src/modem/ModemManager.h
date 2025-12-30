@@ -46,6 +46,12 @@ public:
      */
     bool sendATCommand(const char* cmd, const char* expectedResponse, unsigned long timeoutMs);
 
+    /**
+     * Send AT command and return the full response string.
+     * Useful for commands that return data (like DNS resolution).
+     */
+    String sendATCommandGetResponse(const char* cmd, const char* expectedResponse, unsigned long timeoutMs);
+
 private:
     HardwareSerial modemSerial;
     bool ready;

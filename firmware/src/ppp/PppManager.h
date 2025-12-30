@@ -1,15 +1,22 @@
 #ifndef PPP_MANAGER_H
 #define PPP_MANAGER_H
 
+// CRITICAL: Include TinyGSM pre-header FIRST (before any other includes)
+// This ensures TINY_GSM_MODEM_A7670 is defined before TinyGsm.h includes TinyGsmClient.h
+#include "tinygsm_pre.h"
+
 #include <Arduino.h>
 #include <stdint.h>
 #include <HardwareSerial.h>
 #include "config/config.h"
 #include "modem/ModemManager.h"
 
-// ESP32 PPP over Serial (PPPoS)
-// Note: For skeleton, we use a simplified approach
-// Full implementation would use esp_netif_ppp.h and lwIP PPP API
+// Include utilities.h for board pin definitions
+#include "utilities.h"
+
+// Now include TinyGSM headers (TINY_GSM_MODEM_A7670 is now defined via tinygsm_pre.h)
+#include <TinyGsm.h>
+#include <TinyGsmClient.h>
 
 /**
  * Manages PPP connection over UART to cellular modem.
@@ -61,6 +68,27 @@ public:
      */
     bool shouldHardReset() const;
 
+    /**
+     * Get TinyGSM modem instance (for use by MqttManager).
+     */
+    TinyGsm* getModem();
+
+    /**
+     * Get TinyGsmClient instance (for use by MqttManager).
+     */
+    TinyGsmClient* getClient();
+
+    /**
+     * Get ModemManager instance (for DNS resolution via AT commands).
+     */
+    ModemManager* getModemManager();
+
+    /**
+     * Initialize modem's built-in MQTT client with SSL/TLS.
+     * Call this before using modem.mqtt_* methods.
+     */
+    bool initializeModemMqtt(bool enableSSL, bool enableSNI, const char* rootCA = nullptr);
+
 private:
     ModemManager* modemManager;
     bool pppUp;
@@ -68,8 +96,14 @@ private:
     unsigned long pppStartTime;
     bool pppStarting;
 
+    // TinyGSM instances
+    TinyGsm* tinyGsmModem;
+    TinyGsmClient* tinyGsmClient;
+    HardwareSerial* modemSerial;
+
     bool checkIpAssigned();
-    bool sendPppAtCommands();
+    bool initializeTinyGsm();
+    void deinitializeTinyGsm();
 };
 
 #endif // PPP_MANAGER_H
