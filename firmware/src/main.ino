@@ -6,6 +6,9 @@
 #include "modem/ModemManager.h"
 #include "ppp/PppManager.h"
 #include "mqtt/MqttManager.h"
+#include "relay/relay.h"
+#include "gate_control/gate_control.h"
+#include "protocol/Protocol.h"
 #include <WiFi.h>  // For WiFiClient (works with PPP if initialized)
 
 // Disable watchdog timer to prevent boot loops
@@ -197,6 +200,13 @@ void setup() {
     Serial.println("[Test] All managers created");
     Serial.flush();
 
+    // Initialize relay and gate control
+    Serial.println("[Test] Initializing relay and gate control...");
+    Relay::init();
+    GateControl::init();
+    Serial.println("[Test] Relay and gate control initialized");
+    Serial.flush();
+
     // Note: setPppManager() will be called after PPP is up (when TinyGSM modem is created)
     // For now, just initialize with settings
     Serial.println("[Test] Initializing MQTT manager with test settings...");
@@ -321,6 +331,9 @@ void loop() {
             // Try to connect to MQTT broker
             if (mqttManager->connect()) {
                 Serial.println("[Test] MQTT connected!");
+                // Register command callback for gate control
+                mqttManager->setCommandCallback(handleMqttCommand);
+                Serial.println("[Test] Command callback registered");
                 testState = TEST_MQTT_CONNECTED;
                 stateEntryTime = now;
             } else {
@@ -333,11 +346,8 @@ void loop() {
             break;
 
         case TEST_MQTT_CONNECTED:
-            // Publish test message periodically
-            if (now - lastPublishTime >= PUBLISH_INTERVAL) {
-                publishTestMessage();
-                lastPublishTime = now;
-            }
+            // Publish status/healthcheck periodically
+            mqttManager->publishStatus();
 
             // Check connection health
             if (!mqttManager->isConnected()) {
@@ -479,22 +489,113 @@ void testConnectivity() {
     delay(500);
 }
 
-void publishTestMessage() {
+/**
+ * Handle incoming MQTT command messages.
+ * Processes gate open commands with validation, cooldown, dedupe, and relay control.
+ */
+void handleMqttCommand(const char* topic, const char* payload) {
     if (mqttManager == nullptr || !mqttManager->isConnected()) {
+        Serial.println("[Gate] ERROR: Cannot handle command - MQTT not connected");
         return;
     }
 
-    messageCount++;
+    Serial.print("[Gate] Command received on topic: ");
+    Serial.print(topic);
+    Serial.print(", payload: ");
+    Serial.println(payload);
 
-    // Create test message
-    char message[128];
-    snprintf(message, sizeof(message), "Test message #%d from ESP32 at %lu", messageCount, millis());
+    // Parse command JSON
+    CommandResult cmd;
+    if (!Protocol::parseCommand(payload, cmd)) {
+        Serial.println("[Gate] Invalid payload - publishing BAD_PAYLOAD ACK");
+        char ackJson[256];
+        Protocol::createAck("", false, "BAD_PAYLOAD", ackJson, sizeof(ackJson));
+        mqttManager->publish(MQTT_ACK_TOPIC, ackJson, false);
+        return;
+    }
 
-    // Note: Using status topic for test (update if needed)
-    if (mqttManager->publish(MQTT_STATUS_TOPIC, message, false)) {
-        Serial.print("[Test] Published: ");
-        Serial.println(message);
+    // Validate requestId is non-empty
+    if (cmd.requestId[0] == '\0') {
+        Serial.println("[Gate] Empty requestId - publishing BAD_PAYLOAD ACK");
+        char ackJson[256];
+        Protocol::createAck(cmd.requestId, false, "BAD_PAYLOAD", ackJson, sizeof(ackJson));
+        mqttManager->publish(MQTT_ACK_TOPIC, ackJson, false);
+        return;
+    }
+
+    Serial.print("[Gate] Parsed command: requestId=");
+    Serial.print(cmd.requestId);
+    Serial.print(", command=");
+    Serial.print(cmd.command);
+    Serial.print(", userId=");
+    Serial.print(cmd.userId);
+    Serial.print(", issuedAt=");
+    Serial.println(cmd.issuedAt);
+
+    // Check if command is "open"
+    if (strcmp(cmd.command, "open") != 0) {
+        Serial.print("[Gate] Unknown command: ");
+        Serial.print(cmd.command);
+        Serial.println(" - publishing UNKNOWN_COMMAND ACK");
+        char ackJson[256];
+        Protocol::createAck(cmd.requestId, false, "UNKNOWN_COMMAND", ackJson, sizeof(ackJson));
+        mqttManager->publish(MQTT_ACK_TOPIC, ackJson, false);
+        return;
+    }
+
+    // Check dedupe (idempotency)
+    if (GateControl::wasProcessed(cmd.requestId)) {
+        Serial.print("[Gate] Dedupe hit for requestId: ");
+        Serial.print(cmd.requestId);
+        Serial.println(" - publishing idempotent success ACK");
+        char ackJson[256];
+        Protocol::createAck(cmd.requestId, true, nullptr, ackJson, sizeof(ackJson));
+        mqttManager->publish(MQTT_ACK_TOPIC, ackJson, false);
+        Serial.print("[Gate] ACK published: ok=true (idempotent) for requestId ");
+        Serial.println(cmd.requestId);
+        return;
+    }
+
+    // Check cooldown
+    uint32_t nowMs = millis();
+    uint32_t remainingMs = 0;
+    if (!GateControl::canExecuteNow(nowMs, remainingMs)) {
+        Serial.print("[Gate] Cooldown active - remaining: ");
+        Serial.print(remainingMs);
+        Serial.println("ms - publishing COOLDOWN ACK");
+        char ackJson[256];
+        Protocol::createAck(cmd.requestId, false, "COOLDOWN", ackJson, sizeof(ackJson));
+        mqttManager->publish(MQTT_ACK_TOPIC, ackJson, false);
+        Serial.print("[Gate] ACK published: ok=false, errorCode=COOLDOWN for requestId ");
+        Serial.println(cmd.requestId);
+        return;
+    }
+
+    // Activate relay
+    Serial.println("[Gate] Activating relay pulse...");
+    bool relaySuccess = Relay::activatePulse();
+
+    if (relaySuccess) {
+        // Record gate open and mark request as processed
+        GateControl::recordOpen(nowMs);
+        GateControl::markProcessed(cmd.requestId);
+
+        // Publish success ACK
+        char ackJson[256];
+        Protocol::createAck(cmd.requestId, true, nullptr, ackJson, sizeof(ackJson));
+        if (mqttManager->publish(MQTT_ACK_TOPIC, ackJson, false)) {
+            Serial.print("[Gate] ACK published: ok=true for requestId ");
+            Serial.println(cmd.requestId);
+        } else {
+            Serial.println("[Gate] ERROR: Failed to publish ACK");
+        }
     } else {
-        Serial.println("[Test] Failed to publish message");
+        // Publish failure ACK
+        Serial.println("[Gate] Relay activation failed - publishing RELAY_FAIL ACK");
+        char ackJson[256];
+        Protocol::createAck(cmd.requestId, false, "RELAY_FAIL", ackJson, sizeof(ackJson));
+        mqttManager->publish(MQTT_ACK_TOPIC, ackJson, false);
+        Serial.print("[Gate] ACK published: ok=false, errorCode=RELAY_FAIL for requestId ");
+        Serial.println(cmd.requestId);
     }
 }

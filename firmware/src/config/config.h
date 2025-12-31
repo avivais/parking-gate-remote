@@ -62,5 +62,13 @@
 // Firmware Version
 #define FW_VERSION "fw-dev-0.1"
 
+// Relay Control Configuration
+#define RELAY_PIN 18
+#define RELAY_PULSE_MS 3000
+
+// Gate Control Configuration
+#define GATE_COOLDOWN_MS 8000
+#define DEDUP_CACHE_SIZE 20
+
 #endif // CONFIG_H
 

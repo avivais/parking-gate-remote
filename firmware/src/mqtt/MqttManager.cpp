@@ -2,6 +2,7 @@
 #include "utilities.h"
 #include "MqttManager.h"
 #include "ppp/PppManager.h"
+#include "protocol/Protocol.h"
 #include <TinyGsm.h>  // For TinyGsm type
 // TinyGSM is included via PppManager.h
 
@@ -207,8 +208,17 @@ void MqttManager::publishStatus() {
 
     lastStatusPublish = now;
 
-    // Status message will be created by caller using Protocol::createStatus
-    // This method is a placeholder for future use if needed
+    // Create status JSON using Protocol
+    char statusJson[256];
+    Protocol::createStatus(DEVICE_ID, true, now, 0, FW_VERSION, statusJson, sizeof(statusJson));
+
+    // Publish status message
+    if (publish(MQTT_STATUS_TOPIC, statusJson, false)) {
+        Serial.print("[MQTT] Status published: ");
+        Serial.println(statusJson);
+    } else {
+        Serial.println("[MQTT] Failed to publish status");
+    }
 }
 
 void MqttManager::setCommandCallback(void (*callback)(const char* topic, const char* payload)) {
