@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 type GateButtonProps = {
@@ -16,6 +16,20 @@ export function GateButton({ onOpen, disabled = false, loading }: GateButtonProp
 
     const isLoading = loading ?? status === "loading";
     const isDisabled = disabled || isLoading;
+
+    // Reset opacity when status changes to idle
+    useEffect(() => {
+        if (status === "idle" && !isDisabled) {
+            // Small delay to ensure DOM is updated
+            const timer = setTimeout(() => {
+                const button = document.querySelector('[aria-busy]') as HTMLButtonElement;
+                if (button) {
+                    button.style.opacity = "1";
+                }
+            }, 50);
+            return () => clearTimeout(timer);
+        }
+    }, [status, isDisabled]);
 
     const handlePress = useCallback(async () => {
         if (isDisabled) return;
@@ -130,7 +144,12 @@ export function GateButton({ onOpen, disabled = false, loading }: GateButtonProp
                 }
             }}
             onMouseLeave={(e) => {
-                e.currentTarget.style.opacity = isDisabled ? "0.5" : "1";
+                // Reset opacity based on current disabled state
+                if (isDisabled) {
+                    e.currentTarget.style.opacity = "0.5";
+                } else {
+                    e.currentTarget.style.opacity = "1";
+                }
             }}
             animate={status === "idle" ? "idle" : status}
             variants={variants}

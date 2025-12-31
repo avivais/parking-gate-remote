@@ -9,6 +9,7 @@
 #include "relay/relay.h"
 #include "gate_control/gate_control.h"
 #include "protocol/Protocol.h"
+#include <ArduinoJson.h>  // For parsing requestId from invalid JSON
 #include <WiFi.h>  // For WiFiClient (works with PPP if initialized)
 
 // Disable watchdog timer to prevent boot loops
@@ -507,9 +508,17 @@ void handleMqttCommand(const char* topic, const char* payload) {
     // Parse command JSON
     CommandResult cmd;
     if (!Protocol::parseCommand(payload, cmd)) {
-        Serial.println("[Gate] Invalid payload - publishing BAD_PAYLOAD ACK");
+        Serial.println("[Gate] Invalid payload - attempting to extract requestId for BAD_PAYLOAD ACK");
         char ackJson[256];
-        Protocol::createAck("", false, "BAD_PAYLOAD", ackJson, sizeof(ackJson));
+        // Try to extract requestId from raw JSON for error reporting
+        char requestId[37] = "";
+        StaticJsonDocument<256> errorDoc;
+        DeserializationError error = deserializeJson(errorDoc, payload);
+        if (!error && errorDoc.containsKey("requestId") && errorDoc["requestId"].is<const char*>()) {
+            strncpy(requestId, errorDoc["requestId"].as<const char*>(), sizeof(requestId) - 1);
+            requestId[sizeof(requestId) - 1] = '\0';
+        }
+        Protocol::createAck(requestId[0] != '\0' ? requestId : "", false, "BAD_PAYLOAD", ackJson, sizeof(ackJson));
         mqttManager->publish(MQTT_ACK_TOPIC, ackJson, false);
         return;
     }

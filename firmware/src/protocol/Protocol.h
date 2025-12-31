@@ -10,7 +10,7 @@ struct CommandResult {
     char requestId[37];      // UUID length (36 + null terminator)
     char command[16];
     char userId[64];
-    unsigned long issuedAt;
+    unsigned long long issuedAt;  // Use long long for large timestamps (milliseconds)
     bool valid;
 
     CommandResult() : valid(false), issuedAt(0) {

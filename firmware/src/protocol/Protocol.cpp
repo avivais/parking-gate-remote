@@ -30,7 +30,8 @@ bool Protocol::parseCommand(const char* json, CommandResult& result) {
         return false;
     }
 
-    if (!doc.containsKey("issuedAt") || !doc["issuedAt"].is<unsigned long>()) {
+    // Check issuedAt - accept any numeric type (int64, uint64, or double)
+    if (!doc.containsKey("issuedAt") || !doc["issuedAt"].is<long long>() && !doc["issuedAt"].is<unsigned long long>() && !doc["issuedAt"].is<double>()) {
         Serial.println("[Protocol] Missing or invalid issuedAt");
         return false;
     }
@@ -45,7 +46,17 @@ bool Protocol::parseCommand(const char* json, CommandResult& result) {
     strncpy(result.userId, doc["userId"].as<const char*>(), sizeof(result.userId) - 1);
     result.userId[sizeof(result.userId) - 1] = '\0';
 
-    result.issuedAt = doc["issuedAt"].as<unsigned long>();
+    // Parse issuedAt - handle different numeric types
+    if (doc["issuedAt"].is<unsigned long long>()) {
+        result.issuedAt = doc["issuedAt"].as<unsigned long long>();
+    } else if (doc["issuedAt"].is<long long>()) {
+        result.issuedAt = static_cast<unsigned long long>(doc["issuedAt"].as<long long>());
+    } else if (doc["issuedAt"].is<double>()) {
+        result.issuedAt = static_cast<unsigned long long>(doc["issuedAt"].as<double>());
+    } else {
+        Serial.println("[Protocol] issuedAt is not a valid number");
+        return false;
+    }
     result.valid = true;
 
     return true;
