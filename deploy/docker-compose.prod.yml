@@ -1,0 +1,65 @@
+services:
+    mongo:
+        image: mongo:7
+        container_name: parking-mongo
+        restart: always
+        volumes:
+            - mongo_data:/data/db
+        networks:
+            - parking_net
+        healthcheck:
+            test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+    backend:
+        build:
+            context: ./backend
+            dockerfile: Dockerfile
+        container_name: parking-backend
+        restart: always
+        env_file:
+            - ./backend/.env
+        ports:
+            - "127.0.0.1:3001:3001"
+        depends_on:
+            mongo:
+                condition: service_healthy
+        networks:
+            - parking_net
+        healthcheck:
+            test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/api', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+
+    frontend:
+        build:
+            context: ./frontend
+            dockerfile: Dockerfile
+        container_name: parking-frontend
+        restart: always
+        environment:
+            - NEXT_PUBLIC_API_BASE=https://api.mitzpe6-8.com/api
+        ports:
+            - "127.0.0.1:3000:3000"
+        depends_on:
+            - backend
+        networks:
+            - parking_net
+        healthcheck:
+            test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+
+networks:
+    parking_net:
+        name: parking_net
+        driver: bridge
+
+volumes:
+    mongo_data:
+        name: parking_mongo_data
+

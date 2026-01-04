@@ -1,0 +1,39 @@
+services:
+    mosquitto:
+        image: eclipse-mosquitto:2.0
+        container_name: parking-mosquitto
+        restart: always
+        ports:
+            - "0.0.0.0:8883:8883"  # MQTT over TLS only
+        volumes:
+            - ./mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+            - ./mqtt/passwordfile:/mosquitto/config/passwordfile:ro
+            - ./mqtt/aclfile:/mosquitto/config/aclfile:ro
+            - ./mqtt/certs:/mosquitto/certs:ro
+            - mosquitto_data:/mosquitto/data
+            - mosquitto_log:/mosquitto/log
+        networks:
+            - parking_net
+        logging:
+            driver: "json-file"
+            options:
+                max-size: "10m"
+                max-file: "3"
+        healthcheck:
+            test: ["CMD-SHELL", "timeout 5 mosquitto_sub -h localhost -p 8883 --cafile /mosquitto/certs/ca.crt -t '$$SYS/#' -C 1 || exit 1"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 10s
+
+networks:
+    parking_net:
+        external: true
+        name: parking_net
+
+volumes:
+    mosquitto_data:
+        name: parking_mosquitto_data
+    mosquitto_log:
+        name: parking_mosquitto_log
+
