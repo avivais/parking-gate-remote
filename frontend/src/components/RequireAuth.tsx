@@ -27,7 +27,7 @@ export function RequireAuth({
             return;
         }
 
-        if (requireApproved && !user.approved) {
+        if (requireApproved && user.status !== "approved") {
             router.push("/pending");
             return;
         }
@@ -52,7 +52,7 @@ export function RequireAuth({
         return null;
     }
 
-    if (requireApproved && !user.approved) {
+    if (requireApproved && user.status !== "approved") {
         return null;
     }
 
