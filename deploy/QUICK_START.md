@@ -35,14 +35,11 @@ SSH into the server and run:
 ```bash
 cd /opt/parking-gate-remote
 
-# Make scripts executable
-chmod +x deploy/*.sh mqtt/certs/generate-mqtt-certs.sh
-
 # Run server setup (generates certs, creates .env, etc.)
-./deploy/server-setup.sh
+./server-setup.sh
 
 # Configure Apache
-sudo ./deploy/setup-apache.sh
+sudo ./setup-apache.sh
 
 # Configure firewall
 sudo ufw allow 80,443,8883/tcp
@@ -50,7 +47,7 @@ sudo ufw deny 1883/tcp
 sudo ufw --force enable
 
 # Start all services
-./deploy/start-services.sh
+./start-services.sh
 ```
 
 ### 4. Verify Deployment

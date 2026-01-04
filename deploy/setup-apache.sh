@@ -15,13 +15,18 @@ fi
 echo "Enabling Apache modules..."
 a2enmod proxy proxy_http ssl rewrite
 
-# Get SSL certificate for api.mitzpe6-8.com
+# Get SSL certificate for api.mitzpe6-8.com (if not already exists)
 echo ""
-echo "Getting SSL certificate for api.mitzpe6-8.com..."
-certbot --apache -d api.mitzpe6-8.com --non-interactive --agree-tos --email admin@mitzpe6-8.com || {
-    echo "Certbot failed. You may need to run manually:"
-    echo "  certbot --apache -d api.mitzpe6-8.com"
-}
+echo "Checking SSL certificate for api.mitzpe6-8.com..."
+if [ -f "/etc/letsencrypt/live/api.mitzpe6-8.com/fullchain.pem" ]; then
+    echo "SSL certificate already exists, skipping certbot..."
+else
+    echo "Getting SSL certificate for api.mitzpe6-8.com..."
+    certbot --apache -d api.mitzpe6-8.com --non-interactive --agree-tos --email admin@mitzpe6-8.com || {
+        echo "Certbot failed. You may need to run manually:"
+        echo "  certbot --apache -d api.mitzpe6-8.com"
+    }
+fi
 
 # Copy Apache configurations
 echo ""

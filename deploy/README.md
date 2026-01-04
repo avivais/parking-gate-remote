@@ -35,10 +35,9 @@ export SSH_KEY=$HOME/.ssh/VaisenKey.pem
 # 3. SSH to server and run setup
 ssh -i $HOME/.ssh/VaisenKey.pem ubuntu@ec2-98-84-90-118.compute-1.amazonaws.com
 cd /opt/parking-gate-remote
-chmod +x deploy/server-setup.sh deploy/setup-apache.sh deploy/start-services.sh
-./deploy/server-setup.sh
-sudo ./deploy/setup-apache.sh
-./deploy/start-services.sh
+./server-setup.sh
+sudo ./setup-apache.sh
+./start-services.sh
 ```
 
 ### Option 2: Manual Step-by-Step

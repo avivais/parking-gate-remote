@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copy deployment files to EC2 server
+# Copy deployment files to EC2 server using tar.gz archive
 # Usage: ./copy-to-server.sh [server-ip-or-hostname]
 
 set -e
@@ -11,8 +11,10 @@ KEY="${SSH_KEY:-$HOME/.ssh/VaisenKey.pem}"
 # Apache will proxy to Docker containers, so files don't need to be in /var/www
 PROJECT_DIR="/opt/parking-gate-remote"
 LOCAL_PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+TEMP_DIR=$(mktemp -d)
+ARCHIVE_NAME="parking-gate-deployment-$(date +%Y%m%d-%H%M%S).tar.gz"
 
-echo "=== Copying Files to Server ==="
+echo "=== Copying Files to Server (tar.gz) ==="
 echo "Server: $SERVER"
 echo "Key: $KEY"
 echo "Project Root: $LOCAL_PROJECT_ROOT"
@@ -25,76 +27,126 @@ if [ ! -f "$KEY" ]; then
     exit 1
 fi
 
-# Function to copy files
-copy_files() {
-    echo "Copying $1..."
-    scp -i "$KEY" -r "$LOCAL_PROJECT_ROOT/$2" "$SERVER:$PROJECT_DIR/$3"
+# Cleanup function
+cleanup() {
+    echo "Cleaning up temporary files..."
+    rm -rf "$TEMP_DIR"
+    # Clean up archive on server if it exists
+    ssh -i "$KEY" "$SERVER" "rm -f ~/$ARCHIVE_NAME" 2>/dev/null || true
 }
+trap cleanup EXIT
+
+# Create directory structure in temp directory
+echo "Preparing files for archive..."
+mkdir -p "$TEMP_DIR/backend"
+mkdir -p "$TEMP_DIR/frontend"
+mkdir -p "$TEMP_DIR/mqtt/certs"
+mkdir -p "$TEMP_DIR/apache-configs"
+
+# Copy backend files
+echo "  - Backend files..."
+cp -r "$LOCAL_PROJECT_ROOT/backend/dist" "$TEMP_DIR/backend/" 2>/dev/null || { echo "Warning: backend/dist not found. Make sure to build backend first."; }
+cp "$LOCAL_PROJECT_ROOT/backend/package.json" "$TEMP_DIR/backend/" 2>/dev/null || true
+cp "$LOCAL_PROJECT_ROOT/backend/package-lock.json" "$TEMP_DIR/backend/" 2>/dev/null || true
+cp "$LOCAL_PROJECT_ROOT/backend/Dockerfile" "$TEMP_DIR/backend/" 2>/dev/null || true
+
+# Copy frontend files
+echo "  - Frontend files..."
+cp -r "$LOCAL_PROJECT_ROOT/frontend/.next" "$TEMP_DIR/frontend/" 2>/dev/null || { echo "Warning: frontend/.next not found. Make sure to build frontend first."; }
+cp "$LOCAL_PROJECT_ROOT/frontend/package.json" "$TEMP_DIR/frontend/" 2>/dev/null || true
+cp "$LOCAL_PROJECT_ROOT/frontend/package-lock.json" "$TEMP_DIR/frontend/" 2>/dev/null || true
+cp "$LOCAL_PROJECT_ROOT/frontend/next.config.ts" "$TEMP_DIR/frontend/" 2>/dev/null || true
+cp -r "$LOCAL_PROJECT_ROOT/frontend/public" "$TEMP_DIR/frontend/" 2>/dev/null || true
+cp "$LOCAL_PROJECT_ROOT/frontend/Dockerfile.prod" "$TEMP_DIR/frontend/Dockerfile" 2>/dev/null || true
+
+# Copy docker-compose files
+echo "  - Docker Compose files..."
+cp "$LOCAL_PROJECT_ROOT/deploy/docker-compose.prod.yml" "$TEMP_DIR/docker-compose.yml"
+cp "$LOCAL_PROJECT_ROOT/deploy/docker-compose.mqtt.prod.yml" "$TEMP_DIR/docker-compose.mqtt.yml"
+
+# Copy MQTT configuration
+echo "  - MQTT configuration..."
+cp "$LOCAL_PROJECT_ROOT/deploy/mosquitto.prod.conf" "$TEMP_DIR/mqtt/mosquitto.conf"
+cp "$LOCAL_PROJECT_ROOT/mqtt/aclfile" "$TEMP_DIR/mqtt/aclfile" 2>/dev/null || true
+cp "$LOCAL_PROJECT_ROOT/deploy/generate-mqtt-certs.sh" "$TEMP_DIR/mqtt/certs/"
+
+# Copy Apache configurations (for separate handling)
+echo "  - Apache configurations..."
+cp "$LOCAL_PROJECT_ROOT/deploy/apache-api.conf" "$TEMP_DIR/apache-configs/"
+cp "$LOCAL_PROJECT_ROOT/deploy/apache-api-ssl.conf" "$TEMP_DIR/apache-configs/"
+cp "$LOCAL_PROJECT_ROOT/deploy/apache-root.conf" "$TEMP_DIR/apache-configs/"
+cp "$LOCAL_PROJECT_ROOT/deploy/apache-app-ssl-updated.conf" "$TEMP_DIR/apache-configs/"
+
+# Copy environment template
+echo "  - Environment template..."
+cp "$LOCAL_PROJECT_ROOT/deploy/backend.env.template" "$TEMP_DIR/backend/.env.template"
+
+# Copy deployment scripts
+echo "  - Deployment scripts..."
+cp "$LOCAL_PROJECT_ROOT/deploy/server-setup.sh" "$TEMP_DIR/"
+cp "$LOCAL_PROJECT_ROOT/deploy/setup-apache.sh" "$TEMP_DIR/"
+cp "$LOCAL_PROJECT_ROOT/deploy/start-services.sh" "$TEMP_DIR/"
+cp "$LOCAL_PROJECT_ROOT/deploy/deployment-script.sh" "$TEMP_DIR/" 2>/dev/null || true
+
+# Make scripts executable in archive
+chmod +x "$TEMP_DIR"/*.sh 2>/dev/null || true
+chmod +x "$TEMP_DIR/mqtt/certs/generate-mqtt-certs.sh" 2>/dev/null || true
+
+# Create tar.gz archive
+echo ""
+echo "Creating archive..."
+cd "$TEMP_DIR"
+# COPYFILE_DISABLE=1 prevents macOS from including extended attributes (._* files)
+# This avoids warnings when extracting on Linux
+COPYFILE_DISABLE=1 tar czf "$LOCAL_PROJECT_ROOT/$ARCHIVE_NAME" .
+ARCHIVE_SIZE=$(du -h "$LOCAL_PROJECT_ROOT/$ARCHIVE_NAME" | cut -f1)
+echo "Archive created: $ARCHIVE_NAME ($ARCHIVE_SIZE)"
 
 # Create directories on server with proper permissions
+echo ""
 echo "Creating directories on server (requires sudo)..."
 ssh -i "$KEY" "$SERVER" "sudo mkdir -p $PROJECT_DIR/{backend,frontend,mqtt/certs} && sudo chown -R ubuntu:ubuntu $PROJECT_DIR && echo 'Directories created and ownership set to ubuntu user'"
 
-# Copy backend files
+# Transfer archive to server
 echo ""
-echo "=== Copying Backend Files ==="
-scp -i "$KEY" -r "$LOCAL_PROJECT_ROOT/backend/dist" "$SERVER:$PROJECT_DIR/backend/"
-scp -i "$KEY" "$LOCAL_PROJECT_ROOT/backend/package.json" "$SERVER:$PROJECT_DIR/backend/"
-scp -i "$KEY" "$LOCAL_PROJECT_ROOT/backend/package-lock.json" "$SERVER:$PROJECT_DIR/backend/" 2>/dev/null || true
-scp -i "$KEY" "$LOCAL_PROJECT_ROOT/backend/Dockerfile" "$SERVER:$PROJECT_DIR/backend/"
+echo "Transferring archive to server..."
+scp -i "$KEY" "$LOCAL_PROJECT_ROOT/$ARCHIVE_NAME" "$SERVER:~/"
 
-# Copy frontend files
+# Extract archive on server
 echo ""
-echo "=== Copying Frontend Files ==="
-scp -i "$KEY" -r "$LOCAL_PROJECT_ROOT/frontend/.next" "$SERVER:$PROJECT_DIR/frontend/"
-scp -i "$KEY" "$LOCAL_PROJECT_ROOT/frontend/package.json" "$SERVER:$PROJECT_DIR/frontend/"
-scp -i "$KEY" "$LOCAL_PROJECT_ROOT/frontend/package-lock.json" "$SERVER:$PROJECT_DIR/frontend/" 2>/dev/null || true
-scp -i "$KEY" "$LOCAL_PROJECT_ROOT/frontend/next.config.ts" "$SERVER:$PROJECT_DIR/frontend/"
-scp -i "$KEY" -r "$LOCAL_PROJECT_ROOT/frontend/public" "$SERVER:$PROJECT_DIR/frontend/"
-scp -i "$KEY" "$LOCAL_PROJECT_ROOT/frontend/Dockerfile.prod" "$SERVER:$PROJECT_DIR/frontend/Dockerfile"
+echo "Extracting archive on server..."
+ssh -i "$KEY" "$SERVER" "
+    cd $PROJECT_DIR && \
+    tar xzf ~/$ARCHIVE_NAME 2>/dev/null && \
+    chmod +x *.sh mqtt/certs/*.sh 2>/dev/null || true && \
+    echo 'Archive extracted successfully'
+"
 
-# Copy docker-compose files
+# Move Apache configs to /tmp/apache-configs with sudo
 echo ""
-echo "=== Copying Docker Compose Files ==="
-scp -i "$KEY" "$LOCAL_PROJECT_ROOT/deploy/docker-compose.prod.yml" "$SERVER:$PROJECT_DIR/docker-compose.yml"
-scp -i "$KEY" "$LOCAL_PROJECT_ROOT/deploy/docker-compose.mqtt.prod.yml" "$SERVER:$PROJECT_DIR/docker-compose.mqtt.yml"
+echo "Setting up Apache configurations..."
+ssh -i "$KEY" "$SERVER" "
+    sudo mkdir -p /tmp/apache-configs && \
+    sudo cp $PROJECT_DIR/apache-configs/* /tmp/apache-configs/ && \
+    sudo chown root:root /tmp/apache-configs/* && \
+    rm -rf $PROJECT_DIR/apache-configs && \
+    echo 'Apache configurations moved to /tmp/apache-configs'
+"
 
-# Copy MQTT configuration
+# Clean up archive on server
 echo ""
-echo "=== Copying MQTT Configuration ==="
-scp -i "$KEY" "$LOCAL_PROJECT_ROOT/deploy/mosquitto.prod.conf" "$SERVER:$PROJECT_DIR/mqtt/mosquitto.conf"
-scp -i "$KEY" "$LOCAL_PROJECT_ROOT/mqtt/aclfile" "$SERVER:$PROJECT_DIR/mqtt/aclfile"
+echo "Cleaning up archive on server..."
+ssh -i "$KEY" "$SERVER" "rm -f ~/$ARCHIVE_NAME"
 
-# Copy Apache configurations
-echo ""
-echo "=== Copying Apache Configurations ==="
-# Create directory in user's home first, then move with sudo (more reliable than /tmp)
-APACHE_CONFIG_DIR="~/apache-configs"
-ssh -i "$KEY" "$SERVER" "mkdir -p $APACHE_CONFIG_DIR"
-scp -i "$KEY" "$LOCAL_PROJECT_ROOT/deploy/apache-api.conf" "$SERVER:$APACHE_CONFIG_DIR/"
-scp -i "$KEY" "$LOCAL_PROJECT_ROOT/deploy/apache-api-ssl.conf" "$SERVER:$APACHE_CONFIG_DIR/"
-scp -i "$KEY" "$LOCAL_PROJECT_ROOT/deploy/apache-root.conf" "$SERVER:$APACHE_CONFIG_DIR/"
-scp -i "$KEY" "$LOCAL_PROJECT_ROOT/deploy/apache-app-ssl-updated.conf" "$SERVER:$APACHE_CONFIG_DIR/"
-# Move to /tmp/apache-configs with sudo for the setup script
-ssh -i "$KEY" "$SERVER" "sudo mkdir -p /tmp/apache-configs && sudo cp $APACHE_CONFIG_DIR/* /tmp/apache-configs/ && sudo chown root:root /tmp/apache-configs/* && rm -rf $APACHE_CONFIG_DIR"
-
-# Copy environment template
-echo ""
-echo "=== Copying Environment Template ==="
-scp -i "$KEY" "$LOCAL_PROJECT_ROOT/deploy/backend.env.template" "$SERVER:$PROJECT_DIR/backend/.env.template"
-
-# Copy certificate generation script
-echo ""
-echo "=== Copying Certificate Generation Script ==="
-scp -i "$KEY" "$LOCAL_PROJECT_ROOT/deploy/generate-mqtt-certs.sh" "$SERVER:$PROJECT_DIR/mqtt/certs/"
+# Clean up local archive
+rm -f "$LOCAL_PROJECT_ROOT/$ARCHIVE_NAME"
 
 echo ""
 echo "=== Files Copied Successfully ==="
 echo ""
 echo "Next steps on server:"
-echo "1. Generate MQTT certificates: cd $PROJECT_DIR/mqtt/certs && chmod +x generate-mqtt-certs.sh && ./generate-mqtt-certs.sh"
-echo "2. Create MQTT password file: cd $PROJECT_DIR/mqtt && mosquitto_passwd -c passwordfile pgr_server"
-echo "3. Create backend .env: cd $PROJECT_DIR/backend && cp .env.template .env && nano .env"
-echo "4. Configure Apache (see deploy/README.md)"
-echo "5. Start services: cd $PROJECT_DIR && docker-compose up -d"
-
+echo "1. Run server setup: cd $PROJECT_DIR && ./server-setup.sh"
+echo "2. Configure Apache: cd $PROJECT_DIR && sudo ./setup-apache.sh"
+echo "3. Start services: cd $PROJECT_DIR && ./start-services.sh"
+echo ""
+echo "Or follow the manual steps in deploy/README.md"
