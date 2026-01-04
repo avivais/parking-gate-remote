@@ -1,5 +1,15 @@
 /* TypeScript types for auth and gate */
-export type UserStatus = "pending" | "approved" | "rejected" | "archived";
+
+// Constants for UserStatus values - single source of truth
+export const USER_STATUS = {
+    PENDING: "pending",
+    APPROVED: "approved",
+    REJECTED: "rejected",
+    ARCHIVED: "archived",
+} as const;
+
+// Derive the type from the constants to avoid duplication
+export type UserStatus = typeof USER_STATUS[keyof typeof USER_STATUS];
 
 export interface User {
     _id: string;

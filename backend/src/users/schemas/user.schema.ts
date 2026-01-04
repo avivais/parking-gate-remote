@@ -3,7 +3,16 @@ import { HydratedDocument } from 'mongoose';
 
 export type UserDocument = HydratedDocument<User>;
 
-export type UserStatus = 'pending' | 'approved' | 'rejected' | 'archived';
+// Constants for UserStatus values - single source of truth
+export const USER_STATUS = {
+    PENDING: 'pending',
+    APPROVED: 'approved',
+    REJECTED: 'rejected',
+    ARCHIVED: 'archived',
+} as const;
+
+// Derive the type from the constants to avoid duplication
+export type UserStatus = (typeof USER_STATUS)[keyof typeof USER_STATUS];
 
 @Schema({ timestamps: true })
 export class User {
@@ -33,8 +42,13 @@ export class User {
 
     @Prop({
         required: true,
-        enum: ['pending', 'approved', 'rejected', 'archived'],
-        default: 'pending',
+        enum: [
+            USER_STATUS.PENDING,
+            USER_STATUS.APPROVED,
+            USER_STATUS.REJECTED,
+            USER_STATUS.ARCHIVED,
+        ],
+        default: USER_STATUS.PENDING,
     })
     status: UserStatus;
 

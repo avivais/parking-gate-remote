@@ -13,7 +13,7 @@ import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { UpdateMeDto } from './dto/update-me.dto';
-import { User, UserDocument } from '../users/schemas/user.schema';
+import { User, UserDocument, USER_STATUS } from '../users/schemas/user.schema';
 import { JwtPayload, UserRole } from './auth.types';
 
 export interface AuthTokens {
@@ -111,7 +111,7 @@ export class AuthService {
             phone: String(registerDto.phone),
             apartmentNumber: Number(registerDto.apartmentNumber),
             floor: Number(registerDto.floor),
-            status: 'pending',
+            status: USER_STATUS.PENDING,
             rejectionReason: null,
         });
 
@@ -137,11 +137,11 @@ export class AuthService {
         }
 
         // Check user status
-        if (user.status === 'pending') {
+        if (user.status === USER_STATUS.PENDING) {
             throw new ForbiddenException('המשתמש ממתין לאישור אדמין');
         }
 
-        if (user.status === 'rejected') {
+        if (user.status === USER_STATUS.REJECTED) {
             const rejectionReason: string | null =
                 (user.rejectionReason as string | null | undefined) ?? null;
             throw new ForbiddenException({
@@ -150,12 +150,12 @@ export class AuthService {
             });
         }
 
-        if (user.status === 'archived') {
+        if (user.status === USER_STATUS.ARCHIVED) {
             throw new ForbiddenException('המשתמש נחסם');
         }
 
         // Only approved status can login
-        if (user.status !== 'approved') {
+        if (user.status !== USER_STATUS.APPROVED) {
             throw new ForbiddenException('החשבון לא מאושר');
         }
 

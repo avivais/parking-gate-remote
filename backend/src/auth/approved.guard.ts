@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { UsersService } from '../users/users.service';
+import { USER_STATUS } from '../users/schemas/user.schema';
 
 interface AuthUser {
     userId: string;
@@ -45,12 +46,12 @@ export class ApprovedGuard implements CanActivate {
         }
 
         // Check user status
-        if (user.status !== 'approved') {
-            if (user.status === 'pending') {
+        if (user.status !== USER_STATUS.APPROVED) {
+            if (user.status === USER_STATUS.PENDING) {
                 throw new ForbiddenException('החשבון ממתין לאישור אדמין');
-            } else if (user.status === 'rejected') {
+            } else if (user.status === USER_STATUS.REJECTED) {
                 throw new ForbiddenException('הבקשה לאישור החשבון נדחתה');
-            } else if (user.status === 'archived') {
+            } else if (user.status === USER_STATUS.ARCHIVED) {
                 throw new ForbiddenException('המשתמש נחסם');
             } else {
                 throw new ForbiddenException('החשבון לא מאושר');

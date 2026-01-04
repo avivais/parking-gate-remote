@@ -12,7 +12,7 @@ import {
     ValidatorConstraintInterface,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { UserStatus } from '../../users/schemas/user.schema';
+import { UserStatus, USER_STATUS } from '../../users/schemas/user.schema';
 
 @ValidatorConstraint({ name: 'rejectionReasonRequired', async: false })
 export class RejectionReasonValidator implements ValidatorConstraintInterface {
@@ -21,7 +21,7 @@ export class RejectionReasonValidator implements ValidatorConstraintInterface {
         args: ValidationArguments,
     ): boolean {
         const obj = args.object as UpdateUserDto;
-        if (obj.status === 'rejected') {
+        if (obj.status === USER_STATUS.REJECTED) {
             return (
                 rejectionReason !== null &&
                 rejectionReason !== undefined &&
@@ -43,7 +43,7 @@ export class RejectionReasonNullValidator implements ValidatorConstraintInterfac
         args: ValidationArguments,
     ): boolean {
         const obj = args.object as UpdateUserDto;
-        if (obj.status && obj.status !== 'rejected') {
+        if (obj.status && obj.status !== USER_STATUS.REJECTED) {
             return (
                 rejectionReason === null ||
                 rejectionReason === undefined ||
@@ -88,15 +88,20 @@ export class UpdateUserDto {
     floor?: number;
 
     @IsOptional()
-    @IsEnum(['pending', 'approved', 'rejected', 'archived'])
+    @IsEnum([
+        USER_STATUS.PENDING,
+        USER_STATUS.APPROVED,
+        USER_STATUS.REJECTED,
+        USER_STATUS.ARCHIVED,
+    ])
     status?: UserStatus;
 
     @IsOptional()
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    @ValidateIf((o) => o.status === 'rejected')
+    @ValidateIf((o) => o.status === USER_STATUS.REJECTED)
     @Validate(RejectionReasonValidator)
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return
-    @ValidateIf((o) => o.status && o.status !== 'rejected')
+    @ValidateIf((o) => o.status && o.status !== USER_STATUS.REJECTED)
     @Validate(RejectionReasonNullValidator)
     @IsString()
     rejectionReason?: string | null;

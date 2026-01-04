@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { USER_STATUS } from "@/types/auth";
 
 interface RequireAuthProps {
     children: React.ReactNode;
@@ -27,7 +28,7 @@ export function RequireAuth({
             return;
         }
 
-        if (requireApproved && user.status !== "approved") {
+        if (requireApproved && user.status !== USER_STATUS.APPROVED) {
             router.push("/pending");
             return;
         }
@@ -52,7 +53,7 @@ export function RequireAuth({
         return null;
     }
 
-    if (requireApproved && user.status !== "approved") {
+    if (requireApproved && user.status !== USER_STATUS.APPROVED) {
         return null;
     }
 

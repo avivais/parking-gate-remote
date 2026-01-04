@@ -13,7 +13,7 @@ import { GateService } from '../gate/gate.service';
 import { GetUsersQueryDto, UserStatusFilter } from './dto/get-users-query.dto';
 import { GetLogsQueryDto } from './dto/get-logs-query.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { UserStatus } from '../users/schemas/user.schema';
+import { UserStatus, USER_STATUS } from '../users/schemas/user.schema';
 import {
     DeviceStatus,
     DeviceStatusDocument,
@@ -197,9 +197,9 @@ export class AdminService {
 
             // If status becomes rejected/archived/pending: clear activeDeviceId (force logout)
             if (
-                updateDto.status === 'rejected' ||
-                updateDto.status === 'archived' ||
-                updateDto.status === 'pending'
+                updateDto.status === USER_STATUS.REJECTED ||
+                updateDto.status === USER_STATUS.ARCHIVED ||
+                updateDto.status === USER_STATUS.PENDING
             ) {
                 updateData.activeDeviceId = null;
                 // Also clear session
@@ -207,7 +207,7 @@ export class AdminService {
             }
 
             // Handle rejectionReason based on status
-            if (updateDto.status === 'rejected') {
+            if (updateDto.status === USER_STATUS.REJECTED) {
                 if (
                     !updateDto.rejectionReason ||
                     updateDto.rejectionReason.trim().length === 0
@@ -223,7 +223,7 @@ export class AdminService {
             }
         } else if (updateDto.rejectionReason !== undefined) {
             // If only rejectionReason is being updated (without status change)
-            if (existingUser.status === 'rejected') {
+            if (existingUser.status === USER_STATUS.REJECTED) {
                 if (
                     !updateDto.rejectionReason ||
                     updateDto.rejectionReason.trim().length === 0
