@@ -45,17 +45,47 @@ if ! command -v docker &> /dev/null; then
     sudo sh get-docker.sh
     sudo usermod -aG docker $USER
     rm get-docker.sh
-    print_warning "Please log out and log back in for Docker group changes to take effect"
+    print_warning "Docker installed. You may need to log out and log back in for Docker group changes to take effect."
+    print_warning "Alternatively, run: newgrp docker"
+    # Try to activate docker group without logout
+    newgrp docker <<EOF || true
+echo "Docker group activated"
+EOF
 else
     echo "Docker is already installed"
+    docker --version
 fi
 
 if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
     print_warning "Docker Compose not found. Installing..."
-    sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-    sudo chmod +x /usr/local/bin/docker-compose
+    # Try docker compose plugin first (modern approach)
+    if docker compose version &> /dev/null; then
+        echo "Docker Compose plugin is available"
+    else
+        # Install standalone docker-compose
+        DOCKER_COMPOSE_VERSION=$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep 'tag_name' | cut -d\" -f4)
+        sudo curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
+        echo "Docker Compose installed: $DOCKER_COMPOSE_VERSION"
+    fi
 else
     echo "Docker Compose is already installed"
+    if docker compose version &> /dev/null; then
+        docker compose version
+    else
+        docker-compose --version
+    fi
+fi
+
+# Verify Docker is working
+echo ""
+echo "Verifying Docker installation..."
+if sudo docker ps &> /dev/null; then
+    echo "Docker is working correctly"
+else
+    print_warning "Docker daemon may not be running. Starting Docker service..."
+    sudo systemctl start docker
+    sudo systemctl enable docker
 fi
 
 # Step 2: Create project directory structure

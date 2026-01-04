@@ -1,0 +1,16 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install mqtt package
+RUN npm install mqtt@5.10.2
+
+# Copy simulator script
+COPY mqtt-simulator.js .
+
+# Make it executable
+RUN chmod +x mqtt-simulator.js
+
+# Run simulator
+CMD ["node", "mqtt-simulator.js"]
+

@@ -38,12 +38,14 @@ services:
         build:
             context: ./frontend
             dockerfile: Dockerfile
+            args:
+                - NEXT_PUBLIC_API_BASE=https://api.mitzpe6-8.com/api
         container_name: parking-frontend
         restart: always
         environment:
             - NEXT_PUBLIC_API_BASE=https://api.mitzpe6-8.com/api
         ports:
-            - "127.0.0.1:3000:3000"
+            - "127.0.0.1:3003:3000"
         depends_on:
             - backend
         networks:
@@ -58,6 +60,7 @@ networks:
     parking_net:
         name: parking_net
         driver: bridge
+        external: false
 
 volumes:
     mongo_data:

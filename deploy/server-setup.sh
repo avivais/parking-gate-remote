@@ -8,6 +8,55 @@ PROJECT_DIR="/opt/parking-gate-remote"
 
 echo "=== Server Setup Script ==="
 
+# Check and install Docker if needed
+if ! command -v docker &> /dev/null; then
+    echo ""
+    echo "Docker not found. Installing Docker..."
+    curl -fsSL https://get.docker.com -o /tmp/get-docker.sh
+    sudo sh /tmp/get-docker.sh
+    sudo usermod -aG docker $USER
+    rm /tmp/get-docker.sh
+    echo "Docker installed. Activating docker group..."
+    # Try to activate docker group without logout
+    newgrp docker <<EOF || true
+echo "Docker group activated"
+EOF
+    # Start Docker service
+    sudo systemctl start docker
+    sudo systemctl enable docker
+    echo "Docker service started and enabled"
+else
+    echo "Docker is already installed: $(docker --version)"
+    # Ensure Docker service is running
+    if ! sudo docker ps &> /dev/null; then
+        echo "Starting Docker service..."
+        sudo systemctl start docker
+        sudo systemctl enable docker
+    fi
+fi
+
+# Check and install Docker Compose if needed
+if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
+    echo ""
+    echo "Docker Compose not found. Installing..."
+    # Try docker compose plugin first (modern approach)
+    if docker compose version &> /dev/null; then
+        echo "Docker Compose plugin is available"
+    else
+        # Install standalone docker-compose
+        DOCKER_COMPOSE_VERSION=$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep 'tag_name' | cut -d\" -f4)
+        sudo curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
+        echo "Docker Compose installed: $DOCKER_COMPOSE_VERSION"
+    fi
+else
+    if docker compose version &> /dev/null; then
+        echo "Docker Compose is already installed: $(docker compose version)"
+    else
+        echo "Docker Compose is already installed: $(docker-compose --version)"
+    fi
+fi
+
 # 1. Generate MQTT certificates
 echo ""
 echo "Step 1: Generating MQTT TLS certificates..."

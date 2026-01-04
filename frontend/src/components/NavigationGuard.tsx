@@ -57,15 +57,35 @@ export function NavigationGuard({ children }: { children: React.ReactNode }) {
         // All other routes are allowed for authenticated, approved users
     }, [user, loading, isReady, pathname, router]);
 
-    // Show loading screen while auth state is resolving
+    // Middleware handles the initial redirect for unauthenticated users
+    // This guard handles client-side navigation and status checks
+
+    // While auth is loading, render nothing (middleware already protected the route)
     if (!isReady || loading) {
-        return (
-            <div className="flex min-h-screen items-center justify-center" style={{ backgroundColor: "var(--bg)" }}>
-                <div className="text-lg" style={{ color: "var(--text)" }}>טוען...</div>
-            </div>
-        );
+        return null;
+    }
+
+    // Additional client-side checks for user status
+    if (!user) {
+        // Not authenticated - middleware should have redirected, but handle edge cases
+        if (pathname !== "/login" && pathname !== "/register") {
+            return null;
+        }
+    } else {
+        // Authenticated - check status
+        if (user.status === "rejected" || user.status === "archived") {
+            if (pathname !== "/login") {
+                return null;
+            }
+        } else if (user.status !== "approved") {
+            // Pending status
+            if (pathname !== "/pending") {
+                return null;
+            }
+        }
     }
 
     return <>{children}</>;
 }
+
 

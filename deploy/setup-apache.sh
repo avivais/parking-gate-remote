@@ -13,7 +13,7 @@ fi
 
 # Enable required modules
 echo "Enabling Apache modules..."
-a2enmod proxy proxy_http ssl rewrite
+a2enmod proxy proxy_http ssl rewrite headers
 
 # Get SSL certificate for api.mitzpe6-8.com (if not already exists)
 echo ""

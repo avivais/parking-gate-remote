@@ -1,0 +1,32 @@
+services:
+    mqtt-simulator:
+        build:
+            context: .
+            dockerfile: Dockerfile.simulator
+        container_name: parking-mqtt-simulator
+        restart: always
+        env_file:
+            - ./backend/.env
+        environment:
+            - MQTT_URL=mqtts://mosquitto:8883
+            - MQTT_USERNAME=pgr_device_mitspe6
+            - MQTT_PASSWORD=Avivr_121
+            - MQTT_CMD_TOPIC=pgr/mitspe6/gate/cmd
+            - MQTT_ACK_TOPIC=pgr/mitspe6/gate/ack
+            - MQTT_STATUS_TOPIC=pgr/mitspe6/gate/status
+            - CA_CERT_PATH=/app/certs/ca.crt
+        volumes:
+            - ./mqtt/certs:/app/certs:ro
+        networks:
+            - parking_net
+        logging:
+            driver: "json-file"
+            options:
+                max-size: "10m"
+                max-file: "3"
+
+networks:
+    parking_net:
+        external: true
+        name: parking_net
+

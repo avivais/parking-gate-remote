@@ -108,6 +108,7 @@ export class MqttGateDeviceService
                     clientId: `pgr-server-${Date.now()}`,
                     reconnectPeriod: 5000,
                     connectTimeout: 10000,
+                    rejectUnauthorized: false, // Accept self-signed certificates for MQTT TLS
                 });
 
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access

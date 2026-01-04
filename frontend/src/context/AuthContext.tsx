@@ -88,7 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // If /auth/me fails, continue anyway
         }
         setLoading(false);
-        router.push("/");
+        router.replace("/");
     };
 
     const register = async (

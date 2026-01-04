@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import { apiRequest, ApiError, AUTH_UNAUTHORIZED, AUTH_FORBIDDEN } from "@/lib/api";
 import { GateButton } from "@/components/GateButton";
 import * as haptics from "@/lib/haptics";
@@ -11,6 +12,7 @@ type FeedbackState = "idle" | "loading" | "success" | "error";
 
 export default function HomePage() {
     const router = useRouter();
+    const { user, loading, isReady } = useAuth();
     const [status, setStatus] = useState<FeedbackState>("idle");
     const [isOffline, setIsOffline] = useState(false);
 
@@ -73,6 +75,12 @@ export default function HomePage() {
     }, [status, isOffline, router]);
 
     const isLoading = status === "loading";
+
+    // Don't render button until auth is ready to prevent flashing
+    // Middleware handles redirect, but we still need to wait for client-side auth to load user data
+    if (!isReady || loading || !user) {
+        return null; // Return nothing - middleware already redirected if not authenticated
+    }
 
     return (
         <div className="flex min-h-screen flex-col" style={{ backgroundColor: "var(--bg)" }}>
