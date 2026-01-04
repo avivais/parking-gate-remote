@@ -6,7 +6,9 @@ set -e
 
 # Configuration
 SERVER="${1:-ubuntu@ec2-98-84-90-118.compute-1.amazonaws.com}"
-KEY="${SSH_KEY:-~/.ssh/VaisenKey.pem}"
+KEY="${SSH_KEY:-$HOME/.ssh/VaisenKey.pem}"
+# Using /opt for Docker-based application (standard location for optional software)
+# Apache will proxy to Docker containers, so files don't need to be in /var/www
 PROJECT_DIR="/opt/parking-gate-remote"
 LOCAL_PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
@@ -29,9 +31,9 @@ copy_files() {
     scp -i "$KEY" -r "$LOCAL_PROJECT_ROOT/$2" "$SERVER:$PROJECT_DIR/$3"
 }
 
-# Create directories on server
-echo "Creating directories on server..."
-ssh -i "$KEY" "$SERVER" "mkdir -p $PROJECT_DIR/{backend,frontend,mqtt/certs}"
+# Create directories on server with proper permissions
+echo "Creating directories on server (requires sudo)..."
+ssh -i "$KEY" "$SERVER" "sudo mkdir -p $PROJECT_DIR/{backend,frontend,mqtt/certs} && sudo chown -R ubuntu:ubuntu $PROJECT_DIR && echo 'Directories created and ownership set to ubuntu user'"
 
 # Copy backend files
 echo ""
@@ -66,11 +68,15 @@ scp -i "$KEY" "$LOCAL_PROJECT_ROOT/mqtt/aclfile" "$SERVER:$PROJECT_DIR/mqtt/aclf
 # Copy Apache configurations
 echo ""
 echo "=== Copying Apache Configurations ==="
-ssh -i "$KEY" "$SERVER" "sudo mkdir -p /tmp/apache-configs"
-scp -i "$KEY" "$LOCAL_PROJECT_ROOT/deploy/apache-api.conf" "$SERVER:/tmp/apache-configs/"
-scp -i "$KEY" "$LOCAL_PROJECT_ROOT/deploy/apache-api-ssl.conf" "$SERVER:/tmp/apache-configs/"
-scp -i "$KEY" "$LOCAL_PROJECT_ROOT/deploy/apache-root.conf" "$SERVER:/tmp/apache-configs/"
-scp -i "$KEY" "$LOCAL_PROJECT_ROOT/deploy/apache-app-ssl-updated.conf" "$SERVER:/tmp/apache-configs/"
+# Create directory in user's home first, then move with sudo (more reliable than /tmp)
+APACHE_CONFIG_DIR="~/apache-configs"
+ssh -i "$KEY" "$SERVER" "mkdir -p $APACHE_CONFIG_DIR"
+scp -i "$KEY" "$LOCAL_PROJECT_ROOT/deploy/apache-api.conf" "$SERVER:$APACHE_CONFIG_DIR/"
+scp -i "$KEY" "$LOCAL_PROJECT_ROOT/deploy/apache-api-ssl.conf" "$SERVER:$APACHE_CONFIG_DIR/"
+scp -i "$KEY" "$LOCAL_PROJECT_ROOT/deploy/apache-root.conf" "$SERVER:$APACHE_CONFIG_DIR/"
+scp -i "$KEY" "$LOCAL_PROJECT_ROOT/deploy/apache-app-ssl-updated.conf" "$SERVER:$APACHE_CONFIG_DIR/"
+# Move to /tmp/apache-configs with sudo for the setup script
+ssh -i "$KEY" "$SERVER" "sudo mkdir -p /tmp/apache-configs && sudo cp $APACHE_CONFIG_DIR/* /tmp/apache-configs/ && sudo chown root:root /tmp/apache-configs/* && rm -rf $APACHE_CONFIG_DIR"
 
 # Copy environment template
 echo ""

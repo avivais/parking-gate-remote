@@ -10,6 +10,14 @@ This directory contains all files needed to deploy the Parking Gate Remote appli
 - Let's Encrypt SSL certificates (will be obtained during deployment)
 - Node.js 18+ installed locally for building
 
+## Directory Structure
+
+The application is deployed to `/opt/parking-gate-remote` (not `/var/www`) because:
+- `/opt` is the standard location for optional software packages and Docker-based applications
+- Apache will proxy to Docker containers running on localhost, so files don't need to be in `/var/www`
+- The existing `/var/www/mitzpe6-8/app` and `/var/www/mitzpe6-8/api` directories are not used with this Docker setup
+- All directories are created with sudo and then chowned to the ubuntu user for proper permissions
+
 ## Quick Start (Automated)
 
 ### Option 1: Automated Deployment
@@ -21,11 +29,11 @@ From your local machine:
 ./deploy/build-and-deploy.sh
 
 # 2. Copy all files to server
-export SSH_KEY=~/.ssh/VaisenKey.pem
+export SSH_KEY=$HOME/.ssh/VaisenKey.pem
 ./deploy/copy-to-server.sh
 
 # 3. SSH to server and run setup
-ssh -i ~/.ssh/VaisenKey.pem ubuntu@ec2-98-84-90-118.compute-1.amazonaws.com
+ssh -i $HOME/.ssh/VaisenKey.pem ubuntu@ec2-98-84-90-118.compute-1.amazonaws.com
 cd /opt/parking-gate-remote
 chmod +x deploy/server-setup.sh deploy/setup-apache.sh deploy/start-services.sh
 ./deploy/server-setup.sh
@@ -88,7 +96,7 @@ From your local machine, copy files to the server:
 ```bash
 # Set these variables
 SERVER="ubuntu@ec2-98-84-90-118.compute-1.amazonaws.com"
-KEY="~/.ssh/VaisenKey.pem"
+KEY="$HOME/.ssh/VaisenKey.pem"
 PROJECT_DIR="/opt/parking-gate-remote"
 
 # Copy docker-compose files

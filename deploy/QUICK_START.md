@@ -5,7 +5,7 @@ This is a condensed guide for deploying to production. For detailed instructions
 ## Prerequisites
 
 - Local machine with Node.js 18+
-- SSH access to EC2: `ssh -i ~/.ssh/VaisenKey.pem ubuntu@ec2-98-84-90-118.compute-1.amazonaws.com`
+- SSH access to EC2: `ssh -i $HOME/.ssh/VaisenKey.pem ubuntu@ec2-98-84-90-118.compute-1.amazonaws.com`
 - Domain DNS configured in CloudFlare
 
 ## Deployment Steps
@@ -22,7 +22,7 @@ This builds both backend and frontend with production settings.
 ### 2. Copy Files to Server (Local)
 
 ```bash
-export SSH_KEY=~/.ssh/VaisenKey.pem
+export SSH_KEY=$HOME/.ssh/VaisenKey.pem
 ./deploy/copy-to-server.sh
 ```
 
