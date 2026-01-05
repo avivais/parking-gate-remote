@@ -40,7 +40,7 @@ You must configure the EC2 Security Group in AWS Console to match the UFW rules.
    - Click "Edit inbound rules"
 
 4. **Add/Update Rules**:
-   
+
    | Type | Protocol | Port Range | Source | Description |
    |------|----------|------------|--------|-------------|
    | SSH | TCP | 22 | Your IP or 0.0.0.0/0 | Server access |

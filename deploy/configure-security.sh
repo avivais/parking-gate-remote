@@ -8,7 +8,7 @@ echo "=== Security Configuration ==="
 echo ""
 
 # Check if running as root or with sudo
-if [ "$EUID" -ne 0 ]; then 
+if [ "$EUID" -ne 0 ]; then
     echo "This script must be run with sudo"
     echo "Usage: sudo ./configure-security.sh"
     exit 1
