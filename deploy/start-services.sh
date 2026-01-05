@@ -49,6 +49,14 @@ sleep 5
 # Start MQTT broker
 echo ""
 echo "Starting MQTT broker..."
+# Export MQTT_SERVER_PASSWORD from backend .env if it exists
+# The backend .env uses MQTT_PASSWORD, we need MQTT_SERVER_PASSWORD for the healthcheck
+if [ -f "$PROJECT_DIR/backend/.env" ]; then
+    export MQTT_SERVER_PASSWORD=$(grep "^MQTT_PASSWORD=" "$PROJECT_DIR/backend/.env" | cut -d'=' -f2- | tr -d '"' | tr -d "'")
+    if [ -z "$MQTT_SERVER_PASSWORD" ]; then
+        echo "Warning: MQTT_PASSWORD not found in backend .env, healthcheck may fail"
+    fi
+fi
 $DOCKER_COMPOSE -f docker-compose.mqtt.yml up -d
 
 # Wait a moment for MQTT

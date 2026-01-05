@@ -10,6 +10,7 @@ services:
             - ./mqtt/passwordfile:/mosquitto/config/passwordfile:ro
             - ./mqtt/aclfile:/mosquitto/config/aclfile:ro
             - ./mqtt/certs:/mosquitto/certs:ro
+            - ./mqtt/healthcheck.sh:/usr/local/bin/healthcheck.sh:ro
             - mosquitto_data:/mosquitto/data
             - mosquitto_log:/mosquitto/log
         networks:
@@ -19,8 +20,10 @@ services:
             options:
                 max-size: "10m"
                 max-file: "3"
+        environment:
+            - MQTT_SERVER_PASSWORD=${MQTT_SERVER_PASSWORD}
         healthcheck:
-            test: ["CMD-SHELL", "timeout 5 mosquitto_sub -h localhost -p 8883 --cafile /mosquitto/certs/ca.crt -t '$$SYS/#' -C 1 || exit 1"]
+            test: ["CMD-SHELL", "sh /usr/local/bin/healthcheck.sh"]
             interval: 30s
             timeout: 10s
             retries: 3
