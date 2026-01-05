@@ -4,10 +4,10 @@
 // Device Identification
 #define DEVICE_ID "mitspe6-gate-001"
 
-// MQTT Broker Configuration (HiveMQ Cloud)
-#define MQTT_HOST "3bde4a57fee14109aa72d3b805d645c5.s1.eu.hivemq.cloud"
+// MQTT Broker Configuration (Production EC2)
+#define MQTT_HOST "mqtt.mitzpe6-8.com"  // Production MQTT broker hostname
 #define MQTT_PORT 8883  // TLS port
-#define MQTT_USERNAME "avivais"
+#define MQTT_USERNAME "pgr_device_mitspe6"  // Production device user
 #define MQTT_PASSWORD "Avivr_121"
 
 // MQTT Topics
@@ -60,7 +60,7 @@
 #define DNS_SECONDARY "8.8.4.4"
 
 // Firmware Version
-#define FW_VERSION "fw-dev-0.1"
+#define FW_VERSION "fw-prod-1.0"
 
 // Relay Control Configuration
 #define RELAY_PIN 18

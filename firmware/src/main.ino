@@ -2,7 +2,7 @@
 #include "tinygsm_pre.h"  // MUST be first - defines TINY_GSM_MODEM_A7670 before any TinyGSM includes
 #include "utilities.h"  // Board pin definitions
 #include "config/config.h"
-#include "config/HivemqRootCA.h"  // Root CA certificate for HiveMQ TLS
+#include "config/ProductionRootCA.h"  // Root CA certificate for Production MQTT TLS
 #include "modem/ModemManager.h"
 #include "ppp/PppManager.h"
 #include "mqtt/MqttManager.h"
@@ -301,14 +301,14 @@ void loop() {
                 if (!mqttSetup && (now - pppUpTime > 1000)) {
                     Serial.println("[Test] Linking MqttManager to PppManager...");
                     mqttManager->setPppManager(pppManager);
-                    mqttManager->begin(TEST_MQTT_HOST, TEST_MQTT_PORT, TEST_MQTT_USERNAME, TEST_MQTT_PASSWORD);
+                    mqttManager->begin(MQTT_HOST, MQTT_PORT, MQTT_USERNAME, MQTT_PASSWORD);
                     mqttSetup = true;
                 }
 
                 // Step 2: Initialize modem MQTT with TLS (like POC)
                 if (mqttSetup && !mqttInitialized && (now - pppUpTime > 2000)) {
                     Serial.println("[Test] Initializing modem MQTT with TLS...");
-                    if (mqttManager->initializeModemMqtt(true, true, HivemqRootCA)) {
+                    if (mqttManager->initializeModemMqtt(true, true, ProductionRootCA)) {
                         Serial.println("[Test] Modem MQTT initialized with TLS");
                         mqttInitialized = true;
                     } else {
