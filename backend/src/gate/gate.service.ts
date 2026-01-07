@@ -1,6 +1,7 @@
 import { Injectable, ConflictException, Inject } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { randomUUID } from 'crypto';
 import { GateLog, GateLogDocument } from './schemas/gate-log.schema';
 import {
     GateRequest,
@@ -131,8 +132,8 @@ export class GateService {
         userAgent?: string;
     }): Promise<{ success: true }> {
         const startTime = Date.now();
-        const requestId =
-            params.requestId || `admin-${Date.now()}-${Math.random()}`;
+        // Use UUID format to match firmware buffer size (36 chars + null terminator)
+        const requestId = params.requestId || randomUUID();
 
         let status: GateLogStatus = 'failed';
         let failureReason: string | undefined;
