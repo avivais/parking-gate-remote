@@ -72,12 +72,15 @@ export class GateController {
     }
 
     // דלת אחורית: /api/gate/admin-open?key=XXXX
-    @Post('admin-open')
+    @Get('admin-open')
     async adminOpen(
         @Request() req: ExpressRequest,
         @Query('key') key?: string,
     ): Promise<{ success: true }> {
-        const expectedKey = this.configService.get<string>('ADMIN_OPEN_KEY');
+        // Try to get from ConfigService first, then fallback to process.env
+        const expectedKey =
+            this.configService.get<string>('ADMIN_OPEN_KEY') ||
+            process.env.ADMIN_OPEN_KEY;
 
         if (!expectedKey) {
             throw new BadRequestException('מפתח פתיחת אדמין לא מוגדר');
