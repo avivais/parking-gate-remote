@@ -7,6 +7,7 @@ import { apiRequest, ApiError, AUTH_UNAUTHORIZED, AUTH_FORBIDDEN } from "@/lib/a
 import { GateButton } from "@/components/GateButton";
 import * as haptics from "@/lib/haptics";
 import toast from "react-hot-toast";
+import type { DeviceStatusResponse } from "@/types/auth";
 
 type FeedbackState = "idle" | "loading" | "success" | "error";
 
@@ -15,8 +16,9 @@ export default function HomePage() {
     const { user, loading, isReady } = useAuth();
     const [status, setStatus] = useState<FeedbackState>("idle");
     const [isOffline, setIsOffline] = useState(false);
+    const [deviceOnline, setDeviceOnline] = useState<boolean | null>(null);
 
-    // Offline detection
+    // Browser offline detection
     useEffect(() => {
         const updateOnlineStatus = () => {
             setIsOffline(!navigator.onLine);
@@ -30,6 +32,34 @@ export default function HomePage() {
             window.removeEventListener("online", updateOnlineStatus);
             window.removeEventListener("offline", updateOnlineStatus);
         };
+    }, []);
+
+    // Check gate device status
+    useEffect(() => {
+        const checkDeviceStatus = async () => {
+            try {
+                const data = await apiRequest<DeviceStatusResponse>("/admin/device-status");
+                // Check if any device is truly online
+                // Device must be marked online AND seen within last 60 seconds
+                const now = Date.now();
+                const STALE_THRESHOLD_MS = 60000; // 60 seconds
+                const anyOnline = data.items.some(device => {
+                    if (!device.online) return false;
+                    const lastSeen = new Date(device.lastSeenAt).getTime();
+                    return (now - lastSeen) < STALE_THRESHOLD_MS;
+                });
+                setDeviceOnline(anyOnline);
+            } catch {
+                // If API fails, assume unknown status
+                setDeviceOnline(null);
+            }
+        };
+
+        // Check immediately and then every 5 seconds
+        checkDeviceStatus();
+        const interval = setInterval(checkDeviceStatus, 5000);
+
+        return () => clearInterval(interval);
     }, []);
 
     const handleOpenGate = useCallback(async () => {
@@ -82,9 +112,46 @@ export default function HomePage() {
         return null; // Return nothing - middleware already redirected if not authenticated
     }
 
+    const displayName = user.firstName && user.lastName
+        ? `${user.firstName} ${user.lastName}`
+        : user.firstName || user.email?.split('@')[0] || 'משתמש';
+
+    // Time-based greeting
+    const getGreeting = () => {
+        const hour = new Date().getHours();
+        if (hour >= 5 && hour < 12) return "בוקר טוב";
+        if (hour >= 12 && hour < 17) return "צהריים טובים";
+        if (hour >= 17 && hour < 22) return "ערב טוב";
+        return "לילה טוב";
+    };
+
     return (
         <div className="flex min-h-screen flex-col" style={{ backgroundColor: "var(--bg)" }}>
-            <div className="flex-1 flex items-center justify-center px-4 pt-20 pb-12">
+            {/* User name display below header */}
+            <div className="fixed top-14 left-0 right-0 z-30 px-4 pt-2 pb-1">
+                <div className="mx-auto max-w-7xl">
+                    <span className="inline-flex items-center text-sm" style={{ color: "var(--muted)" }}>
+                        {/* Connection status indicator */}
+                        <span
+                            className="inline-block w-2 h-2 rounded-full"
+                            style={{
+                                backgroundColor: deviceOnline === false ? "var(--danger)" : deviceOnline === true ? "var(--success)" : "var(--muted)",
+                                opacity: deviceOnline === false ? 1 : deviceOnline === true ? 1 : 0.5,
+                                marginLeft: "6px"
+                            }}
+                            title={deviceOnline === false ? "השער לא מקוון" : deviceOnline === true ? "השער מקוון" : "מצב לא ידוע"}
+                        />
+                        {getGreeting()}, {displayName}
+                        {user.apartmentNumber && user.floor && (
+                            <span className="text-xs" style={{ opacity: 0.8 }}>
+                                &nbsp;· דירה {user.apartmentNumber}, קומה {user.floor}
+                            </span>
+                        )}
+                    </span>
+                </div>
+            </div>
+
+            <div className="flex-1 flex items-center justify-center px-4 pt-24 pb-12">
                 <div className="w-full max-w-md space-y-6">
                         {isOffline && (
                             <div className="rounded-theme-md border px-4 py-3 text-center" style={{ backgroundColor: "var(--warning)", borderColor: "var(--warning)", opacity: 0.1 }}>
