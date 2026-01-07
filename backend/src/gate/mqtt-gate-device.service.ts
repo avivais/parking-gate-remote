@@ -448,7 +448,7 @@ export class MqttGateDeviceService
                     }
 
                     this.logger.log(
-                        `Published command for requestId ${requestId} to topic ${this.cmdTopic}`,
+                        `Published command '${command.command}' for requestId ${requestId} to topic ${this.cmdTopic}`,
                     );
                 },
             );
