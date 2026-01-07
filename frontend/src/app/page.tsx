@@ -130,7 +130,7 @@ export default function HomePage() {
             {/* User name display below header */}
             <div className="fixed top-14 left-0 right-0 z-30 px-4 pt-2 pb-1">
                 <div className="mx-auto max-w-7xl">
-                    <span className="inline-flex items-center text-sm" style={{ color: "var(--muted)" }}>
+                    <span className="inline-flex items-center text-sm" style={{ color: "var(--muted)", transform: "translateY(-1px)" }}>
                         {/* Connection status indicator */}
                         <span
                             className="inline-block w-2 h-2 rounded-full"

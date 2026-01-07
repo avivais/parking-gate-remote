@@ -9,6 +9,7 @@ import {
     UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { SkipThrottle } from '@nestjs/throttler';
 import { AdminService } from './admin.service';
 import { ApprovedGuard } from '../auth/approved.guard';
 import { AdminGuard } from '../auth/admin.guard';
@@ -44,6 +45,7 @@ export class AdminController {
         return this.adminService.getLogs(query);
     }
 
+    @SkipThrottle()
     @Get('device-status')
     async getDeviceStatus() {
         return this.adminService.getDeviceStatuses();
