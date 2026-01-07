@@ -137,7 +137,8 @@ export default function HomePage() {
                             style={{
                                 backgroundColor: deviceOnline === false ? "var(--danger)" : deviceOnline === true ? "var(--success)" : "var(--muted)",
                                 opacity: deviceOnline === false ? 1 : deviceOnline === true ? 1 : 0.5,
-                                marginLeft: "6px"
+                                marginLeft: "6px",
+                                transform: "translateY(1px)"
                             }}
                             title={deviceOnline === false ? "השער לא מקוון" : deviceOnline === true ? "השער מקוון" : "מצב לא ידוע"}
                         />
