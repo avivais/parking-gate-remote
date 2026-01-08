@@ -11,14 +11,15 @@ if [ -z "$PASSWORD" ]; then
     exit 1
 fi
 
-# Test connection by subscribing to a system topic
+# Test connection by subscribing to status topic (pgr_server has read access to this)
+# Use a timeout and check if mosquitto_sub can connect
 timeout 5 mosquitto_sub \
     -h localhost \
     -p 8883 \
     --cafile /mosquitto/certs/ca.crt \
     -u "$USERNAME" \
     -P "$PASSWORD" \
-    -t '$SYS/#' \
+    -t 'pgr/mitspe6/gate/status' \
     -C 1 > /dev/null 2>&1
 
 exit $?

@@ -159,7 +159,8 @@ export class AuthService {
             throw new ForbiddenException('החשבון לא מאושר');
         }
 
-        if (user.activeDeviceId && user.activeDeviceId !== loginDto.deviceId) {
+        // Admins can login from multiple devices, regular users cannot
+        if (user.role !== 'admin' && user.activeDeviceId && user.activeDeviceId !== loginDto.deviceId) {
             throw new ConflictException('המשתמש מחובר כבר ממכשיר אחר');
         }
 

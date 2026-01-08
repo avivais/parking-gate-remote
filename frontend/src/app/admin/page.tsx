@@ -181,13 +181,29 @@ export default function AdminPage() {
         }
     }, [logsEmailDebounced, logsOpenedBy, logsPage, logsLimit]);
 
-    // Load device status
-    const loadDeviceStatus = useCallback(async () => {
-        setLoading(true);
-        setError(null);
+    // Load device status with staleness check
+    const loadDeviceStatus = useCallback(async (silent = false) => {
+        if (!silent) {
+            setLoading(true);
+            setError(null);
+        }
         try {
             const data = await apiRequest<DeviceStatusResponse>("/admin/device-status");
-            setDeviceStatusData(data);
+            // Apply staleness check - device must be marked online AND seen within last 60 seconds
+            const now = Date.now();
+            const STALE_THRESHOLD_MS = 60000; // 60 seconds
+            const processedData: DeviceStatusResponse = {
+                ...data,
+                items: data.items.map(device => {
+                    const lastSeen = new Date(device.lastSeenAt).getTime();
+                    const isActuallyOnline = device.online && (now - lastSeen) < STALE_THRESHOLD_MS;
+                    return {
+                        ...device,
+                        online: isActuallyOnline
+                    };
+                })
+            };
+            setDeviceStatusData(processedData);
         } catch (err) {
             if (err instanceof ApiError) {
                 if (err.message === AUTH_FORBIDDEN || err.status === 403) {
@@ -199,7 +215,9 @@ export default function AdminPage() {
                 setError("שגיאה בטעינת סטטוס מכשירים");
             }
         } finally {
-            setLoading(false);
+            if (!silent) {
+                setLoading(false);
+            }
         }
     }, []);
 
@@ -211,8 +229,8 @@ export default function AdminPage() {
             loadLogs();
         } else if (activeTab === "devices") {
             loadDeviceStatus();
-            // Refresh device status every 10 seconds
-            const interval = setInterval(loadDeviceStatus, 10000);
+            // Refresh device status every 5 seconds (silent refresh)
+            const interval = setInterval(() => loadDeviceStatus(true), 5000);
             return () => clearInterval(interval);
         }
     }, [activeTab, loadUsers, loadLogs, loadDeviceStatus]);
@@ -1234,7 +1252,29 @@ export default function AdminPage() {
                 {/* Devices Tab */}
                 {activeTab === "devices" && (
                     <div className="space-y-4">
-                        {loading ? (
+                        {/* Header with refresh button */}
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-lg font-semibold" style={{ color: "var(--text)" }}>
+                                סטטוס מכשירים
+                            </h2>
+                            <button
+                                onClick={() => loadDeviceStatus(false)}
+                                disabled={loading}
+                                className="flex items-center gap-2 rounded-theme-md border border-theme bg-surface px-3 py-2 text-sm font-medium hover:bg-surface-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                style={{ color: "var(--text)" }}
+                            >
+                                <svg
+                                    className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`}
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                רענון
+                            </button>
+                        </div>
+                        {loading && !deviceStatusData ? (
                             <div className="flex items-center justify-center py-12">
                                 <div className="text-lg text-muted">טוען...</div>
                             </div>
@@ -1264,15 +1304,21 @@ export default function AdminPage() {
                                                         </h3>
                                                     </div>
                                                     <div>
-                                                        {device.online ? (
-                                                            <span className="badge-success inline-flex rounded-full px-2 py-1 text-xs font-medium">
-                                                                מקוון
-                                                            </span>
-                                                        ) : (
-                                                            <span className="badge-danger inline-flex rounded-full px-2 py-1 text-xs font-medium">
-                                                                לא מקוון
-                                                            </span>
-                                                        )}
+                                                        {(() => {
+                                                            const now = Date.now();
+                                                            const STALE_THRESHOLD_MS = 60000;
+                                                            const lastSeen = new Date(device.lastSeenAt).getTime();
+                                                            const isActuallyOnline = device.online && (now - lastSeen) < STALE_THRESHOLD_MS;
+                                                            return isActuallyOnline ? (
+                                                                <span className="badge-success inline-flex rounded-full px-2 py-1 text-xs font-medium">
+                                                                    מקוון
+                                                                </span>
+                                                            ) : (
+                                                                <span className="badge-danger inline-flex rounded-full px-2 py-1 text-xs font-medium">
+                                                                    לא מקוון
+                                                                </span>
+                                                            );
+                                                        })()}
                                                     </div>
                                                 </div>
                                                 <div className="space-y-1 text-xs">
@@ -1348,15 +1394,21 @@ export default function AdminPage() {
                                                                 {device.deviceId}
                                                             </td>
                                                             <td className="whitespace-nowrap px-6 py-4 text-sm">
-                                                                {device.online ? (
-                                                                    <span className="badge-success inline-flex rounded-full px-2 py-1 text-xs font-medium">
-                                                                        מקוון
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="badge-danger inline-flex rounded-full px-2 py-1 text-xs font-medium">
-                                                                        לא מקוון
-                                                                    </span>
-                                                                )}
+                                                                {(() => {
+                                                                    const now = Date.now();
+                                                                    const STALE_THRESHOLD_MS = 60000;
+                                                                    const lastSeen = new Date(device.lastSeenAt).getTime();
+                                                                    const isActuallyOnline = device.online && (now - lastSeen) < STALE_THRESHOLD_MS;
+                                                                    return isActuallyOnline ? (
+                                                                        <span className="badge-success inline-flex rounded-full px-2 py-1 text-xs font-medium">
+                                                                            מקוון
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="badge-danger inline-flex rounded-full px-2 py-1 text-xs font-medium">
+                                                                            לא מקוון
+                                                                        </span>
+                                                                    );
+                                                                })()}
                                                             </td>
                                                             <td className="whitespace-nowrap px-6 py-4 text-sm" style={{ color: "var(--text)" }}>
                                                                 {formatRelativeTime(device.lastSeenAt)}
