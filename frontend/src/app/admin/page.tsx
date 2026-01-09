@@ -66,6 +66,8 @@ export default function AdminPage() {
     const [usersSearchDebounced, setUsersSearchDebounced] = useState("");
     const [usersPage, setUsersPage] = useState(1);
     const [usersLimit, setUsersLimit] = useState(20);
+    const [usersSortField, setUsersSortField] = useState<"name" | "apartmentNumber" | "createdAt" | "approvalDate">("createdAt");
+    const [usersSortOrder, setUsersSortOrder] = useState<"asc" | "desc">("desc");
 
     // Modal state
     const [rejectModalOpen, setRejectModalOpen] = useState(false);
@@ -129,6 +131,8 @@ export default function AdminPage() {
                 status: usersStatusFilter,
                 page: usersPage.toString(),
                 limit: usersLimit.toString(),
+                sortField: usersSortField,
+                sortOrder: usersSortOrder,
             });
             if (usersSearchDebounced) {
                 params.append("q", usersSearchDebounced);
@@ -151,7 +155,7 @@ export default function AdminPage() {
         } finally {
             setLoading(false);
         }
-    }, [usersStatusFilter, usersSearchDebounced, usersPage, usersLimit]);
+    }, [usersStatusFilter, usersSearchDebounced, usersPage, usersLimit, usersSortField, usersSortOrder]);
 
     // Load logs
     const loadLogs = useCallback(async () => {
@@ -526,6 +530,19 @@ export default function AdminPage() {
         setEditModalConfirmClose(false);
     };
 
+    // Handle column sort
+    const handleSort = (field: "name" | "apartmentNumber" | "createdAt" | "approvalDate") => {
+        if (usersSortField === field) {
+            // Toggle sort order if clicking the same field
+            setUsersSortOrder(usersSortOrder === "asc" ? "desc" : "asc");
+        } else {
+            // Set new field and default to descending (except for createdAt which should default to desc for newest first)
+            setUsersSortField(field);
+            setUsersSortOrder(field === "createdAt" ? "desc" : "asc");
+        }
+        setUsersPage(1); // Reset to first page when sorting changes
+    };
+
     // Check if form has changes
     const editFormHasChanges = useMemo(() => {
         if (!selectedUser) return false;
@@ -774,7 +791,7 @@ export default function AdminPage() {
                         </div>
 
                         {/* Approve All Button - Only show when filter is pending */}
-                        {usersStatusFilter === "pending" && usersData && usersData.items.length > 0 && (
+                        {usersStatusFilter === "pending" && !loading && usersData && usersData.total > 0 && (
                             <div className="mb-4">
                                 <button
                                     onClick={() => setApproveAllModalOpen(true)}
@@ -810,8 +827,9 @@ export default function AdminPage() {
                                         usersData.items.map((user) => (
                                             <div
                                                 key={user.id}
-                                                className="rounded-theme-md border p-4 space-y-3"
+                                                className="rounded-theme-md border p-4 space-y-3 cursor-pointer hover:bg-surface-2 transition-colors"
                                                 style={{ backgroundColor: "var(--surface)", borderColor: "var(--border)" }}
+                                                onClick={() => openEditModal(user)}
                                             >
                                                 <div className="flex items-start justify-between">
                                                     <div className="flex-1">
@@ -869,7 +887,7 @@ export default function AdminPage() {
                                                                             {device.deviceId.substring(0, 12)}...
                                                                         </span>
                                                                         <button
-                                                                            onClick={() => handleResetDevice(user.id, device.deviceId)}
+                                                                            onClick={(e) => { e.stopPropagation(); handleResetDevice(user.id, device.deviceId); }}
                                                                             className="rounded-theme-sm px-2 py-0.5 text-xs font-medium"
                                                                             style={{
                                                                                 backgroundColor: "var(--warning)",
@@ -908,7 +926,7 @@ export default function AdminPage() {
                                                     {user.status === "pending" && (
                                                         <>
                                                             <button
-                                                                onClick={() => handleApproveUser(user.id)}
+                                                                onClick={(e) => { e.stopPropagation(); handleApproveUser(user.id); }}
                                                                 className="rounded-theme-sm px-3 py-1.5 text-xs font-medium flex-1"
                                                                 style={{
                                                                     backgroundColor: "var(--success)",
@@ -918,7 +936,7 @@ export default function AdminPage() {
                                                                 אישור
                                                             </button>
                                                             <button
-                                                                onClick={() => openRejectModal(user)}
+                                                                onClick={(e) => { e.stopPropagation(); openRejectModal(user); }}
                                                                 className="rounded-theme-sm px-3 py-1.5 text-xs font-medium flex-1"
                                                                 style={{
                                                                     backgroundColor: "var(--danger)",
@@ -931,7 +949,7 @@ export default function AdminPage() {
                                                     )}
                                                     {user.status === "approved" && !user.approvalEmailSentAt && (
                                                         <button
-                                                            onClick={() => handleSendApprovalEmail(user.id)}
+                                                            onClick={(e) => { e.stopPropagation(); handleSendApprovalEmail(user.id); }}
                                                             className="rounded-theme-sm px-3 py-1.5 text-xs font-medium flex-1"
                                                             style={{
                                                                 backgroundColor: "var(--primary)",
@@ -942,7 +960,7 @@ export default function AdminPage() {
                                                         </button>
                                                     )}
                                                     <button
-                                                        onClick={() => openEditModal(user)}
+                                                        onClick={(e) => { e.stopPropagation(); openEditModal(user); }}
                                                         className="rounded-theme-sm px-3 py-1.5 text-xs font-medium"
                                                         style={{
                                                             backgroundColor: "var(--primary)",
@@ -953,7 +971,7 @@ export default function AdminPage() {
                                                     </button>
                                                     {user.status !== "archived" && (
                                                         <button
-                                                            onClick={() => handleArchiveUser(user.id)}
+                                                            onClick={(e) => { e.stopPropagation(); handleArchiveUser(user.id); }}
                                                             className="rounded-theme-sm px-3 py-1.5 text-xs font-medium"
                                                             style={{
                                                                 backgroundColor: "var(--muted)",
@@ -975,31 +993,83 @@ export default function AdminPage() {
                                         <table className="min-w-full divide-y" style={{ borderColor: "var(--table-border)" }}>
                                             <thead className="table-header">
                                                 <tr>
-                                                    <th className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
+                                                    <th className="px-3 py-3 text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)", textAlign: "right" }}>
                                                         אימייל
                                                     </th>
-                                                    <th className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
-                                                        שם
+                                                    <th
+                                                        className="px-3 py-3 text-xs font-medium uppercase tracking-wider cursor-pointer hover:opacity-80 transition-opacity select-none"
+                                                        style={{ color: "var(--table-header-text)", textAlign: "right" }}
+                                                        onClick={() => handleSort("name")}
+                                                    >
+                                                        <span style={{ display: "inline-block" }}>
+                                                            שם
+                                                            <span className="text-xs" style={{ marginRight: "4px" }}>
+                                                                {usersSortField === "name" ? (
+                                                                    usersSortOrder === "asc" ? "↑" : "↓"
+                                                                ) : (
+                                                                    "↕"
+                                                                )}
+                                                            </span>
+                                                        </span>
                                                     </th>
-                                                    <th className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
+                                                    <th className="px-3 py-3 text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)", textAlign: "right" }}>
                                                         טלפון
                                                     </th>
-                                                    <th className="px-2 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
-                                                        דירה/קומה
+                                                    <th
+                                                        className="px-2 py-3 text-xs font-medium uppercase tracking-wider cursor-pointer hover:opacity-80 transition-opacity select-none"
+                                                        style={{ color: "var(--table-header-text)", textAlign: "right" }}
+                                                        onClick={() => handleSort("apartmentNumber")}
+                                                    >
+                                                        <span style={{ display: "inline-block" }}>
+                                                            דירה/קומה
+                                                            <span className="text-xs" style={{ marginRight: "4px" }}>
+                                                                {usersSortField === "apartmentNumber" ? (
+                                                                    usersSortOrder === "asc" ? "↑" : "↓"
+                                                                ) : (
+                                                                    "↕"
+                                                                )}
+                                                            </span>
+                                                        </span>
                                                     </th>
-                                                    <th className="px-2 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
+                                                    <th className="px-2 py-3 text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)", textAlign: "right" }}>
                                                         סטטוס
                                                     </th>
-                                                    <th className="px-2 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
+                                                    <th className="px-2 py-3 text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)", textAlign: "right" }}>
                                                         מכשיר
                                                     </th>
-                                                    <th className="px-2 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
-                                                        תאריך יצירה
+                                                    <th
+                                                        className="px-2 py-3 text-xs font-medium uppercase tracking-wider cursor-pointer hover:opacity-80 transition-opacity select-none"
+                                                        style={{ color: "var(--table-header-text)", textAlign: "right" }}
+                                                        onClick={() => handleSort("createdAt")}
+                                                    >
+                                                        <span style={{ display: "inline-block" }}>
+                                                            תאריך יצירה
+                                                            <span className="text-xs" style={{ marginRight: "4px" }}>
+                                                                {usersSortField === "createdAt" ? (
+                                                                    usersSortOrder === "asc" ? "↑" : "↓"
+                                                                ) : (
+                                                                    "↕"
+                                                                )}
+                                                            </span>
+                                                        </span>
                                                     </th>
-                                                    <th className="px-2 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
-                                                        אישור/דחייה
+                                                    <th
+                                                        className="px-2 py-3 text-xs font-medium uppercase tracking-wider cursor-pointer hover:opacity-80 transition-opacity select-none"
+                                                        style={{ color: "var(--table-header-text)", textAlign: "right" }}
+                                                        onClick={() => handleSort("approvalDate")}
+                                                    >
+                                                        <span style={{ display: "inline-block" }}>
+                                                            אישור/דחייה
+                                                            <span className="text-xs" style={{ marginRight: "4px" }}>
+                                                                {usersSortField === "approvalDate" ? (
+                                                                    usersSortOrder === "asc" ? "↑" : "↓"
+                                                                ) : (
+                                                                    "↕"
+                                                                )}
+                                                            </span>
+                                                        </span>
                                                     </th>
-                                                    <th className="px-2 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
+                                                    <th className="px-2 py-3 text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)", textAlign: "right" }}>
                                                         פעולות
                                                     </th>
                                                 </tr>
@@ -1023,20 +1093,20 @@ export default function AdminPage() {
 
                                                         // First row with user info + first device (or "אין" if no devices)
                                                         const rows = [
-                                                            <tr key={`${user.id}-main`} className="table-row">
-                                                                <td rowSpan={numRows} className="px-3 py-2 text-sm align-middle" style={{ color: "var(--text)" }}>
+                                                            <tr key={`${user.id}-main`} className="cursor-pointer transition-colors" style={{ backgroundColor: "var(--surface)" }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--surface-2)"; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--surface)"; }} onClick={() => openEditModal(user)}>
+                                                                <td rowSpan={numRows} className="px-3 py-4 text-sm align-middle" style={{ color: "var(--text)" }}>
                                                                     <div className="truncate max-w-[150px]">{user.email}</div>
                                                                 </td>
-                                                                <td rowSpan={numRows} className="px-3 py-2 text-sm align-middle" style={{ color: "var(--text)" }}>
+                                                                <td rowSpan={numRows} className="px-3 py-4 text-sm align-middle" style={{ color: "var(--text)" }}>
                                                                     {user.firstName} {user.lastName}
                                                                 </td>
-                                                                <td rowSpan={numRows} className="px-3 py-2 text-sm align-middle" style={{ color: "var(--text)" }}>
+                                                                <td rowSpan={numRows} className="px-3 py-4 text-sm align-middle" style={{ color: "var(--text)" }}>
                                                                     {user.phone}
                                                                 </td>
-                                                                <td rowSpan={numRows} className="px-2 py-2 text-sm align-middle" style={{ color: "var(--text)" }}>
+                                                                <td rowSpan={numRows} className="px-2 py-4 text-sm align-middle" style={{ color: "var(--text)" }}>
                                                                     {user.apartmentNumber}/{user.floor}
                                                                 </td>
-                                                                <td rowSpan={numRows} className="px-2 py-2 text-sm align-middle">
+                                                                <td rowSpan={numRows} className="px-2 py-4 text-sm align-middle">
                                                                     <div className="flex items-center gap-1 flex-wrap">
                                                                         {user.status === "approved" ? (
                                                                             <span className="badge-success inline-flex rounded-full px-2 py-0.5 text-xs font-medium">
@@ -1062,14 +1132,14 @@ export default function AdminPage() {
                                                                         )}
                                                                     </div>
                                                                 </td>
-                                                                <td className="px-2 py-2 text-sm font-mono">
+                                                                <td className="px-2 py-4 text-sm font-mono">
                                                                     {hasDevices ? (
                                                                         <div className="flex items-center gap-1">
                                                                             <span className="text-success text-xs">
                                                                                 {devices[0].deviceId.substring(0, 10)}...
                                                                             </span>
                                                                             <button
-                                                                                onClick={() => handleResetDevice(user.id, devices[0].deviceId)}
+                                                                                onClick={(e) => { e.stopPropagation(); handleResetDevice(user.id, devices[0].deviceId); }}
                                                                                 className="rounded-theme-sm px-1.5 py-0.5 text-xs font-medium"
                                                                                 style={{
                                                                                     backgroundColor: "var(--warning)",
@@ -1084,10 +1154,10 @@ export default function AdminPage() {
                                                                         <span className="text-muted text-xs">אין</span>
                                                                     )}
                                                                 </td>
-                                                                <td rowSpan={numRows} className="px-2 py-2 text-xs text-muted align-middle">
+                                                                <td rowSpan={numRows} className="px-2 py-4 text-xs text-muted align-middle">
                                                                     {new Date(user.createdAt).toLocaleString("he-IL", { dateStyle: "short", timeStyle: "short" })}
                                                                 </td>
-                                                                <td rowSpan={numRows} className="px-2 py-2 text-xs align-middle">
+                                                                <td rowSpan={numRows} className="px-2 py-4 text-xs align-middle">
                                                                     {user.approvedAt && (
                                                                         <span style={{ color: "var(--success)" }}>{new Date(user.approvedAt).toLocaleString("he-IL", { dateStyle: "short", timeStyle: "short" })}</span>
                                                                     )}
@@ -1098,12 +1168,12 @@ export default function AdminPage() {
                                                                         <span className="text-muted">-</span>
                                                                     )}
                                                                 </td>
-                                                                <td rowSpan={numRows} className="px-2 py-2 text-sm align-middle">
+                                                                <td rowSpan={numRows} className="px-2 py-4 text-sm align-middle">
                                                                     <div className="flex flex-wrap gap-1">
                                                                         {user.status === "pending" && (
                                                                             <>
                                                                                 <button
-                                                                                    onClick={() => handleApproveUser(user.id)}
+                                                                                    onClick={(e) => { e.stopPropagation(); handleApproveUser(user.id); }}
                                                                                     className="rounded-theme-sm px-2 py-0.5 text-xs font-medium"
                                                                                     style={{
                                                                                         backgroundColor: "var(--success)",
@@ -1119,7 +1189,7 @@ export default function AdminPage() {
                                                                                     אישור
                                                                                 </button>
                                                                                 <button
-                                                                                    onClick={() => openRejectModal(user)}
+                                                                                    onClick={(e) => { e.stopPropagation(); openRejectModal(user); }}
                                                                                     className="rounded-theme-sm px-2 py-0.5 text-xs font-medium"
                                                                                     style={{
                                                                                         backgroundColor: "var(--danger)",
@@ -1138,7 +1208,7 @@ export default function AdminPage() {
                                                                         )}
                                                                         {user.status === "approved" && !user.approvalEmailSentAt && (
                                                                             <button
-                                                                                onClick={() => handleSendApprovalEmail(user.id)}
+                                                                                onClick={(e) => { e.stopPropagation(); handleSendApprovalEmail(user.id); }}
                                                                                 className="rounded-theme-sm px-2 py-0.5 text-xs font-medium"
                                                                                 style={{
                                                                                     backgroundColor: "var(--primary)",
@@ -1155,7 +1225,7 @@ export default function AdminPage() {
                                                                             </button>
                                                                         )}
                                                                         <button
-                                                                            onClick={() => openEditModal(user)}
+                                                                            onClick={(e) => { e.stopPropagation(); openEditModal(user); }}
                                                                             className="rounded-theme-sm px-2 py-0.5 text-xs font-medium"
                                                                             style={{
                                                                                 backgroundColor: "var(--primary)",
@@ -1172,7 +1242,7 @@ export default function AdminPage() {
                                                                         </button>
                                                                         {user.status !== "archived" && (
                                                                             <button
-                                                                                onClick={() => handleArchiveUser(user.id)}
+                                                                                onClick={(e) => { e.stopPropagation(); handleArchiveUser(user.id); }}
                                                                                 className="rounded-theme-sm px-2 py-0.5 text-xs font-medium"
                                                                                 style={{
                                                                                     backgroundColor: "var(--muted)",
@@ -1194,13 +1264,13 @@ export default function AdminPage() {
                                                             // Additional rows for extra devices
                                                             ...devices.slice(1).map((device, idx) => (
                                                                 <tr key={`${user.id}-device-${device.deviceId}`} className="table-row">
-                                                                    <td className="px-2 py-2 text-sm font-mono">
+                                                                    <td className="px-2 py-4 text-sm font-mono">
                                                                         <div className="flex items-center gap-1">
                                                                             <span className="text-success text-xs">
                                                                                 {device.deviceId.substring(0, 10)}...
                                                                             </span>
                                                                             <button
-                                                                                onClick={() => handleResetDevice(user.id, device.deviceId)}
+                                                                                onClick={(e) => { e.stopPropagation(); handleResetDevice(user.id, device.deviceId); }}
                                                                                 className="rounded-theme-sm px-1.5 py-0.5 text-xs font-medium"
                                                                                 style={{
                                                                                     backgroundColor: "var(--warning)",

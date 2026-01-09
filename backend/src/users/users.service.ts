@@ -192,12 +192,14 @@ export class UsersService {
         filter: any,
         skip: number,
         limit: number,
+        sort: any = { createdAt: -1 },
     ): Promise<UserDocument[]> {
         return (
             this.userModel
                 // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
                 .find(filter)
-                .sort({ createdAt: -1 })
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+                .sort(sort)
                 .skip(skip)
                 .limit(limit)
                 .exec()

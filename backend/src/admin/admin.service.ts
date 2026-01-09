@@ -12,7 +12,7 @@ import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { GateService } from '../gate/gate.service';
 import { EmailService } from '../email/email.service';
-import { GetUsersQueryDto, UserStatusFilter } from './dto/get-users-query.dto';
+import { GetUsersQueryDto, UserStatusFilter, UserSortField, UserSortOrder } from './dto/get-users-query.dto';
 import { GetLogsQueryDto } from './dto/get-logs-query.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
@@ -96,6 +96,8 @@ export class AdminService {
             q,
             page = 1,
             limit = 20,
+            sortField = UserSortField.CREATED_AT,
+            sortOrder = UserSortOrder.DESC,
         } = query;
 
         // Build filter
@@ -130,11 +132,43 @@ export class AdminService {
         const total = await this.usersService.countUsers(filter);
         const totalPages = Math.ceil(total / limit);
 
+        // Build sort object based on sortField and sortOrder
+        const sortDirection = sortOrder === UserSortOrder.ASC ? 1 : -1;
+        let sort: any = {};
+
+        switch (sortField) {
+            case UserSortField.NAME:
+                // Sort by lastName first, then firstName as secondary sort
+                sort = { lastName: sortDirection, firstName: sortDirection };
+                break;
+            case UserSortField.APARTMENT_NUMBER:
+                sort = { apartmentNumber: sortDirection };
+                break;
+            case UserSortField.CREATED_AT:
+                sort = { createdAt: sortDirection };
+                break;
+            case UserSortField.APPROVAL_DATE:
+                // For approval date, we need to sort by approvedAt if exists, otherwise rejectedAt
+                // This requires using MongoDB aggregation or a computed field
+                // For simplicity, we'll sort by approvedAt first (nulls last), then rejectedAt
+                if (sortDirection === 1) {
+                    // Ascending: nulls first, then approvedAt, then rejectedAt
+                    sort = { approvedAt: 1, rejectedAt: 1 };
+                } else {
+                    // Descending: approvedAt/rejectedAt first, then nulls
+                    sort = { approvedAt: -1, rejectedAt: -1 };
+                }
+                break;
+            default:
+                sort = { createdAt: -1 }; // Default fallback
+        }
+
         // Fetch users
         const users = await this.usersService.findUsersPaginated(
             filter,
             skip,
             limit,
+            sort,
         );
 
         // Transform to response format with active devices

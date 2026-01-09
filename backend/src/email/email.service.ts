@@ -63,9 +63,12 @@ export class EmailService {
                 'EMAIL_FROM_NAME',
             );
 
-            // Format "from" field: "Name <email@example.com>" or just "email@example.com"
+            // Format "from" field using object format for better compatibility
             const emailFrom = emailFromName
-                ? `${emailFromName} <${emailAddress}>`
+                ? {
+                      name: emailFromName,
+                      address: emailAddress,
+                  }
                 : emailAddress;
 
             // Load email template
@@ -126,9 +129,10 @@ export class EmailService {
                 <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
                     <h1 style="color: #2c3e50;">החשבון שלך אושר</h1>
                     <p>שלום ${firstName} ${lastName},</p>
-                    <p>החשבון שלך במערכת פתיחת השער אושר בהצלחה. כעת תוכל להתחבר למערכת ולפתוח את השער.</p>
+                    <p>אנו שמחים להודיע לך שהחשבון שלך במערכת פתיחת השער אושר בהצלחה.</p>
+                    <p>כעת תוכל להתחבר למערכת ולהשתמש בשירות פתיחת השער מרחוק.</p>
                     <p>תוכל להתחבר באמצעות כתובת האימייל והסיסמה שהזנת בעת ההרשמה.</p>
-                    <p>בברכה,<br>צוות המערכת</p>
+                    <p>בברכה,<br>ועד הבית</p>
                 </div>
             </body>
             </html>

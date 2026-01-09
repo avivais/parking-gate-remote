@@ -9,6 +9,18 @@ export enum UserStatusFilter {
     ALL = 'all',
 }
 
+export enum UserSortField {
+    NAME = 'name',
+    APARTMENT_NUMBER = 'apartmentNumber',
+    CREATED_AT = 'createdAt',
+    APPROVAL_DATE = 'approvalDate',
+}
+
+export enum UserSortOrder {
+    ASC = 'asc',
+    DESC = 'desc',
+}
+
 export class GetUsersQueryDto {
     @IsOptional()
     @IsEnum(UserStatusFilter)
@@ -30,4 +42,12 @@ export class GetUsersQueryDto {
     @Min(1)
     @Max(100)
     limit?: number = 20;
+
+    @IsOptional()
+    @IsEnum(UserSortField)
+    sortField?: UserSortField = UserSortField.CREATED_AT;
+
+    @IsOptional()
+    @IsEnum(UserSortOrder)
+    sortOrder?: UserSortOrder = UserSortOrder.DESC;
 }
