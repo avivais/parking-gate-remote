@@ -257,8 +257,11 @@ export default function AdminPage() {
                 body: { status: "approved" },
             });
             toast.success("המשתמש אושר בהצלחה");
-            // If currently on pending tab, the user will disappear. Optionally switch to approved tab.
-            // For now, just refresh the current view
+            // Refresh the current view - ensure we reload with current filter
+            // Reset to page 1 if needed to avoid showing empty pages
+            if (usersPage !== 1) {
+                setUsersPage(1);
+            }
             await loadUsers();
         } catch (err) {
             if (err instanceof ApiError) {
@@ -277,6 +280,8 @@ export default function AdminPage() {
                 method: "POST",
             });
             toast.success(`${response.count} משתמשים אושרו בהצלחה`);
+            // Reset to page 1 and reload
+            setUsersPage(1);
             await loadUsers();
         } catch (err) {
             if (err instanceof ApiError) {
@@ -888,14 +893,14 @@ export default function AdminPage() {
                                                     </div>
                                                     {user.approvedAt && (
                                                         <div className="flex justify-between">
-                                                            <span className="text-muted">תאריך אישור:</span>
-                                                            <span className="text-muted">{new Date(user.approvedAt).toLocaleString("he-IL")}</span>
+                                                            <span className="text-muted">תאריך אישור/דחייה:</span>
+                                                            <span style={{ color: "var(--success)" }}>{new Date(user.approvedAt).toLocaleString("he-IL")}</span>
                                                         </div>
                                                     )}
                                                     {user.rejectedAt && (
                                                         <div className="flex justify-between">
-                                                            <span className="text-muted">תאריך דחייה:</span>
-                                                            <span className="text-muted">{new Date(user.rejectedAt).toLocaleString("he-IL")}</span>
+                                                            <span className="text-muted">תאריך אישור/דחייה:</span>
+                                                            <span style={{ color: "var(--danger)" }}>{new Date(user.rejectedAt).toLocaleString("he-IL")}</span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -970,31 +975,31 @@ export default function AdminPage() {
                                         <table className="min-w-full divide-y" style={{ borderColor: "var(--table-border)" }}>
                                             <thead className="table-header">
                                                 <tr>
-                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
+                                                    <th className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
                                                         אימייל
                                                     </th>
-                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
+                                                    <th className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
                                                         שם
                                                     </th>
-                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
+                                                    <th className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
                                                         טלפון
                                                     </th>
-                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
-                                                        דירה + קומה
+                                                    <th className="px-2 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
+                                                        דירה/קומה
                                                     </th>
-                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
+                                                    <th className="px-2 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
                                                         סטטוס
                                                     </th>
-                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
-                                                        מכשיר פעיל
+                                                    <th className="px-2 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
+                                                        מכשיר
                                                     </th>
-                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
+                                                    <th className="px-2 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
                                                         תאריך יצירה
                                                     </th>
-                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
-                                                        תאריך אישור/דחייה
+                                                    <th className="px-2 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
+                                                        אישור/דחייה
                                                     </th>
-                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
+                                                    <th className="px-2 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
                                                         פעולות
                                                     </th>
                                                 </tr>
@@ -1004,7 +1009,7 @@ export default function AdminPage() {
                                                     <tr>
                                                         <td
                                                             colSpan={9}
-                                                            className="px-6 py-4 text-center text-sm text-muted"
+                                                            className="px-3 py-3 text-center text-sm text-muted"
                                                         >
                                                             אין משתמשים להצגה
                                                         </td>
@@ -1019,53 +1024,53 @@ export default function AdminPage() {
                                                         // First row with user info + first device (or "אין" if no devices)
                                                         const rows = [
                                                             <tr key={`${user.id}-main`} className="table-row">
-                                                                <td rowSpan={numRows} className="whitespace-nowrap px-6 py-4 text-sm align-middle" style={{ color: "var(--text)" }}>
-                                                                    {user.email}
+                                                                <td rowSpan={numRows} className="px-3 py-2 text-sm align-middle" style={{ color: "var(--text)" }}>
+                                                                    <div className="truncate max-w-[150px]">{user.email}</div>
                                                                 </td>
-                                                                <td rowSpan={numRows} className="whitespace-nowrap px-6 py-4 text-sm align-middle" style={{ color: "var(--text)" }}>
+                                                                <td rowSpan={numRows} className="px-3 py-2 text-sm align-middle" style={{ color: "var(--text)" }}>
                                                                     {user.firstName} {user.lastName}
                                                                 </td>
-                                                                <td rowSpan={numRows} className="whitespace-nowrap px-6 py-4 text-sm align-middle" style={{ color: "var(--text)" }}>
+                                                                <td rowSpan={numRows} className="px-3 py-2 text-sm align-middle" style={{ color: "var(--text)" }}>
                                                                     {user.phone}
                                                                 </td>
-                                                                <td rowSpan={numRows} className="whitespace-nowrap px-6 py-4 text-sm align-middle" style={{ color: "var(--text)" }}>
-                                                                    {user.apartmentNumber} / {user.floor}
+                                                                <td rowSpan={numRows} className="px-2 py-2 text-sm align-middle" style={{ color: "var(--text)" }}>
+                                                                    {user.apartmentNumber}/{user.floor}
                                                                 </td>
-                                                                <td rowSpan={numRows} className="whitespace-nowrap px-6 py-4 text-sm align-middle">
-                                                                    <div className="flex items-center gap-2">
+                                                                <td rowSpan={numRows} className="px-2 py-2 text-sm align-middle">
+                                                                    <div className="flex items-center gap-1 flex-wrap">
                                                                         {user.status === "approved" ? (
-                                                                            <span className="badge-success inline-flex rounded-full px-2 py-1 text-xs font-medium">
+                                                                            <span className="badge-success inline-flex rounded-full px-2 py-0.5 text-xs font-medium">
                                                                                 מאושר
                                                                             </span>
                                                                         ) : user.status === "pending" ? (
-                                                                            <span className="badge-warning inline-flex rounded-full px-2 py-1 text-xs font-medium">
+                                                                            <span className="badge-warning inline-flex rounded-full px-2 py-0.5 text-xs font-medium">
                                                                                 ממתין
                                                                             </span>
                                                                         ) : user.status === "rejected" ? (
-                                                                            <span className="badge-danger inline-flex rounded-full px-2 py-1 text-xs font-medium">
+                                                                            <span className="badge-danger inline-flex rounded-full px-2 py-0.5 text-xs font-medium">
                                                                                 נדחה
                                                                             </span>
                                                                         ) : (
-                                                                            <span className="badge-muted inline-flex rounded-full px-2 py-1 text-xs font-medium">
+                                                                            <span className="badge-muted inline-flex rounded-full px-2 py-0.5 text-xs font-medium">
                                                                                 מושבת
                                                                             </span>
                                                                         )}
                                                                         {user.role === "admin" && (
-                                                                            <span className="inline-flex rounded-full px-2 py-1 text-xs font-medium" style={{ backgroundColor: "var(--primary)", color: "var(--primary-contrast)" }}>
+                                                                            <span className="inline-flex rounded-full px-2 py-0.5 text-xs font-medium" style={{ backgroundColor: "var(--primary)", color: "var(--primary-contrast)" }}>
                                                                                 אדמין
                                                                             </span>
                                                                         )}
                                                                     </div>
                                                                 </td>
-                                                                <td className="whitespace-nowrap px-6 py-4 text-sm font-mono">
+                                                                <td className="px-2 py-2 text-sm font-mono">
                                                                     {hasDevices ? (
-                                                                        <div className="flex items-center gap-2">
-                                                                            <span className="text-success">
-                                                                                {devices[0].deviceId.substring(0, 12)}...
+                                                                        <div className="flex items-center gap-1">
+                                                                            <span className="text-success text-xs">
+                                                                                {devices[0].deviceId.substring(0, 10)}...
                                                                             </span>
                                                                             <button
                                                                                 onClick={() => handleResetDevice(user.id, devices[0].deviceId)}
-                                                                                className="rounded-theme-sm px-2 py-1 text-xs font-medium"
+                                                                                className="rounded-theme-sm px-1.5 py-0.5 text-xs font-medium"
                                                                                 style={{
                                                                                     backgroundColor: "var(--warning)",
                                                                                     color: "var(--primary-contrast)",
@@ -1076,36 +1081,30 @@ export default function AdminPage() {
                                                                             </button>
                                                                         </div>
                                                                     ) : (
-                                                                        <span className="text-muted">אין</span>
+                                                                        <span className="text-muted text-xs">אין</span>
                                                                     )}
                                                                 </td>
-                                                                <td rowSpan={numRows} className="whitespace-nowrap px-6 py-4 text-sm text-muted align-middle">
-                                                                    {new Date(user.createdAt).toLocaleString("he-IL")}
+                                                                <td rowSpan={numRows} className="px-2 py-2 text-xs text-muted align-middle">
+                                                                    {new Date(user.createdAt).toLocaleString("he-IL", { dateStyle: "short", timeStyle: "short" })}
                                                                 </td>
-                                                                <td rowSpan={numRows} className="whitespace-nowrap px-6 py-4 text-sm text-muted align-middle">
+                                                                <td rowSpan={numRows} className="px-2 py-2 text-xs align-middle">
                                                                     {user.approvedAt && (
-                                                                        <div>
-                                                                            <span className="text-xs">אישור: </span>
-                                                                            {new Date(user.approvedAt).toLocaleString("he-IL")}
-                                                                        </div>
+                                                                        <span style={{ color: "var(--success)" }}>{new Date(user.approvedAt).toLocaleString("he-IL", { dateStyle: "short", timeStyle: "short" })}</span>
                                                                     )}
                                                                     {user.rejectedAt && (
-                                                                        <div>
-                                                                            <span className="text-xs">דחייה: </span>
-                                                                            {new Date(user.rejectedAt).toLocaleString("he-IL")}
-                                                                        </div>
+                                                                        <span style={{ color: "var(--danger)" }}>{new Date(user.rejectedAt).toLocaleString("he-IL", { dateStyle: "short", timeStyle: "short" })}</span>
                                                                     )}
                                                                     {!user.approvedAt && !user.rejectedAt && (
                                                                         <span className="text-muted">-</span>
                                                                     )}
                                                                 </td>
-                                                                <td rowSpan={numRows} className="whitespace-nowrap px-6 py-4 text-sm align-middle">
-                                                                    <div className="flex flex-wrap gap-2">
+                                                                <td rowSpan={numRows} className="px-2 py-2 text-sm align-middle">
+                                                                    <div className="flex flex-wrap gap-1">
                                                                         {user.status === "pending" && (
                                                                             <>
                                                                                 <button
                                                                                     onClick={() => handleApproveUser(user.id)}
-                                                                                    className="rounded-theme-sm px-3 py-1 text-xs font-medium"
+                                                                                    className="rounded-theme-sm px-2 py-0.5 text-xs font-medium"
                                                                                     style={{
                                                                                         backgroundColor: "var(--success)",
                                                                                         color: "var(--primary-contrast)",
@@ -1121,7 +1120,7 @@ export default function AdminPage() {
                                                                                 </button>
                                                                                 <button
                                                                                     onClick={() => openRejectModal(user)}
-                                                                                    className="rounded-theme-sm px-3 py-1 text-xs font-medium"
+                                                                                    className="rounded-theme-sm px-2 py-0.5 text-xs font-medium"
                                                                                     style={{
                                                                                         backgroundColor: "var(--danger)",
                                                                                         color: "var(--primary-contrast)",
@@ -1140,7 +1139,7 @@ export default function AdminPage() {
                                                                         {user.status === "approved" && !user.approvalEmailSentAt && (
                                                                             <button
                                                                                 onClick={() => handleSendApprovalEmail(user.id)}
-                                                                                className="rounded-theme-sm px-3 py-1 text-xs font-medium"
+                                                                                className="rounded-theme-sm px-2 py-0.5 text-xs font-medium"
                                                                                 style={{
                                                                                     backgroundColor: "var(--primary)",
                                                                                     color: "var(--primary-contrast)",
@@ -1152,21 +1151,21 @@ export default function AdminPage() {
                                                                                     e.currentTarget.style.opacity = "1";
                                                                                 }}
                                                                             >
-                                                                                שלח מייל אישור
+                                                                                שלח מייל
                                                                             </button>
                                                                         )}
                                                                         <button
                                                                             onClick={() => openEditModal(user)}
-                                                                            className="rounded-theme-sm px-3 py-1 text-xs font-medium"
+                                                                            className="rounded-theme-sm px-2 py-0.5 text-xs font-medium"
                                                                             style={{
                                                                                 backgroundColor: "var(--primary)",
                                                                                 color: "var(--primary-contrast)",
                                                                             }}
                                                                             onMouseEnter={(e) => {
-                                                                                e.currentTarget.style.backgroundColor = "var(--primary-hover)";
+                                                                                e.currentTarget.style.opacity = "0.9";
                                                                             }}
                                                                             onMouseLeave={(e) => {
-                                                                                e.currentTarget.style.backgroundColor = "var(--primary)";
+                                                                                e.currentTarget.style.opacity = "1";
                                                                             }}
                                                                         >
                                                                             עריכה
@@ -1174,7 +1173,7 @@ export default function AdminPage() {
                                                                         {user.status !== "archived" && (
                                                                             <button
                                                                                 onClick={() => handleArchiveUser(user.id)}
-                                                                                className="rounded-theme-sm px-3 py-1 text-xs font-medium"
+                                                                                className="rounded-theme-sm px-2 py-0.5 text-xs font-medium"
                                                                                 style={{
                                                                                     backgroundColor: "var(--muted)",
                                                                                     color: "var(--primary-contrast)",
@@ -1195,14 +1194,14 @@ export default function AdminPage() {
                                                             // Additional rows for extra devices
                                                             ...devices.slice(1).map((device, idx) => (
                                                                 <tr key={`${user.id}-device-${device.deviceId}`} className="table-row">
-                                                                    <td className="whitespace-nowrap px-6 py-4 text-sm font-mono">
-                                                                        <div className="flex items-center gap-2">
-                                                                            <span className="text-success">
-                                                                                {device.deviceId.substring(0, 12)}...
+                                                                    <td className="px-2 py-2 text-sm font-mono">
+                                                                        <div className="flex items-center gap-1">
+                                                                            <span className="text-success text-xs">
+                                                                                {device.deviceId.substring(0, 10)}...
                                                                             </span>
                                                                             <button
                                                                                 onClick={() => handleResetDevice(user.id, device.deviceId)}
-                                                                                className="rounded-theme-sm px-2 py-1 text-xs font-medium"
+                                                                                className="rounded-theme-sm px-1.5 py-0.5 text-xs font-medium"
                                                                                 style={{
                                                                                     backgroundColor: "var(--warning)",
                                                                                     color: "var(--primary-contrast)",

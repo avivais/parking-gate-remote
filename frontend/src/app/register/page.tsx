@@ -17,7 +17,6 @@ export default function RegisterPage() {
     const [apartmentNumber, setApartmentNumber] = useState("");
     const [floor, setFloor] = useState("");
     const [loading, setLoading] = useState(false);
-    const [showPendingNotice, setShowPendingNotice] = useState(false);
     const { register } = useAuth();
     const router = useRouter();
 
@@ -52,7 +51,6 @@ export default function RegisterPage() {
             const fullPhone = `${phonePrefix}${phoneNumber}`;
 
             await register(email, password, firstName, lastName, fullPhone, aptNum, floorNum);
-            setShowPendingNotice(true);
             toast.success("נרשמת בהצלחה! ממתין לאישור אדמין.");
             setTimeout(() => {
                 router.push("/login");
@@ -275,13 +273,6 @@ export default function RegisterPage() {
                         </div>
                     </div>
 
-                    {showPendingNotice && (
-                        <div className="rounded-theme-md border p-4" style={{ backgroundColor: "var(--primary)", borderColor: "var(--primary)", opacity: 0.1 }}>
-                            <p className="text-sm" style={{ color: "var(--primary)" }}>
-                                נרשמת, ממתין לאישור אדמין
-                            </p>
-                        </div>
-                    )}
 
                     <div>
                         <button

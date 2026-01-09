@@ -29,6 +29,7 @@ Add these to your `.env` file (or `backend.env.template` for production):
 ```bash
 # Email Configuration
 EMAIL_FROM=mitzpe6.8@gmail.com
+EMAIL_FROM_NAME=מצפה 6-8 - מערכת פתיחת שער
 EMAIL_USER=mitzpe6.8@gmail.com
 EMAIL_PASSWORD=YOUR_16_CHARACTER_APP_PASSWORD_HERE  # The App Password from Step 2
 EMAIL_HOST=smtp.gmail.com
@@ -37,8 +38,14 @@ EMAIL_PORT=587
 
 ### Where to get each variable:
 
-- **EMAIL_FROM**: Your Gmail address (what recipients will see as sender)
+- **EMAIL_FROM**: Your Gmail address (what recipients will see as sender email)
   - Example: `mitzpe6.8@gmail.com`
+
+- **EMAIL_FROM_NAME**: Display name for the sender (optional, but recommended)
+  - This name will appear before the email address in the "From" field
+  - Example: `מצפה 6-8 - מערכת פתיחת שער` or `Mitzpe 6-8 Gate System`
+  - If not set, only the email address will be shown
+  - Recipients will see: "Name <email@example.com>"
 
 - **EMAIL_USER**: Your Gmail address (for authentication)
   - Example: `mitzpe6.8@gmail.com`
@@ -61,11 +68,14 @@ For the account `mitzpe6.8@gmail.com` with App Password `abcdefghijklmnop`:
 
 ```bash
 EMAIL_FROM=mitzpe6.8@gmail.com
+EMAIL_FROM_NAME=מצפה 6-8 - מערכת פתיחת שער
 EMAIL_USER=mitzpe6.8@gmail.com
 EMAIL_PASSWORD=abcdefghijklmnop
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 ```
+
+Recipients will see the email as coming from: "מצפה 6-8 - מערכת פתיחת שער <mitzpe6.8@gmail.com>"
 
 ## Troubleshooting
 

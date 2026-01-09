@@ -55,10 +55,18 @@ export class EmailService {
         }
 
         try {
-            const emailFrom = this.configService.get<string>(
+            const emailAddress = this.configService.get<string>(
                 'EMAIL_FROM',
                 this.configService.get<string>('EMAIL_USER', 'noreply@example.com'),
             );
+            const emailFromName = this.configService.get<string>(
+                'EMAIL_FROM_NAME',
+            );
+
+            // Format "from" field: "Name <email@example.com>" or just "email@example.com"
+            const emailFrom = emailFromName
+                ? `${emailFromName} <${emailAddress}>`
+                : emailAddress;
 
             // Load email template
             // Try multiple possible paths (dev and production)
