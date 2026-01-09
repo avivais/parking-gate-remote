@@ -56,6 +56,15 @@ export class User {
     rejectionReason: string | null;
 
     @Prop()
+    approvedAt?: Date;
+
+    @Prop()
+    rejectedAt?: Date;
+
+    @Prop()
+    approvalEmailSentAt?: Date;
+
+    @Prop()
     activeDeviceId?: string;
 
     @Prop()

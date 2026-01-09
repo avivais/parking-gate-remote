@@ -73,4 +73,15 @@ export class AdminController {
     async getDeviceStatus() {
         return this.adminService.getDeviceStatuses();
     }
+
+    @Post('users/approve-all')
+    async approveAllPendingUsers() {
+        return this.adminService.approveAllPendingUsers();
+    }
+
+    @Post('users/:id/send-approval-email')
+    async sendApprovalEmail(@Param('id') id: string) {
+        await this.adminService.sendApprovalEmail(id);
+        return { message: 'מייל אישור נשלח בהצלחה' };
+    }
 }

@@ -71,6 +71,7 @@ export default function AdminPage() {
     const [rejectModalOpen, setRejectModalOpen] = useState(false);
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [editModalConfirmClose, setEditModalConfirmClose] = useState(false);
+    const [approveAllModalOpen, setApproveAllModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
     const [rejectionReason, setRejectionReason] = useState("");
     const [editFormData, setEditFormData] = useState({
@@ -264,6 +265,41 @@ export default function AdminPage() {
                 toast.error(err.message || "שגיאה באישור המשתמש");
             } else {
                 toast.error("שגיאה באישור המשתמש");
+            }
+        }
+    };
+
+    // Handle approve all pending users
+    const handleApproveAll = async () => {
+        try {
+            setApproveAllModalOpen(false);
+            const response = await apiRequest<{ count: number }>("/admin/users/approve-all", {
+                method: "POST",
+            });
+            toast.success(`${response.count} משתמשים אושרו בהצלחה`);
+            await loadUsers();
+        } catch (err) {
+            if (err instanceof ApiError) {
+                toast.error(err.message || "שגיאה באישור כל המשתמשים");
+            } else {
+                toast.error("שגיאה באישור כל המשתמשים");
+            }
+        }
+    };
+
+    // Handle send approval email
+    const handleSendApprovalEmail = async (userId: string) => {
+        try {
+            await apiRequest(`/admin/users/${userId}/send-approval-email`, {
+                method: "POST",
+            });
+            toast.success("מייל אישור נשלח בהצלחה");
+            await loadUsers();
+        } catch (err) {
+            if (err instanceof ApiError) {
+                toast.error(err.message || "שגיאה בשליחת מייל אישור");
+            } else {
+                toast.error("שגיאה בשליחת מייל אישור");
             }
         }
     };
@@ -521,6 +557,8 @@ export default function AdminPage() {
                 if (rejectModalOpen) {
                     setRejectModalOpen(false);
                     setRejectionReason("");
+                } else if (approveAllModalOpen) {
+                    setApproveAllModalOpen(false);
                 } else if (editModalOpen) {
                     if (editFormHasChanges || isResettingPassword) {
                         if (!editModalConfirmClose) {
@@ -538,13 +576,13 @@ export default function AdminPage() {
             }
         };
 
-        if (rejectModalOpen || editModalOpen) {
+        if (rejectModalOpen || approveAllModalOpen || editModalOpen) {
             document.addEventListener("keydown", handleEscapeKey);
             return () => {
                 document.removeEventListener("keydown", handleEscapeKey);
             };
         }
-    }, [rejectModalOpen, editModalOpen, editFormHasChanges, isResettingPassword, editModalConfirmClose]);
+    }, [rejectModalOpen, approveAllModalOpen, editModalOpen, editFormHasChanges, isResettingPassword, editModalConfirmClose]);
 
     // Confirm close edit modal (discard changes)
     const confirmCloseEditModal = () => {
@@ -730,6 +768,22 @@ export default function AdminPage() {
                             </div>
                         </div>
 
+                        {/* Approve All Button - Only show when filter is pending */}
+                        {usersStatusFilter === "pending" && usersData && usersData.items.length > 0 && (
+                            <div className="mb-4">
+                                <button
+                                    onClick={() => setApproveAllModalOpen(true)}
+                                    className="rounded-theme-md px-4 py-2 text-sm font-medium"
+                                    style={{
+                                        backgroundColor: "var(--success)",
+                                        color: "var(--primary-contrast)",
+                                    }}
+                                >
+                                    אישור כל המשתמשים הממתינים ({usersData.total})
+                                </button>
+                            </div>
+                        )}
+
                         {/* Users Table */}
                         {loading ? (
                             <div className="flex items-center justify-center py-12">
@@ -832,6 +886,18 @@ export default function AdminPage() {
                                                         <span className="text-muted">תאריך יצירה:</span>
                                                         <span className="text-muted">{new Date(user.createdAt).toLocaleString("he-IL")}</span>
                                                     </div>
+                                                    {user.approvedAt && (
+                                                        <div className="flex justify-between">
+                                                            <span className="text-muted">תאריך אישור:</span>
+                                                            <span className="text-muted">{new Date(user.approvedAt).toLocaleString("he-IL")}</span>
+                                                        </div>
+                                                    )}
+                                                    {user.rejectedAt && (
+                                                        <div className="flex justify-between">
+                                                            <span className="text-muted">תאריך דחייה:</span>
+                                                            <span className="text-muted">{new Date(user.rejectedAt).toLocaleString("he-IL")}</span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <div className="flex flex-wrap gap-2 pt-2 border-t" style={{ borderColor: "var(--border)" }}>
                                                     {user.status === "pending" && (
@@ -857,6 +923,18 @@ export default function AdminPage() {
                                                                 דחייה
                                                             </button>
                                                         </>
+                                                    )}
+                                                    {user.status === "approved" && !user.approvalEmailSentAt && (
+                                                        <button
+                                                            onClick={() => handleSendApprovalEmail(user.id)}
+                                                            className="rounded-theme-sm px-3 py-1.5 text-xs font-medium flex-1"
+                                                            style={{
+                                                                backgroundColor: "var(--primary)",
+                                                                color: "var(--primary-contrast)",
+                                                            }}
+                                                        >
+                                                            שלח מייל אישור
+                                                        </button>
                                                     )}
                                                     <button
                                                         onClick={() => openEditModal(user)}
@@ -914,6 +992,9 @@ export default function AdminPage() {
                                                         תאריך יצירה
                                                     </th>
                                                     <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
+                                                        תאריך אישור/דחייה
+                                                    </th>
+                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
                                                         פעולות
                                                     </th>
                                                 </tr>
@@ -922,7 +1003,7 @@ export default function AdminPage() {
                                                 {usersData.items.length === 0 ? (
                                                     <tr>
                                                         <td
-                                                            colSpan={8}
+                                                            colSpan={9}
                                                             className="px-6 py-4 text-center text-sm text-muted"
                                                         >
                                                             אין משתמשים להצגה
@@ -1001,6 +1082,23 @@ export default function AdminPage() {
                                                                 <td rowSpan={numRows} className="whitespace-nowrap px-6 py-4 text-sm text-muted align-middle">
                                                                     {new Date(user.createdAt).toLocaleString("he-IL")}
                                                                 </td>
+                                                                <td rowSpan={numRows} className="whitespace-nowrap px-6 py-4 text-sm text-muted align-middle">
+                                                                    {user.approvedAt && (
+                                                                        <div>
+                                                                            <span className="text-xs">אישור: </span>
+                                                                            {new Date(user.approvedAt).toLocaleString("he-IL")}
+                                                                        </div>
+                                                                    )}
+                                                                    {user.rejectedAt && (
+                                                                        <div>
+                                                                            <span className="text-xs">דחייה: </span>
+                                                                            {new Date(user.rejectedAt).toLocaleString("he-IL")}
+                                                                        </div>
+                                                                    )}
+                                                                    {!user.approvedAt && !user.rejectedAt && (
+                                                                        <span className="text-muted">-</span>
+                                                                    )}
+                                                                </td>
                                                                 <td rowSpan={numRows} className="whitespace-nowrap px-6 py-4 text-sm align-middle">
                                                                     <div className="flex flex-wrap gap-2">
                                                                         {user.status === "pending" && (
@@ -1038,6 +1136,24 @@ export default function AdminPage() {
                                                                                     דחייה
                                                                                 </button>
                                                                             </>
+                                                                        )}
+                                                                        {user.status === "approved" && !user.approvalEmailSentAt && (
+                                                                            <button
+                                                                                onClick={() => handleSendApprovalEmail(user.id)}
+                                                                                className="rounded-theme-sm px-3 py-1 text-xs font-medium"
+                                                                                style={{
+                                                                                    backgroundColor: "var(--primary)",
+                                                                                    color: "var(--primary-contrast)",
+                                                                                }}
+                                                                                onMouseEnter={(e) => {
+                                                                                    e.currentTarget.style.opacity = "0.9";
+                                                                                }}
+                                                                                onMouseLeave={(e) => {
+                                                                                    e.currentTarget.style.opacity = "1";
+                                                                                }}
+                                                                            >
+                                                                                שלח מייל אישור
+                                                                            </button>
                                                                         )}
                                                                         <button
                                                                             onClick={() => openEditModal(user)}
@@ -1651,6 +1767,47 @@ export default function AdminPage() {
                                     }}
                                 >
                                     דחייה
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Approve All Modal */}
+                {approveAllModalOpen && usersData && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}>
+                        <div className="card-theme w-full max-w-md p-6 shadow-theme-lg">
+                            <h3 className="mb-4 text-lg font-bold" style={{ color: "var(--text)" }}>
+                                אישור כל המשתמשים הממתינים
+                            </h3>
+                            <p className="mb-4 text-sm text-muted">
+                                האם אתה בטוח שברצונך לאשר את כל {usersData.total} המשתמשים הממתינים?
+                                <br />
+                                מייל אישור יישלח לכל משתמש בנפרד.
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setApproveAllModalOpen(false)}
+                                    className="flex-1 rounded-theme-md border border-theme bg-surface px-4 py-2 text-sm font-medium hover:bg-surface-2"
+                                    style={{ color: "var(--text)" }}
+                                >
+                                    ביטול
+                                </button>
+                                <button
+                                    onClick={handleApproveAll}
+                                    className="flex-1 rounded-theme-md px-4 py-2 text-sm font-medium"
+                                    style={{
+                                        backgroundColor: "var(--success)",
+                                        color: "var(--primary-contrast)",
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.opacity = "0.9";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.opacity = "1";
+                                    }}
+                                >
+                                    אישור הכל
                                 </button>
                             </div>
                         </div>

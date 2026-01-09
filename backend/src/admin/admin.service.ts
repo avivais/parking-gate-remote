@@ -11,6 +11,7 @@ import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { GateService } from '../gate/gate.service';
+import { EmailService } from '../email/email.service';
 import { GetUsersQueryDto, UserStatusFilter } from './dto/get-users-query.dto';
 import { GetLogsQueryDto } from './dto/get-logs-query.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -39,6 +40,9 @@ export interface PaginatedUsersResponse {
             sessionId: string;
             lastActiveAt: string;
         }>;
+        approvedAt?: string;
+        rejectedAt?: string;
+        approvalEmailSentAt?: string;
         createdAt: string;
         updatedAt: string;
     }>;
@@ -81,6 +85,7 @@ export class AdminService {
     constructor(
         private readonly usersService: UsersService,
         private readonly gateService: GateService,
+        private readonly emailService: EmailService,
         @InjectModel(DeviceStatus.name)
         private readonly deviceStatusModel: Model<DeviceStatusDocument>,
     ) {}
@@ -178,6 +183,15 @@ export class AdminService {
                     floor: user.floor,
                     activeDeviceId: user.activeDeviceId || null,
                     activeDevices,
+                    approvedAt: (user as any).approvedAt
+                        ? new Date((user as any).approvedAt).toISOString()
+                        : undefined,
+                    rejectedAt: (user as any).rejectedAt
+                        ? new Date((user as any).rejectedAt).toISOString()
+                        : undefined,
+                    approvalEmailSentAt: (user as any).approvalEmailSentAt
+                        ? new Date((user as any).approvalEmailSentAt).toISOString()
+                        : undefined,
                     createdAt: userDoc.createdAt
                         ? new Date(userDoc.createdAt).toISOString()
                         : new Date().toISOString(),
@@ -212,6 +226,9 @@ export class AdminService {
         apartmentNumber: number;
         floor: number;
         activeDeviceId?: string | null;
+        approvedAt?: string;
+        rejectedAt?: string;
+        approvalEmailSentAt?: string;
         createdAt: string;
         updatedAt: string;
     }> {
@@ -242,7 +259,17 @@ export class AdminService {
 
         // Handle status changes
         if (updateDto.status !== undefined) {
+            const previousStatus = existingUser.status;
             updateData.status = updateDto.status;
+
+            // Set timestamps based on status change
+            if (updateDto.status === USER_STATUS.APPROVED && previousStatus !== USER_STATUS.APPROVED) {
+                updateData.approvedAt = new Date();
+                updateData.rejectedAt = null; // Clear rejectedAt if approving
+            } else if (updateDto.status === USER_STATUS.REJECTED && previousStatus !== USER_STATUS.REJECTED) {
+                updateData.rejectedAt = new Date();
+                updateData.approvedAt = null; // Clear approvedAt if rejecting
+            }
 
             // If status becomes rejected/archived/pending: clear activeDeviceId (force logout)
             if (
@@ -297,6 +324,33 @@ export class AdminService {
             throw new NotFoundException('משתמש לא נמצא');
         }
 
+        // Send approval email if user was just approved and email hasn't been sent yet
+        if (
+            updateDto.status === USER_STATUS.APPROVED &&
+            existingUser.status !== USER_STATUS.APPROVED &&
+            !(updatedUser as any).approvalEmailSentAt
+        ) {
+            try {
+                await this.emailService.sendApprovalEmail(
+                    updatedUser.email,
+                    updatedUser.firstName,
+                    updatedUser.lastName,
+                );
+                // Update approvalEmailSentAt timestamp
+                await this.usersService.updateUser(userId, {
+                    approvalEmailSentAt: new Date(),
+                } as any);
+                // Refresh updatedUser to include the new timestamp
+                const refreshedUser = await this.usersService.findById(userId);
+                if (refreshedUser) {
+                    Object.assign(updatedUser, refreshedUser);
+                }
+            } catch (error) {
+                // Log error but don't fail the approval operation
+                console.error('Failed to send approval email:', error);
+            }
+        }
+
         const userDoc = updatedUser as any;
         return {
             id: updatedUser._id.toString(),
@@ -310,6 +364,15 @@ export class AdminService {
             apartmentNumber: updatedUser.apartmentNumber,
             floor: updatedUser.floor,
             activeDeviceId: updatedUser.activeDeviceId || null,
+            approvedAt: userDoc.approvedAt
+                ? new Date(userDoc.approvedAt).toISOString()
+                : undefined,
+            rejectedAt: userDoc.rejectedAt
+                ? new Date(userDoc.rejectedAt).toISOString()
+                : undefined,
+            approvalEmailSentAt: userDoc.approvalEmailSentAt
+                ? new Date(userDoc.approvalEmailSentAt).toISOString()
+                : undefined,
             createdAt: userDoc.createdAt
                 ? new Date(userDoc.createdAt).toISOString()
                 : new Date().toISOString(),
@@ -529,5 +592,88 @@ export class AdminService {
             items,
             total: items.length,
         };
+    }
+
+    async approveAllPendingUsers(): Promise<{ count: number }> {
+        // Find all pending users
+        const pendingUsers = await this.usersService.findUsersPaginated(
+            { status: USER_STATUS.PENDING },
+            0,
+            10000, // Large limit to get all pending users
+        );
+
+        let approvedCount = 0;
+        const now = new Date();
+
+        // Approve each user individually and send email
+        for (const user of pendingUsers) {
+            try {
+                // Update user status and set approvedAt timestamp
+                await this.usersService.updateUser(user._id.toString(), {
+                    status: USER_STATUS.APPROVED,
+                    approvedAt: now,
+                    rejectedAt: null,
+                } as any);
+
+                // Send approval email
+                try {
+                    await this.emailService.sendApprovalEmail(
+                        user.email,
+                        user.firstName,
+                        user.lastName,
+                    );
+                    // Update approvalEmailSentAt timestamp
+                    await this.usersService.updateUser(user._id.toString(), {
+                        approvalEmailSentAt: now,
+                    } as any);
+                } catch (emailError) {
+                    // Log error but continue approving other users
+                    console.error(
+                        `Failed to send approval email to ${user.email}:`,
+                        emailError,
+                    );
+                }
+
+                // Clear active device if set (force logout)
+                await this.usersService.clearSession(user._id.toString());
+                await this.usersService.clearActiveDevice(user._id.toString());
+
+                approvedCount++;
+            } catch (error) {
+                // Log error but continue with other users
+                console.error(
+                    `Failed to approve user ${user._id.toString()}:`,
+                    error,
+                );
+            }
+        }
+
+        return { count: approvedCount };
+    }
+
+    async sendApprovalEmail(userId: string): Promise<void> {
+        const user = await this.usersService.findById(userId);
+
+        if (!user) {
+            throw new NotFoundException('משתמש לא נמצא');
+        }
+
+        if (user.status !== USER_STATUS.APPROVED) {
+            throw new BadRequestException(
+                'לא ניתן לשלוח מייל אישור למשתמש שאינו מאושר',
+            );
+        }
+
+        // Send email
+        await this.emailService.sendApprovalEmail(
+            user.email,
+            user.firstName,
+            user.lastName,
+        );
+
+        // Update approvalEmailSentAt timestamp
+        await this.usersService.updateUser(userId, {
+            approvalEmailSentAt: new Date(),
+        } as any);
     }
 }

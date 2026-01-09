@@ -4,12 +4,14 @@ import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { UsersModule } from '../users/users.module';
 import { GateModule } from '../gate/gate.module';
+import { EmailModule } from '../email/email.module';
 import { DeviceStatus, DeviceStatusSchema } from '../gate/schemas/device-status.schema';
 
 @Module({
     imports: [
         UsersModule,
         GateModule,
+        EmailModule,
         MongooseModule.forFeature([
             { name: DeviceStatus.name, schema: DeviceStatusSchema },
         ]),

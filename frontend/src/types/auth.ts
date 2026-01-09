@@ -77,6 +77,9 @@ export interface AdminUser {
         sessionId: string;
         lastActiveAt: string;
     }>;
+    approvedAt?: string;
+    rejectedAt?: string;
+    approvalEmailSentAt?: string;
     createdAt: string;
     updatedAt: string;
 }
