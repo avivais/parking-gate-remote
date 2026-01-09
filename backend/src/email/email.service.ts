@@ -52,22 +52,20 @@ export class EmailService {
     }
 
     /**
-     * Wraps a name with appropriate direction attribute based on content
-     * If name contains Hebrew, returns as-is (parent is RTL)
-     * If name is English/Latin, wraps with dir="ltr" to prevent reversal
+     * Formats full name with appropriate direction for RTL email context
+     * - Hebrew names: FirstName LastName (no wrapping, RTL handles it)
+     * - English names: wrapped with dir="ltr" so FirstName appears first (on left)
      */
-    private wrapNameWithDirection(name: string): string {
-        const fullName = name.trim();
-        if (!fullName) {
-            return name;
-        }
-        
-        // If name contains Hebrew characters, return as-is (parent context is RTL)
-        if (this.containsHebrew(fullName)) {
+    private formatFullName(firstName: string, lastName: string): string {
+        const fullName = `${firstName} ${lastName}`.trim();
+
+        // If either name contains Hebrew, return as-is (parent RTL context handles it)
+        if (this.containsHebrew(firstName) || this.containsHebrew(lastName)) {
             return fullName;
         }
-        
-        // For English/Latin names, wrap with dir="ltr" to prevent reversal
+
+        // For English/Latin names, wrap entire name with dir="ltr"
+        // This ensures "FirstName LastName" order (left to right)
         return `<span dir="ltr">${fullName}</span>`;
     }
 
@@ -100,9 +98,8 @@ export class EmailService {
                   }
                 : emailAddress;
 
-            // Wrap names with appropriate direction attributes
-            const wrappedFirstName = this.wrapNameWithDirection(firstName);
-            const wrappedLastName = this.wrapNameWithDirection(lastName);
+            // Format full name with appropriate direction
+            const formattedFullName = this.formatFullName(firstName, lastName);
 
             // Load email template
             // Try multiple possible paths (dev and production)
@@ -118,9 +115,8 @@ export class EmailService {
             for (const templatePath of possiblePaths) {
                 try {
                     htmlContent = readFileSync(templatePath, 'utf-8');
-                    // Replace placeholders with wrapped names (preserving spaces)
-                    htmlContent = htmlContent.replace(/\{\{firstName\}\}/g, wrappedFirstName);
-                    htmlContent = htmlContent.replace(/\{\{lastName\}\}/g, wrappedLastName);
+                    // Replace placeholders
+                    htmlContent = htmlContent.replace(/\{\{fullName\}\}/g, formattedFullName);
                     htmlContent = htmlContent.replace(/\{\{email\}\}/g, email);
                     templateLoaded = true;
                     break;
@@ -150,8 +146,7 @@ export class EmailService {
     }
 
     private getFallbackEmailContent(firstName: string, lastName: string): string {
-        const wrappedFirstName = this.wrapNameWithDirection(firstName);
-        const wrappedLastName = this.wrapNameWithDirection(lastName);
+        const formattedFullName = this.formatFullName(firstName, lastName);
         return `
             <!DOCTYPE html>
             <html dir="rtl" lang="he">
@@ -163,7 +158,7 @@ export class EmailService {
             <body style="font-family: Arial, sans-serif; direction: rtl; text-align: right;">
                 <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
                     <h1 style="color: #2c3e50;">החשבון שלך אושר</h1>
-                    <p>שלום ${wrappedFirstName} ${wrappedLastName},</p>
+                    <p>שלום ${formattedFullName},</p>
                     <p>אנו שמחים להודיע לך שהחשבון שלך במערכת פתיחת השער אושר בהצלחה.</p>
                     <p>כעת תוכל להתחבר למערכת ולהשתמש בשירות פתיחת השער מרחוק.</p>
                     <p>תוכל להתחבר באמצעות כתובת האימייל והסיסמה שהזנת בעת ההרשמה.</p>
