@@ -46,27 +46,31 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     async validate(payload: JwtPayload) {
-        const sessionData = await this.usersService.getSessionData(payload.sub);
-
-        if (!sessionData) {
+        // Check if user exists
+        const user = await this.usersService.findById(payload.sub);
+        if (!user) {
             throw new UnauthorizedException('משתמש לא נמצא');
         }
 
-        // Admins can have multiple active devices/sessions, so skip session and device checks for them
+        // Check session in sessions collection
+        const session = await this.usersService.getSessionBySessionId(payload.sid);
+
+        // Admins can have multiple active devices/sessions, so skip session check for them
         if (payload.role !== 'admin') {
-            if (
-                !sessionData.activeSessionId ||
-                sessionData.activeSessionId !== payload.sid
-            ) {
+            if (!session) {
                 throw new UnauthorizedException('Session לא תקין');
             }
 
-            if (
-                !sessionData.activeDeviceId ||
-                sessionData.activeDeviceId !== payload.deviceId
-            ) {
+            if (session.userId !== payload.sub) {
+                throw new UnauthorizedException('Session לא תואם למשתמש');
+            }
+
+            if (session.deviceId !== payload.deviceId) {
                 throw new UnauthorizedException('Device לא תואם');
             }
+
+            // Update last active timestamp
+            await this.usersService.updateSessionLastActive(payload.sid);
         }
 
         return {

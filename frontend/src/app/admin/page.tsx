@@ -82,7 +82,13 @@ export default function AdminPage() {
         floor: "",
         status: "pending" as "pending" | "approved" | "rejected" | "archived",
         rejectionReason: "",
+        role: "user" as "user" | "admin",
     });
+    const [passwordFormData, setPasswordFormData] = useState({
+        newPassword: "",
+        confirmPassword: "",
+    });
+    const [isResettingPassword, setIsResettingPassword] = useState(false);
 
     // Logs state
     const [logsData, setLogsData] = useState<PaginatedLogsResponse | null>(null);
@@ -350,10 +356,20 @@ export default function AdminPage() {
         }
 
         try {
+            // Update user data
             await apiRequest(`/admin/users/${selectedUser.id}`, {
                 method: "PATCH",
                 body: updateData,
             });
+
+            // Update role if changed
+            if (editFormData.role !== selectedUser.role) {
+                await apiRequest(`/admin/users/${selectedUser.id}/role`, {
+                    method: "PATCH",
+                    body: { role: editFormData.role },
+                });
+            }
+
             toast.success("המשתמש עודכן בהצלחה");
             setEditModalOpen(false);
             setSelectedUser(null);
@@ -363,6 +379,67 @@ export default function AdminPage() {
                 toast.error(err.message || "שגיאה בעדכון המשתמש");
             } else {
                 toast.error("שגיאה בעדכון המשתמש");
+            }
+        }
+    };
+
+    // Handle role update
+    const handleUpdateRole = async (userId: string, role: "user" | "admin") => {
+        try {
+            await apiRequest(`/admin/users/${userId}/role`, {
+                method: "PATCH",
+                body: { role },
+            });
+            toast.success(`התפקיד עודכן ל-${role === "admin" ? "אדמין" : "משתמש"}`);
+            loadUsers();
+        } catch (err) {
+            if (err instanceof ApiError) {
+                toast.error(err.message || "שגיאה בעדכון התפקיד");
+            } else {
+                toast.error("שגיאה בעדכון התפקיד");
+            }
+        }
+    };
+
+    // Handle password reset
+    const handleResetPassword = async () => {
+        if (!selectedUser) return;
+
+        if (!passwordFormData.newPassword || !passwordFormData.confirmPassword) {
+            toast.error("יש להזין סיסמה ואישור סיסמה");
+            return;
+        }
+
+        if (passwordFormData.newPassword !== passwordFormData.confirmPassword) {
+            toast.error("סיסמה ואישור סיסמה אינם תואמים");
+            return;
+        }
+
+        if (passwordFormData.newPassword.length < 6) {
+            toast.error("סיסמה חייבת להכיל לפחות 6 תווים");
+            return;
+        }
+
+        try {
+            await apiRequest(`/admin/users/${selectedUser.id}/password`, {
+                method: "PATCH",
+                body: {
+                    newPassword: passwordFormData.newPassword,
+                    confirmPassword: passwordFormData.confirmPassword,
+                },
+            });
+            toast.success("סיסמה עודכנה והכל המכשירים התנתקו");
+            setPasswordFormData({
+                newPassword: "",
+                confirmPassword: "",
+            });
+            setIsResettingPassword(false);
+            loadUsers();
+        } catch (err) {
+            if (err instanceof ApiError) {
+                toast.error(err.message || "שגיאה בעדכון הסיסמה");
+            } else {
+                toast.error("שגיאה בעדכון הסיסמה");
             }
         }
     };
@@ -388,7 +465,13 @@ export default function AdminPage() {
             floor: user.floor.toString(),
             status: user.status,
             rejectionReason: user.rejectionReason || "",
+            role: user.role,
         });
+        setPasswordFormData({
+            newPassword: "",
+            confirmPassword: "",
+        });
+        setIsResettingPassword(false);
         setEditModalOpen(true);
         setEditModalConfirmClose(false);
     };
@@ -406,6 +489,7 @@ export default function AdminPage() {
             editFormData.apartmentNumber !== selectedUser.apartmentNumber.toString() ||
             editFormData.floor !== selectedUser.floor.toString() ||
             editFormData.status !== selectedUser.status ||
+            editFormData.role !== selectedUser.role ||
             (editFormData.status === "rejected" && editFormData.rejectionReason !== (selectedUser.rejectionReason || ""))
         );
     }, [selectedUser, editFormData]);
@@ -421,6 +505,38 @@ export default function AdminPage() {
         }
     };
 
+    // ESC key handler for modals
+    useEffect(() => {
+        const handleEscapeKey = (event: KeyboardEvent) => {
+            if (event.key === "Escape") {
+                if (rejectModalOpen) {
+                    setRejectModalOpen(false);
+                    setRejectionReason("");
+                } else if (editModalOpen) {
+                    if (editFormHasChanges || isResettingPassword) {
+                        if (!editModalConfirmClose) {
+                            setEditModalConfirmClose(true);
+                            return;
+                        }
+                    }
+                    // Close modal logic (similar to closeEditModal but defined inline)
+                    setEditModalOpen(false);
+                    setSelectedUser(null);
+                    setEditModalConfirmClose(false);
+                    setPasswordFormData({ newPassword: "", confirmPassword: "" });
+                    setIsResettingPassword(false);
+                }
+            }
+        };
+
+        if (rejectModalOpen || editModalOpen) {
+            document.addEventListener("keydown", handleEscapeKey);
+            return () => {
+                document.removeEventListener("keydown", handleEscapeKey);
+            };
+        }
+    }, [rejectModalOpen, editModalOpen, editFormHasChanges, isResettingPassword, editModalConfirmClose]);
+
     // Confirm close edit modal (discard changes)
     const confirmCloseEditModal = () => {
         setEditModalOpen(false);
@@ -434,12 +550,13 @@ export default function AdminPage() {
     };
 
     // Handle reset device
-    const handleResetDevice = async (userId: string) => {
+    const handleResetDevice = async (userId: string, deviceId?: string) => {
         try {
             await apiRequest(`/admin/users/${userId}/reset-device`, {
                 method: "POST",
+                body: deviceId ? { deviceId } : {},
             });
-            toast.success("המכשיר אופס בהצלחה");
+            toast.success(deviceId ? "המכשיר נותק בהצלחה" : "כל המכשירים נותקו בהצלחה");
             loadUsers();
         } catch (err) {
             if (err instanceof ApiError) {
@@ -635,7 +752,7 @@ export default function AdminPage() {
                                                         </h3>
                                                         <p className="text-xs text-muted mt-1">{user.email}</p>
                                                     </div>
-                                                    <div>
+                                                    <div className="flex items-center gap-2">
                                                         {user.status === "approved" ? (
                                                             <span className="badge-success inline-flex rounded-full px-2 py-1 text-xs font-medium">
                                                                 מאושר
@@ -653,6 +770,11 @@ export default function AdminPage() {
                                                                 מושבת
                                                             </span>
                                                         )}
+                                                        {user.role === "admin" && (
+                                                            <span className="inline-flex rounded-full px-2 py-1 text-xs font-medium" style={{ backgroundColor: "var(--primary)", color: "var(--primary-contrast)" }}>
+                                                                אדמין
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </div>
                                                 <div className="space-y-1 text-xs">
@@ -664,11 +786,38 @@ export default function AdminPage() {
                                                         <span className="text-muted">דירה + קומה:</span>
                                                         <span style={{ color: "var(--text)" }}>{user.apartmentNumber} / {user.floor}</span>
                                                     </div>
-                                                    <div className="flex justify-between">
-                                                        <span className="text-muted">מכשיר פעיל:</span>
-                                                        <span className={user.activeDeviceId ? "text-success" : "text-muted"}>
-                                                            {user.activeDeviceId ? `${user.activeDeviceId.substring(0, 8)}...` : "אין"}
-                                                        </span>
+                                                    <div>
+                                                        <div className="mb-1">
+                                                            <span className="text-muted">מכשירים פעילים:</span>
+                                                        </div>
+                                                        {(() => {
+                                                            const devices = (user.activeDevices && user.activeDevices.length > 0) ? user.activeDevices :
+                                                                (user.activeDeviceId ? [{ deviceId: user.activeDeviceId, sessionId: 'legacy', lastActiveAt: user.updatedAt || user.createdAt }] : []);
+                                                            return devices.length > 0 ? (
+                                                            <div className="space-y-1">
+                                                                {devices.map((device) => (
+                                                                    <div key={device.deviceId} className="flex items-center justify-between">
+                                                                        <span className="text-success font-mono text-xs">
+                                                                            {device.deviceId.substring(0, 12)}...
+                                                                        </span>
+                                                                        <button
+                                                                            onClick={() => handleResetDevice(user.id, device.deviceId)}
+                                                                            className="rounded-theme-sm px-2 py-0.5 text-xs font-medium"
+                                                                            style={{
+                                                                                backgroundColor: "var(--warning)",
+                                                                                color: "var(--primary-contrast)",
+                                                                            }}
+                                                                            title="נתק מכשיר"
+                                                                        >
+                                                                            ✕
+                                                                        </button>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-muted text-xs">אין</span>
+                                                        );
+                                                        })()}
                                                     </div>
                                                     <div className="flex justify-between">
                                                         <span className="text-muted">תאריך יצירה:</span>
@@ -722,18 +871,6 @@ export default function AdminPage() {
                                                             השבתה
                                                         </button>
                                                     )}
-                                                    {user.activeDeviceId && (
-                                                        <button
-                                                            onClick={() => handleResetDevice(user.id)}
-                                                            className="rounded-theme-sm px-3 py-1.5 text-xs font-medium"
-                                                            style={{
-                                                                backgroundColor: "var(--warning)",
-                                                                color: "var(--primary-contrast)",
-                                                            }}
-                                                        >
-                                                            איפוס מכשיר
-                                                        </button>
-                                                    )}
                                                 </div>
                                             </div>
                                         ))
@@ -783,65 +920,138 @@ export default function AdminPage() {
                                                         </td>
                                                     </tr>
                                                 ) : (
-                                                    usersData.items.map((user) => (
-                                                        <tr
-                                                            key={user.id}
-                                                            className="table-row"
-                                                        >
-                                                            <td className="whitespace-nowrap px-6 py-4 text-sm" style={{ color: "var(--text)" }}>
-                                                                {user.email}
-                                                            </td>
-                                                            <td className="whitespace-nowrap px-6 py-4 text-sm" style={{ color: "var(--text)" }}>
-                                                                {user.firstName} {user.lastName}
-                                                            </td>
-                                                            <td className="whitespace-nowrap px-6 py-4 text-sm" style={{ color: "var(--text)" }}>
-                                                                {user.phone}
-                                                            </td>
-                                                            <td className="whitespace-nowrap px-6 py-4 text-sm" style={{ color: "var(--text)" }}>
-                                                                {user.apartmentNumber} / {user.floor}
-                                                            </td>
-                                                            <td className="whitespace-nowrap px-6 py-4 text-sm">
-                                                                {user.status === "approved" ? (
-                                                                    <span className="badge-success inline-flex rounded-full px-2 py-1 text-xs font-medium">
-                                                                        מאושר
-                                                                    </span>
-                                                                ) : user.status === "pending" ? (
-                                                                    <span className="badge-warning inline-flex rounded-full px-2 py-1 text-xs font-medium">
-                                                                        ממתין
-                                                                    </span>
-                                                                ) : user.status === "rejected" ? (
-                                                                    <span className="badge-danger inline-flex rounded-full px-2 py-1 text-xs font-medium">
-                                                                        נדחה
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="badge-muted inline-flex rounded-full px-2 py-1 text-xs font-medium">
-                                                                        מושבת
-                                                                    </span>
-                                                                )}
-                                                            </td>
-                                                            <td className="whitespace-nowrap px-6 py-4 text-sm font-mono text-muted">
-                                                                {user.activeDeviceId ? (
-                                                                    <span className="text-success">
-                                                                        {user.activeDeviceId.substring(0, 8)}...
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="text-muted">אין</span>
-                                                                )}
-                                                            </td>
-                                                            <td className="whitespace-nowrap px-6 py-4 text-sm text-muted">
-                                                                {new Date(user.createdAt).toLocaleString("he-IL")}
-                                                            </td>
-                                                            <td className="whitespace-nowrap px-6 py-4 text-sm">
-                                                                <div className="flex flex-wrap gap-2">
-                                                                    {user.status === "pending" && (
-                                                                        <>
+                                                    usersData.items.flatMap((user) => {
+                                                        const devices = (user.activeDevices && user.activeDevices.length > 0) ? user.activeDevices :
+                                                            (user.activeDeviceId ? [{ deviceId: user.activeDeviceId, sessionId: 'legacy', lastActiveAt: user.updatedAt || user.createdAt }] : []);
+                                                        const hasDevices = devices.length > 0;
+                                                        const numRows = Math.max(devices.length, 1); // At least 1 row
+
+                                                        // First row with user info + first device (or "אין" if no devices)
+                                                        const rows = [
+                                                            <tr key={`${user.id}-main`} className="table-row">
+                                                                <td rowSpan={numRows} className="whitespace-nowrap px-6 py-4 text-sm align-middle" style={{ color: "var(--text)" }}>
+                                                                    {user.email}
+                                                                </td>
+                                                                <td rowSpan={numRows} className="whitespace-nowrap px-6 py-4 text-sm align-middle" style={{ color: "var(--text)" }}>
+                                                                    {user.firstName} {user.lastName}
+                                                                </td>
+                                                                <td rowSpan={numRows} className="whitespace-nowrap px-6 py-4 text-sm align-middle" style={{ color: "var(--text)" }}>
+                                                                    {user.phone}
+                                                                </td>
+                                                                <td rowSpan={numRows} className="whitespace-nowrap px-6 py-4 text-sm align-middle" style={{ color: "var(--text)" }}>
+                                                                    {user.apartmentNumber} / {user.floor}
+                                                                </td>
+                                                                <td rowSpan={numRows} className="whitespace-nowrap px-6 py-4 text-sm align-middle">
+                                                                    <div className="flex items-center gap-2">
+                                                                        {user.status === "approved" ? (
+                                                                            <span className="badge-success inline-flex rounded-full px-2 py-1 text-xs font-medium">
+                                                                                מאושר
+                                                                            </span>
+                                                                        ) : user.status === "pending" ? (
+                                                                            <span className="badge-warning inline-flex rounded-full px-2 py-1 text-xs font-medium">
+                                                                                ממתין
+                                                                            </span>
+                                                                        ) : user.status === "rejected" ? (
+                                                                            <span className="badge-danger inline-flex rounded-full px-2 py-1 text-xs font-medium">
+                                                                                נדחה
+                                                                            </span>
+                                                                        ) : (
+                                                                            <span className="badge-muted inline-flex rounded-full px-2 py-1 text-xs font-medium">
+                                                                                מושבת
+                                                                            </span>
+                                                                        )}
+                                                                        {user.role === "admin" && (
+                                                                            <span className="inline-flex rounded-full px-2 py-1 text-xs font-medium" style={{ backgroundColor: "var(--primary)", color: "var(--primary-contrast)" }}>
+                                                                                אדמין
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </td>
+                                                                <td className="whitespace-nowrap px-6 py-4 text-sm font-mono">
+                                                                    {hasDevices ? (
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-success">
+                                                                                {devices[0].deviceId.substring(0, 12)}...
+                                                                            </span>
                                                                             <button
-                                                                                onClick={() =>
-                                                                                    handleApproveUser(user.id)
-                                                                                }
+                                                                                onClick={() => handleResetDevice(user.id, devices[0].deviceId)}
+                                                                                className="rounded-theme-sm px-2 py-1 text-xs font-medium"
+                                                                                style={{
+                                                                                    backgroundColor: "var(--warning)",
+                                                                                    color: "var(--primary-contrast)",
+                                                                                }}
+                                                                                title="נתק מכשיר"
+                                                                            >
+                                                                                ✕
+                                                                            </button>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <span className="text-muted">אין</span>
+                                                                    )}
+                                                                </td>
+                                                                <td rowSpan={numRows} className="whitespace-nowrap px-6 py-4 text-sm text-muted align-middle">
+                                                                    {new Date(user.createdAt).toLocaleString("he-IL")}
+                                                                </td>
+                                                                <td rowSpan={numRows} className="whitespace-nowrap px-6 py-4 text-sm align-middle">
+                                                                    <div className="flex flex-wrap gap-2">
+                                                                        {user.status === "pending" && (
+                                                                            <>
+                                                                                <button
+                                                                                    onClick={() => handleApproveUser(user.id)}
+                                                                                    className="rounded-theme-sm px-3 py-1 text-xs font-medium"
+                                                                                    style={{
+                                                                                        backgroundColor: "var(--success)",
+                                                                                        color: "var(--primary-contrast)",
+                                                                                    }}
+                                                                                    onMouseEnter={(e) => {
+                                                                                        e.currentTarget.style.opacity = "0.9";
+                                                                                    }}
+                                                                                    onMouseLeave={(e) => {
+                                                                                        e.currentTarget.style.opacity = "1";
+                                                                                    }}
+                                                                                >
+                                                                                    אישור
+                                                                                </button>
+                                                                                <button
+                                                                                    onClick={() => openRejectModal(user)}
+                                                                                    className="rounded-theme-sm px-3 py-1 text-xs font-medium"
+                                                                                    style={{
+                                                                                        backgroundColor: "var(--danger)",
+                                                                                        color: "var(--primary-contrast)",
+                                                                                    }}
+                                                                                    onMouseEnter={(e) => {
+                                                                                        e.currentTarget.style.opacity = "0.9";
+                                                                                    }}
+                                                                                    onMouseLeave={(e) => {
+                                                                                        e.currentTarget.style.opacity = "1";
+                                                                                    }}
+                                                                                >
+                                                                                    דחייה
+                                                                                </button>
+                                                                            </>
+                                                                        )}
+                                                                        <button
+                                                                            onClick={() => openEditModal(user)}
+                                                                            className="rounded-theme-sm px-3 py-1 text-xs font-medium"
+                                                                            style={{
+                                                                                backgroundColor: "var(--primary)",
+                                                                                color: "var(--primary-contrast)",
+                                                                            }}
+                                                                            onMouseEnter={(e) => {
+                                                                                e.currentTarget.style.backgroundColor = "var(--primary-hover)";
+                                                                            }}
+                                                                            onMouseLeave={(e) => {
+                                                                                e.currentTarget.style.backgroundColor = "var(--primary)";
+                                                                            }}
+                                                                        >
+                                                                            עריכה
+                                                                        </button>
+                                                                        {user.status !== "archived" && (
+                                                                            <button
+                                                                                onClick={() => handleArchiveUser(user.id)}
                                                                                 className="rounded-theme-sm px-3 py-1 text-xs font-medium"
                                                                                 style={{
-                                                                                    backgroundColor: "var(--success)",
+                                                                                    backgroundColor: "var(--muted)",
                                                                                     color: "var(--primary-contrast)",
                                                                                 }}
                                                                                 onMouseEnter={(e) => {
@@ -851,86 +1061,39 @@ export default function AdminPage() {
                                                                                     e.currentTarget.style.opacity = "1";
                                                                                 }}
                                                                             >
-                                                                                אישור
+                                                                                השבתה
                                                                             </button>
+                                                                        )}
+                                                                    </div>
+                                                                </td>
+                                                            </tr>,
+                                                            // Additional rows for extra devices
+                                                            ...devices.slice(1).map((device, idx) => (
+                                                                <tr key={`${user.id}-device-${device.deviceId}`} className="table-row">
+                                                                    <td className="whitespace-nowrap px-6 py-4 text-sm font-mono">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-success">
+                                                                                {device.deviceId.substring(0, 12)}...
+                                                                            </span>
                                                                             <button
-                                                                                onClick={() => openRejectModal(user)}
-                                                                                className="rounded-theme-sm px-3 py-1 text-xs font-medium"
+                                                                                onClick={() => handleResetDevice(user.id, device.deviceId)}
+                                                                                className="rounded-theme-sm px-2 py-1 text-xs font-medium"
                                                                                 style={{
-                                                                                    backgroundColor: "var(--danger)",
+                                                                                    backgroundColor: "var(--warning)",
                                                                                     color: "var(--primary-contrast)",
                                                                                 }}
-                                                                                onMouseEnter={(e) => {
-                                                                                    e.currentTarget.style.opacity = "0.9";
-                                                                                }}
-                                                                                onMouseLeave={(e) => {
-                                                                                    e.currentTarget.style.opacity = "1";
-                                                                                }}
+                                                                                title="נתק מכשיר"
                                                                             >
-                                                                                דחייה
+                                                                                ✕
                                                                             </button>
-                                                                        </>
-                                                                    )}
-                                                                    <button
-                                                                        onClick={() => openEditModal(user)}
-                                                                        className="rounded-theme-sm px-3 py-1 text-xs font-medium"
-                                                                        style={{
-                                                                            backgroundColor: "var(--primary)",
-                                                                            color: "var(--primary-contrast)",
-                                                                        }}
-                                                                        onMouseEnter={(e) => {
-                                                                            e.currentTarget.style.backgroundColor = "var(--primary-hover)";
-                                                                        }}
-                                                                        onMouseLeave={(e) => {
-                                                                            e.currentTarget.style.backgroundColor = "var(--primary)";
-                                                                        }}
-                                                                    >
-                                                                        עריכה
-                                                                    </button>
-                                                                    {user.status !== "archived" && (
-                                                                        <button
-                                                                            onClick={() =>
-                                                                                handleArchiveUser(user.id)
-                                                                            }
-                                                                            className="rounded-theme-sm px-3 py-1 text-xs font-medium"
-                                                                            style={{
-                                                                                backgroundColor: "var(--muted)",
-                                                                                color: "var(--primary-contrast)",
-                                                                            }}
-                                                                            onMouseEnter={(e) => {
-                                                                                e.currentTarget.style.opacity = "0.9";
-                                                                            }}
-                                                                            onMouseLeave={(e) => {
-                                                                                e.currentTarget.style.opacity = "1";
-                                                                            }}
-                                                                        >
-                                                                            השבתה
-                                                                        </button>
-                                                                    )}
-                                                                    {user.activeDeviceId && (
-                                                                        <button
-                                                                            onClick={() =>
-                                                                                handleResetDevice(user.id)
-                                                                            }
-                                                                            className="rounded-theme-sm px-3 py-1 text-xs font-medium"
-                                                                            style={{
-                                                                                backgroundColor: "var(--warning)",
-                                                                                color: "var(--primary-contrast)",
-                                                                            }}
-                                                                            onMouseEnter={(e) => {
-                                                                                e.currentTarget.style.opacity = "0.9";
-                                                                            }}
-                                                                            onMouseLeave={(e) => {
-                                                                                e.currentTarget.style.opacity = "1";
-                                                                            }}
-                                                                        >
-                                                                            איפוס מכשיר
-                                                                        </button>
-                                                                    )}
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    ))
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            )),
+                                                        ];
+
+                                                        return rows;
+                                                    })
                                                 )}
                                             </tbody>
                                         </table>
@@ -1673,6 +1836,147 @@ export default function AdminPage() {
                                         />
                                     </div>
                                 )}
+                                <div>
+                                    <label className="block text-sm font-medium" style={{ color: "var(--text)" }}>
+                                        תפקיד
+                                    </label>
+                                    <select
+                                        value={editFormData.role}
+                                        onChange={(e) =>
+                                            setEditFormData({
+                                                ...editFormData,
+                                                role: e.target.value as "user" | "admin",
+                                            })
+                                        }
+                                        className="input-theme mt-1 w-full px-3 py-2 text-sm focus-theme"
+                                        style={{ color: "var(--text)" }}
+                                    >
+                                        <option value="user">משתמש</option>
+                                        <option value="admin">אדמין</option>
+                                    </select>
+                                </div>
+                                <div className="border-t pt-4" style={{ borderColor: "var(--border)" }}>
+                                    {!isResettingPassword ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setIsResettingPassword(true);
+                                                setPasswordFormData({ newPassword: "", confirmPassword: "" });
+                                            }}
+                                            className="w-full rounded-theme-md border px-4 py-2.5 text-sm font-medium transition-colors"
+                                            style={{
+                                                borderColor: "var(--border)",
+                                                color: "var(--primary)",
+                                                backgroundColor: "transparent",
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.backgroundColor = "var(--surface-hover)";
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.backgroundColor = "transparent";
+                                            }}
+                                        >
+                                            🔒 שנה סיסמה
+                                        </button>
+                                    ) : (
+                                        <div className="space-y-3 rounded-theme-md border p-4" style={{ borderColor: "var(--border)", backgroundColor: "var(--surface)" }}>
+                                            <div className="flex items-center justify-between">
+                                                <h4 className="text-sm font-semibold" style={{ color: "var(--text)" }}>
+                                                    שנה סיסמה
+                                                </h4>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setIsResettingPassword(false);
+                                                        setPasswordFormData({ newPassword: "", confirmPassword: "" });
+                                                    }}
+                                                    className="text-xs font-medium"
+                                                    style={{ color: "var(--muted-text)" }}
+                                                >
+                                                    ✕ ביטול
+                                                </button>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-medium mb-1" style={{ color: "var(--text)" }}>
+                                                    סיסמה חדשה
+                                                </label>
+                                                <input
+                                                    type="password"
+                                                    value={passwordFormData.newPassword}
+                                                    onChange={(e) =>
+                                                        setPasswordFormData({
+                                                            ...passwordFormData,
+                                                            newPassword: e.target.value,
+                                                        })
+                                                    }
+                                                    className="input-theme w-full px-3 py-2 text-sm focus-theme"
+                                                    style={{ color: "var(--text)" }}
+                                                    placeholder="הכנס סיסמה חדשה"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-medium mb-1" style={{ color: "var(--text)" }}>
+                                                    אישור סיסמה
+                                                </label>
+                                                <input
+                                                    type="password"
+                                                    value={passwordFormData.confirmPassword}
+                                                    onChange={(e) =>
+                                                        setPasswordFormData({
+                                                            ...passwordFormData,
+                                                            confirmPassword: e.target.value,
+                                                        })
+                                                    }
+                                                    className="input-theme w-full px-3 py-2 text-sm focus-theme"
+                                                    style={{ color: "var(--text)" }}
+                                                    placeholder="הכנס שוב את הסיסמה"
+                                                />
+                                            </div>
+                                            {passwordFormData.newPassword &&
+                                                passwordFormData.confirmPassword &&
+                                                passwordFormData.newPassword !== passwordFormData.confirmPassword && (
+                                                    <p className="text-xs text-danger">סיסמה ואישור סיסמה אינם תואמים</p>
+                                                )}
+                                            <button
+                                                type="button"
+                                                onClick={handleResetPassword}
+                                                disabled={
+                                                    !passwordFormData.newPassword ||
+                                                    !passwordFormData.confirmPassword ||
+                                                    passwordFormData.newPassword !== passwordFormData.confirmPassword ||
+                                                    passwordFormData.newPassword.length < 6
+                                                }
+                                                className="w-full rounded-theme-md px-4 py-2 text-sm font-medium transition-colors"
+                                                style={{
+                                                    backgroundColor:
+                                                        passwordFormData.newPassword &&
+                                                        passwordFormData.confirmPassword &&
+                                                        passwordFormData.newPassword === passwordFormData.confirmPassword &&
+                                                        passwordFormData.newPassword.length >= 6
+                                                            ? "var(--primary)"
+                                                            : "var(--muted)",
+                                                    color: "var(--primary-contrast)",
+                                                    opacity:
+                                                        passwordFormData.newPassword &&
+                                                        passwordFormData.confirmPassword &&
+                                                        passwordFormData.newPassword === passwordFormData.confirmPassword &&
+                                                        passwordFormData.newPassword.length >= 6
+                                                            ? 1
+                                                            : 0.6,
+                                                    cursor:
+                                                        passwordFormData.newPassword &&
+                                                        passwordFormData.confirmPassword &&
+                                                        passwordFormData.newPassword === passwordFormData.confirmPassword &&
+                                                        passwordFormData.newPassword.length >= 6
+                                                            ? "pointer"
+                                                            : "not-allowed",
+                                                }}
+                                            >
+                                                עדכן סיסמה
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                             <div className="mt-6 flex gap-2">
                                 <button

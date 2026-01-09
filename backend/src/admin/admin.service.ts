@@ -8,11 +8,13 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { GateService } from '../gate/gate.service';
 import { GetUsersQueryDto, UserStatusFilter } from './dto/get-users-query.dto';
 import { GetLogsQueryDto } from './dto/get-logs-query.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { UserStatus, USER_STATUS } from '../users/schemas/user.schema';
 import {
     DeviceStatus,
@@ -32,6 +34,11 @@ export interface PaginatedUsersResponse {
         apartmentNumber: number;
         floor: number;
         activeDeviceId?: string | null;
+        activeDevices: Array<{
+            deviceId: string;
+            sessionId: string;
+            lastActiveAt: string;
+        }>;
         createdAt: string;
         updatedAt: string;
     }>;
@@ -115,29 +122,61 @@ export class AdminService {
             limit,
         );
 
-        // Transform to response format
-        const items = users.map((user) => {
-            const userDoc = user as any;
-            return {
-                id: user._id.toString(),
-                email: user.email,
-                role: user.role,
-                status: user.status,
-                rejectionReason: user.rejectionReason || null,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                phone: user.phone,
-                apartmentNumber: user.apartmentNumber,
-                floor: user.floor,
-                activeDeviceId: user.activeDeviceId || null,
-                createdAt: userDoc.createdAt
-                    ? new Date(userDoc.createdAt).toISOString()
-                    : new Date().toISOString(),
-                updatedAt: userDoc.updatedAt
-                    ? new Date(userDoc.updatedAt).toISOString()
-                    : new Date().toISOString(),
-            };
-        });
+        // Transform to response format with active devices
+        const items = await Promise.all(
+            users.map(async (user) => {
+                const userDoc = user as any;
+                // Get all active sessions for this user
+                const sessions = await this.usersService.getAllSessions(user._id.toString());
+                let activeDevices = sessions.map((session) => {
+                    const sessionDoc = session as any;
+                    return {
+                        deviceId: session.deviceId,
+                        sessionId: session.sessionId,
+                        lastActiveAt: sessionDoc.lastActiveAt
+                            ? new Date(session.lastActiveAt).toISOString()
+                            : sessionDoc.createdAt
+                              ? new Date(sessionDoc.createdAt).toISOString()
+                              : new Date().toISOString(),
+                    };
+                });
+
+                // Migration: If user has activeDeviceId but no sessions, create a session entry
+                // This handles users who logged in before sessions collection was added
+                if (user.activeDeviceId && activeDevices.length === 0) {
+                    activeDevices = [
+                        {
+                            deviceId: user.activeDeviceId,
+                            sessionId: user.activeSessionId || 'legacy',
+                            lastActiveAt: userDoc.updatedAt
+                                ? new Date(userDoc.updatedAt).toISOString()
+                                : new Date().toISOString(),
+                        },
+                    ];
+                }
+
+                return {
+                    id: user._id.toString(),
+                    email: user.email,
+                    role: user.role,
+                    status: user.status,
+                    rejectionReason: user.rejectionReason || null,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    phone: user.phone,
+                    apartmentNumber: user.apartmentNumber,
+                    floor: user.floor,
+                    activeDeviceId: user.activeDeviceId || null,
+                    activeDevices,
+                    createdAt: userDoc.createdAt
+                        ? new Date(userDoc.createdAt).toISOString()
+                        : new Date().toISOString(),
+                    updatedAt: userDoc.updatedAt
+                        ? new Date(userDoc.updatedAt).toISOString()
+                        : new Date().toISOString(),
+                };
+            }),
+        );
 
         return {
             items,
@@ -270,7 +309,124 @@ export class AdminService {
         };
     }
 
-    async resetUserDevice(userId: string): Promise<{
+    async updateUserRole(
+        userId: string,
+        role: 'user' | 'admin',
+    ): Promise<{
+        id: string;
+        email: string;
+        role: 'user' | 'admin';
+        status: UserStatus;
+        rejectionReason: string | null;
+        firstName: string;
+        lastName: string;
+        phone: string;
+        apartmentNumber: number;
+        floor: number;
+        createdAt: string;
+        updatedAt: string;
+    }> {
+        const user = await this.usersService.findById(userId);
+
+        if (!user) {
+            throw new NotFoundException('משתמש לא נמצא');
+        }
+
+        const updatedUser = await this.usersService.updateUser(userId, { role });
+
+        if (!updatedUser) {
+            throw new NotFoundException('משתמש לא נמצא');
+        }
+
+        const userDoc = updatedUser as any;
+        return {
+            id: updatedUser._id.toString(),
+            email: updatedUser.email,
+            role: updatedUser.role,
+            status: updatedUser.status,
+            rejectionReason: updatedUser.rejectionReason || null,
+            firstName: updatedUser.firstName,
+            lastName: updatedUser.lastName,
+            phone: updatedUser.phone,
+            apartmentNumber: updatedUser.apartmentNumber,
+            floor: updatedUser.floor,
+            createdAt: userDoc.createdAt
+                ? new Date(userDoc.createdAt).toISOString()
+                : new Date().toISOString(),
+            updatedAt: userDoc.updatedAt
+                ? new Date(userDoc.updatedAt).toISOString()
+                : new Date().toISOString(),
+        };
+    }
+
+    async resetPassword(
+        userId: string,
+        resetPasswordDto: ResetPasswordDto,
+    ): Promise<{
+        id: string;
+        email: string;
+        role: 'user' | 'admin';
+        status: UserStatus;
+        rejectionReason: string | null;
+        firstName: string;
+        lastName: string;
+        phone: string;
+        apartmentNumber: number;
+        floor: number;
+        createdAt: string;
+        updatedAt: string;
+    }> {
+        if (resetPasswordDto.newPassword !== resetPasswordDto.confirmPassword) {
+            throw new BadRequestException('סיסמה ואישור סיסמה אינם תואמים');
+        }
+
+        const user = await this.usersService.findById(userId);
+
+        if (!user) {
+            throw new NotFoundException('משתמש לא נמצא');
+        }
+
+        // Hash new password
+        const passwordHash = await bcrypt.hash(resetPasswordDto.newPassword, 10);
+
+        // Update password
+        const updatedUser = await this.usersService.updateUser(userId, {
+            passwordHash,
+        });
+
+        if (!updatedUser) {
+            throw new NotFoundException('משתמש לא נמצא');
+        }
+
+        // Clear all sessions (disconnect all devices)
+        await this.usersService.clearAllSessions(userId);
+        await this.usersService.clearSession(userId);
+
+        const userDoc = updatedUser as any;
+        return {
+            id: updatedUser._id.toString(),
+            email: updatedUser.email,
+            role: updatedUser.role,
+            status: updatedUser.status,
+            rejectionReason: updatedUser.rejectionReason || null,
+            firstName: updatedUser.firstName,
+            lastName: updatedUser.lastName,
+            phone: updatedUser.phone,
+            apartmentNumber: updatedUser.apartmentNumber,
+            floor: updatedUser.floor,
+            createdAt: userDoc.createdAt
+                ? new Date(userDoc.createdAt).toISOString()
+                : new Date().toISOString(),
+            updatedAt: userDoc.updatedAt
+                ? new Date(userDoc.updatedAt).toISOString()
+                : new Date().toISOString(),
+        };
+    }
+
+    async resetUserDevice(
+        userId: string,
+        deviceId?: string,
+    ): Promise<{
         id: string;
         email: string;
         role: 'user' | 'admin';
@@ -285,28 +441,47 @@ export class AdminService {
         createdAt: string;
         updatedAt: string;
     }> {
-        await this.usersService.clearActiveDevice(userId);
-        await this.usersService.clearSession(userId);
-
         const user = await this.usersService.findById(userId);
 
         if (!user) {
             throw new NotFoundException('משתמש לא נמצא');
         }
 
-        const userDoc = user as any;
+        if (deviceId) {
+            // Delete specific device session
+            await this.usersService.deleteSession(userId, deviceId);
+        } else {
+            // Clear all sessions
+            await this.usersService.clearAllSessions(userId);
+            await this.usersService.clearSession(userId);
+            await this.usersService.clearActiveDevice(userId);
+        }
+
+        // Check if user still has any sessions left
+        const remainingSessions = await this.usersService.getAllSessions(userId);
+        if (remainingSessions.length === 0) {
+            await this.usersService.clearSession(userId);
+            await this.usersService.clearActiveDevice(userId);
+        }
+
+        const updatedUser = await this.usersService.findById(userId);
+        if (!updatedUser) {
+            throw new NotFoundException('משתמש לא נמצא');
+        }
+
+        const userDoc = updatedUser as any;
         return {
-            id: user._id.toString(),
-            email: user.email,
-            role: user.role,
-            status: user.status,
-            rejectionReason: user.rejectionReason || null,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            phone: user.phone,
-            apartmentNumber: user.apartmentNumber,
-            floor: user.floor,
-            activeDeviceId: null,
+            id: updatedUser._id.toString(),
+            email: updatedUser.email,
+            role: updatedUser.role,
+            status: updatedUser.status,
+            rejectionReason: updatedUser.rejectionReason || null,
+            firstName: updatedUser.firstName,
+            lastName: updatedUser.lastName,
+            phone: updatedUser.phone,
+            apartmentNumber: updatedUser.apartmentNumber,
+            floor: updatedUser.floor,
+            activeDeviceId: updatedUser.activeDeviceId || null,
             createdAt: userDoc.createdAt
                 ? new Date(userDoc.createdAt).toISOString()
                 : new Date().toISOString(),

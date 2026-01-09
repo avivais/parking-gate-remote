@@ -72,6 +72,11 @@ export interface AdminUser {
     apartmentNumber: number;
     floor: number;
     activeDeviceId?: string | null;
+    activeDevices?: Array<{
+        deviceId: string;
+        sessionId: string;
+        lastActiveAt: string;
+    }>;
     createdAt: string;
     updatedAt: string;
 }

@@ -16,6 +16,9 @@ import { AdminGuard } from '../auth/admin.guard';
 import { GetUsersQueryDto } from './dto/get-users-query.dto';
 import { GetLogsQueryDto } from './dto/get-logs-query.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateUserRoleDto } from './dto/update-user-role.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ResetDeviceDto } from './dto/reset-device.dto';
 
 @Controller('admin')
 @UseGuards(AuthGuard('jwt'), ApprovedGuard, AdminGuard)
@@ -35,9 +38,28 @@ export class AdminController {
         return this.adminService.updateUser(id, updateDto);
     }
 
+    @Patch('users/:id/role')
+    async updateUserRole(
+        @Param('id') id: string,
+        @Body() updateRoleDto: UpdateUserRoleDto,
+    ) {
+        return this.adminService.updateUserRole(id, updateRoleDto.role);
+    }
+
+    @Patch('users/:id/password')
+    async resetPassword(
+        @Param('id') id: string,
+        @Body() resetPasswordDto: ResetPasswordDto,
+    ) {
+        return this.adminService.resetPassword(id, resetPasswordDto);
+    }
+
     @Post('users/:id/reset-device')
-    async resetUserDevice(@Param('id') id: string) {
-        return this.adminService.resetUserDevice(id);
+    async resetUserDevice(
+        @Param('id') id: string,
+        @Body() resetDeviceDto?: ResetDeviceDto,
+    ) {
+        return this.adminService.resetUserDevice(id, resetDeviceDto?.deviceId);
     }
 
     @Get('logs')

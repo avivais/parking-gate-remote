@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument, USER_STATUS, UserStatus } from './schemas/user.schema';
+import { Session, SessionDocument } from './schemas/session.schema';
 
 export interface CreateUserParams {
     email: string;
@@ -20,6 +21,8 @@ export class UsersService {
     constructor(
         @InjectModel(User.name)
         private readonly userModel: Model<UserDocument>,
+        @InjectModel(Session.name)
+        private readonly sessionModel: Model<SessionDocument>,
     ) {}
 
     async create(params: CreateUserParams): Promise<User> {
@@ -81,12 +84,69 @@ export class UsersService {
         sid: string,
         refreshTokenHash: string,
     ): Promise<void> {
+        // Keep backward compatibility - update user fields for non-admin users
+        // For admins, we'll use sessions collection primarily
         await this.userModel
             .findByIdAndUpdate(userId, {
                 activeDeviceId: deviceId,
                 activeSessionId: sid,
                 refreshTokenHash,
             })
+            .exec();
+
+        // Also create/update session document
+        await this.createSession(userId, deviceId, sid, refreshTokenHash);
+    }
+
+    // Session management methods
+    async createSession(
+        userId: string,
+        deviceId: string,
+        sessionId: string,
+        refreshTokenHash: string,
+    ): Promise<Session> {
+        // Use upsert to create or update existing session for this device
+        return this.sessionModel
+            .findOneAndUpdate(
+                { userId, deviceId },
+                {
+                    userId,
+                    deviceId,
+                    sessionId,
+                    refreshTokenHash,
+                    lastActiveAt: new Date(),
+                },
+                { upsert: true, new: true },
+            )
+            .exec();
+    }
+
+    async getAllSessions(userId: string): Promise<Session[]> {
+        return this.sessionModel.find({ userId }).exec();
+    }
+
+    async getSessionBySessionId(sessionId: string): Promise<Session | null> {
+        return this.sessionModel.findOne({ sessionId }).select('+refreshTokenHash').exec();
+    }
+
+    async deleteSession(userId: string, deviceId?: string): Promise<void> {
+        const filter: any = { userId };
+        if (deviceId) {
+            filter.deviceId = deviceId;
+        }
+        await this.sessionModel.deleteMany(filter).exec();
+    }
+
+    async clearAllSessions(userId: string): Promise<void> {
+        await this.sessionModel.deleteMany({ userId }).exec();
+    }
+
+    async updateSessionLastActive(sessionId: string): Promise<void> {
+        await this.sessionModel
+            .findOneAndUpdate(
+                { sessionId },
+                { lastActiveAt: new Date() },
+            )
             .exec();
     }
 

@@ -175,29 +175,27 @@ export class AuthService {
         );
         const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
 
-        // For admins, don't update activeDeviceId if they're already logged in from another device
-        // This allows multiple devices to be active simultaneously
-        // For regular users, always update activeDeviceId to enforce single device
-        if (user.role === 'admin' && user.activeDeviceId && user.activeDeviceId !== loginDto.deviceId) {
-            // Admin logging in from a different device - update session but keep multiple devices active
-            // We'll update activeSessionId and refreshTokenHash, but keep activeDeviceId as is
-            // Actually, we need to track multiple sessions - but for now, let's update activeDeviceId
-            // and rely on JwtStrategy to skip device check for admins
-            await this.usersService.setSession(
-                userId,
-                loginDto.deviceId,
-                sid,
-                refreshTokenHash,
-            );
-        } else {
-            // Regular user or first login - update normally
-            await this.usersService.setSession(
-                userId,
-                loginDto.deviceId,
-                sid,
-                refreshTokenHash,
-            );
+        // For regular users, clear all existing sessions (enforce single device)
+        // For admins, allow multiple devices
+        if (user.role !== 'admin') {
+            await this.usersService.clearAllSessions(userId);
         }
+
+        // Create session document (handles both admin and regular users)
+        await this.usersService.createSession(
+            userId,
+            loginDto.deviceId,
+            sid,
+            refreshTokenHash,
+        );
+
+        // Also update user fields for backward compatibility
+        await this.usersService.setSession(
+            userId,
+            loginDto.deviceId,
+            sid,
+            refreshTokenHash,
+        );
 
         const tokens: AuthTokens = {
             accessToken: this.buildAccessToken(user, loginDto.deviceId, sid),
@@ -227,33 +225,24 @@ export class AuthService {
             throw new UnauthorizedException('Refresh token לא תקין');
         }
 
-        const sessionData = await this.usersService.getSessionData(payload.sub);
+        // Check session in sessions collection
+        const session = await this.usersService.getSessionBySessionId(payload.sid);
 
-        if (!sessionData) {
-            throw new UnauthorizedException('משתמש לא נמצא');
+        if (!session) {
+            throw new UnauthorizedException('Session לא נמצא');
         }
 
-        if (
-            !sessionData.activeSessionId ||
-            sessionData.activeSessionId !== payload.sid
-        ) {
-            throw new UnauthorizedException('Session לא תקין');
+        if (session.userId !== payload.sub) {
+            throw new UnauthorizedException('Session לא תואם למשתמש');
         }
 
-        if (
-            !sessionData.activeDeviceId ||
-            sessionData.activeDeviceId !== payload.deviceId
-        ) {
+        if (session.deviceId !== payload.deviceId) {
             throw new UnauthorizedException('Device לא תואם');
-        }
-
-        if (!sessionData.refreshTokenHash) {
-            throw new UnauthorizedException('Refresh token לא נמצא');
         }
 
         const isValidRefreshToken = await bcrypt.compare(
             refreshToken,
-            sessionData.refreshTokenHash,
+            session.refreshTokenHash,
         );
 
         if (!isValidRefreshToken) {
@@ -269,6 +258,15 @@ export class AuthService {
         );
         const newRefreshTokenHash = await bcrypt.hash(newRefreshToken, 10);
 
+        // Update session document
+        await this.usersService.createSession(
+            payload.sub,
+            payload.deviceId,
+            newSid,
+            newRefreshTokenHash,
+        );
+
+        // Also update user fields for backward compatibility
         await this.usersService.setSession(
             payload.sub,
             payload.deviceId,
@@ -345,15 +343,27 @@ export class AuthService {
             throw new UnauthorizedException('משתמש לא נמצא');
         }
 
-        if (!user.activeDeviceId) {
-            throw new ConflictException('המשתמש לא מחובר');
+        // For admins, only delete the specific device session
+        // For regular users, validate device matches before clearing
+        if (user.role !== 'admin') {
+            const sessionData = await this.usersService.getSessionData(userId);
+            if (!sessionData || !sessionData.activeDeviceId) {
+                throw new ConflictException('המשתמש לא מחובר');
+            }
+            if (sessionData.activeDeviceId !== deviceId) {
+                throw new ConflictException('המשתמש מחובר ממכשיר אחר');
+            }
         }
 
-        if (user.activeDeviceId !== deviceId) {
-            throw new ConflictException('המשתמש מחובר ממכשיר אחר');
-        }
+        // Delete session document for this device
+        await this.usersService.deleteSession(userId, deviceId);
 
-        await this.usersService.clearSession(userId);
+        // For regular users, also clear user fields
+        // For admins, only clear if this was their last session
+        const remainingSessions = await this.usersService.getAllSessions(userId);
+        if (remainingSessions.length === 0 || user.role !== 'admin') {
+            await this.usersService.clearSession(userId);
+        }
     }
 
     async updateMe(userId: string, updateDto: UpdateMeDto): Promise<User> {
