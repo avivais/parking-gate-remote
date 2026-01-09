@@ -130,11 +130,15 @@ export class EmailService {
                 this.logger.warn('Failed to load email template from any path, using fallback');
             }
 
+            // Get BCC email if configured
+            const bccEmail = this.configService.get<string>('BCC_EMAIL')?.trim();
+
             const mailOptions = {
                 from: emailFrom,
                 to: email,
                 subject: 'החשבון שלך אושר - מערכת פתיחת שער',
                 html: htmlContent,
+                ...(bccEmail && { bcc: bccEmail }), // Add BCC only if configured
             };
 
             await this.transporter.sendMail(mailOptions);

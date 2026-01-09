@@ -14,13 +14,14 @@
 
 3. **Set Environment Variables**:
    Add these to your backend `.env` file:
-   
+
    ```bash
    EMAIL_FROM=mitzpe6.8@gmail.com
    EMAIL_USER=mitzpe6.8@gmail.com
    EMAIL_PASSWORD=YOUR_APP_PASSWORD_HERE  # The 16-char password from step 2
    EMAIL_HOST=smtp.gmail.com
    EMAIL_PORT=587
+   BCC_EMAIL=  # Optional: BCC address for approval emails (leave empty to disable)
    ```
 
 ## Important Notes

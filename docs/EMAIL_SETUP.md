@@ -34,6 +34,7 @@ EMAIL_USER=mitzpe6.8@gmail.com
 EMAIL_PASSWORD=YOUR_16_CHARACTER_APP_PASSWORD_HERE  # The App Password from Step 2
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
+BCC_EMAIL=optional-bcc@example.com  # Optional: BCC address for approval emails (leave empty or omit to disable)
 ```
 
 ### Where to get each variable:
@@ -61,6 +62,12 @@ EMAIL_PORT=587
 
 - **EMAIL_PORT**: Gmail SMTP port (TLS)
   - Always: `587`
+
+- **BCC_EMAIL**: Optional BCC email address for approval emails (optional)
+  - If set, all approval emails will be BCC'd to this address
+  - Useful for keeping a record of all approval notifications
+  - Leave empty or omit the variable to disable BCC functionality
+  - Example: `admin@example.com`
 
 ## Example Configuration
 
