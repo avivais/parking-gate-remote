@@ -76,10 +76,7 @@ body {
     background-color: var(--primary);
     color: var(--primary-contrast);
     border-radius: var(--radius-md);
-}
-
-.btn-primary:hover {
-    background-color: var(--primary-hover);
+    transition: background-color 0.2s ease, transform 0.15s ease;
 }
 
 .btn-primary:focus-visible {
@@ -125,8 +122,10 @@ textarea.input-theme.focus-theme:focus-visible {
     color: var(--table-header-text);
 }
 
-.table-row:hover {
-    background-color: var(--table-row-hover);
+/* Table rows - ensure default background and cursor */
+.table-row {
+    background-color: var(--surface);
+    cursor: pointer;
 }
 
 .table-border {
@@ -374,3 +373,132 @@ button:focus-visible {
     outline-offset: 2px;
 }
 
+/* Cursor pointer for all clickable elements - applies to all devices */
+button:not(:disabled),
+a[href],
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+select,
+[role="button"],
+[tabindex]:not([tabindex="-1"]) {
+    cursor: pointer;
+}
+
+
+/* Hover-only utilities - only apply on devices that support hover */
+@media (hover: hover) and (pointer: fine) {
+    /* Primary filled buttons - darken on hover */
+    .btn-primary:hover:not(:disabled),
+    button[style*="--primary"]:hover:not(:disabled) {
+        background-color: var(--primary-hover);
+        transform: translateY(-1px);
+        transition: background-color 0.2s ease, transform 0.15s ease;
+    }
+
+    /* Success buttons (green) */
+    .btn-success:hover:not(:disabled),
+    button[style*="--success"]:hover:not(:disabled) {
+        filter: brightness(0.9);
+        transform: translateY(-1px);
+        transition: filter 0.2s ease, transform 0.15s ease;
+    }
+
+    /* Danger buttons (red) */
+    .btn-danger:hover:not(:disabled),
+    button[style*="--danger"]:hover:not(:disabled) {
+        filter: brightness(0.9);
+        transform: translateY(-1px);
+        transition: filter 0.2s ease, transform 0.15s ease;
+    }
+
+    /* Warning buttons */
+    .btn-warning:hover:not(:disabled),
+    button[style*="--warning"]:hover:not(:disabled) {
+        filter: brightness(0.9);
+        transform: translateY(-1px);
+        transition: filter 0.2s ease, transform 0.15s ease;
+    }
+
+    /* Muted buttons (gray/disabled style) */
+    button[style*="--muted"]:hover:not(:disabled) {
+        filter: brightness(0.9);
+        transform: translateY(-1px);
+        transition: filter 0.2s ease, transform 0.15s ease;
+    }
+
+    /* Outlined/secondary buttons */
+    .btn-outline:hover:not(:disabled) {
+        background-color: var(--surface-2);
+        transition: background-color 0.2s ease;
+    }
+
+    /* All buttons - ensure hover state */
+    button:not(:disabled):hover {
+        cursor: pointer;
+    }
+
+    /* Active navigation items - no hover, no pointer */
+    .nav-item-active {
+        cursor: default !important;
+        pointer-events: none;
+    }
+
+    /* Inactive navigation items - clear bg change on hover */
+    .nav-item-inactive:hover {
+        background-color: var(--surface-2);
+        transition: background-color 0.2s ease;
+    }
+
+    /* Select dropdowns */
+    select.input-theme:hover:not(:disabled) {
+        border-color: var(--primary);
+        transition: border-color 0.2s ease;
+    }
+
+    /* Clickable table headers */
+    .th-sortable:hover {
+        background-color: var(--surface-2);
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+    }
+
+    /* Text links */
+    .link-hover:hover,
+    a[href]:hover {
+        text-decoration: underline;
+        opacity: 0.85;
+        transition: opacity 0.15s ease;
+    }
+
+    /* Pagination buttons */
+    .pagination-btn:hover:not(:disabled) {
+        background-color: var(--surface-2);
+        transition: background-color 0.15s ease;
+    }
+
+    /* Table row hover - use surface-2 for more visible contrast */
+    .table-row:hover {
+        background-color: var(--surface-2) !important;
+        transition: background-color 0.15s ease;
+    }
+
+    /* Theme selection buttons in theme menu */
+    .theme-button:hover:not([aria-selected="true"]) {
+        background-color: var(--surface-2);
+        transition: background-color 0.2s ease;
+    }
+
+    /* Status filter buttons */
+    [role="tab"]:not([aria-selected="true"]):hover,
+    button[role="tab"]:not([aria-selected="true"]):hover {
+        background-color: var(--surface-2);
+        transition: background-color 0.2s ease;
+    }
+
+    /* Tab buttons */
+    .tab-button:not(.active):hover {
+        background-color: var(--surface-2);
+        transition: background-color 0.2s ease;
+    }
+}

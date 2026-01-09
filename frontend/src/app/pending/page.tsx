@@ -153,18 +153,10 @@ export default function PendingPage() {
                         <button
                             onClick={handleCheckAgain}
                             disabled={checking}
-                            className="w-full rounded-theme-lg px-6 py-4 text-lg font-bold shadow-theme-lg focus-theme disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            className="btn-primary w-full rounded-theme-lg px-6 py-4 text-lg font-bold shadow-theme-lg focus-theme disabled:opacity-50 disabled:cursor-not-allowed"
                             style={{
                                 backgroundColor: "var(--primary)",
                                 color: "var(--primary-contrast)",
-                            }}
-                            onMouseEnter={(e) => {
-                                if (!checking) {
-                                    e.currentTarget.style.backgroundColor = "var(--primary-hover)";
-                                }
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.backgroundColor = "var(--primary)";
                             }}
                         >
                             {checking ? (
@@ -199,16 +191,10 @@ export default function PendingPage() {
 
                         <button
                             onClick={logout}
-                            className="w-full rounded-theme-md px-6 py-3 text-base font-medium shadow-theme-sm focus-theme transition-all"
+                            className="btn-danger w-full rounded-theme-md px-6 py-3 text-base font-medium shadow-theme-sm focus-theme"
                             style={{
                                 backgroundColor: "var(--danger)",
                                 color: "var(--primary-contrast)",
-                            }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.opacity = "0.9";
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.opacity = "1";
                             }}
                         >
                             התנתק

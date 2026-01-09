@@ -17,20 +17,6 @@ export function GateButton({ onOpen, disabled = false, loading }: GateButtonProp
     const isLoading = loading ?? status === "loading";
     const isDisabled = disabled || isLoading;
 
-    // Reset opacity when status changes to idle
-    useEffect(() => {
-        if (status === "idle" && !isDisabled) {
-            // Small delay to ensure DOM is updated
-            const timer = setTimeout(() => {
-                const button = document.querySelector('[aria-busy]') as HTMLButtonElement;
-                if (button) {
-                    button.style.opacity = "1";
-                }
-            }, 50);
-            return () => clearTimeout(timer);
-        }
-    }, [status, isDisabled]);
-
     const handlePress = useCallback(async () => {
         if (isDisabled) return;
 
@@ -133,23 +119,10 @@ export function GateButton({ onOpen, disabled = false, loading }: GateButtonProp
             disabled={isDisabled}
             aria-disabled={isDisabled}
             aria-busy={isLoading}
-            className="w-full rounded-theme-lg px-6 py-8 text-2xl font-bold shadow-theme-lg focus-theme disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            className="btn-success w-full rounded-theme-lg px-6 py-8 text-2xl font-bold shadow-theme-lg focus-theme disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
                 backgroundColor: "var(--success)",
                 color: "var(--primary-contrast)",
-            }}
-            onMouseEnter={(e) => {
-                if (!isDisabled) {
-                    e.currentTarget.style.opacity = "0.9";
-                }
-            }}
-            onMouseLeave={(e) => {
-                // Reset opacity based on current disabled state
-                if (isDisabled) {
-                    e.currentTarget.style.opacity = "0.5";
-                } else {
-                    e.currentTarget.style.opacity = "1";
-                }
             }}
             animate={status === "idle" ? "idle" : status}
             variants={variants}

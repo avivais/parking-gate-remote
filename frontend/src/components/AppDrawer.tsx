@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { FRONTEND_VERSION } from "@/lib/version";
 
 export function AppDrawer() {
     const { user, logout } = useAuth();
@@ -155,17 +156,17 @@ export function AppDrawer() {
                     role="dialog"
                     aria-modal="true"
                     aria-label="תפריט אפליקציה"
-                    className="fixed right-0 top-14 bottom-0 z-50 w-[80%] max-w-[360px] md:w-96 overflow-y-auto border-l border-theme bg-surface shadow-theme-lg"
+                    className="fixed right-0 top-14 bottom-0 z-50 w-[80%] max-w-[360px] md:w-96 border-l border-theme bg-surface shadow-theme-lg flex flex-col"
                     style={{ animation: "slideInRight 200ms ease-out" }}
                 >
-                    <div className="py-2">
+                    <div className="py-2 flex-1 overflow-y-auto pb-16">
                         {/* פתח שער */}
                         <button
                             onClick={() => handleNavigate("/")}
                             className={`w-full rounded-theme-md px-4 py-3 text-right text-sm font-medium transition-colors ${
                                 isActive("/")
                                     ? "bg-primary text-primary-contrast"
-                                    : "hover:bg-surface-2"
+                                    : "btn-outline"
                             }`}
                             style={!isActive("/") ? { color: "var(--text)" } : undefined}
                         >
@@ -181,7 +182,7 @@ export function AppDrawer() {
                             className={`w-full rounded-theme-md px-4 py-3 text-right text-sm font-medium transition-colors ${
                                 isActive("/me")
                                     ? "bg-primary text-primary-contrast"
-                                    : "hover:bg-surface-2"
+                                    : "btn-outline"
                             }`}
                             style={!isActive("/me") ? { color: "var(--text)" } : undefined}
                         >
@@ -198,7 +199,7 @@ export function AppDrawer() {
                                     className={`w-full rounded-theme-md px-4 py-3 text-right text-sm font-medium transition-colors ${
                                         isActive("/admin")
                                             ? "bg-primary text-primary-contrast"
-                                            : "hover:bg-surface-2"
+                                            : "btn-outline"
                                     }`}
                                     style={!isActive("/admin") ? { color: "var(--text)" } : undefined}
                                 >
@@ -213,13 +214,20 @@ export function AppDrawer() {
                         {/* התנתק */}
                         <button
                             onClick={handleLogout}
-                            className="w-full rounded-theme-md px-4 py-3 text-right text-sm font-medium transition-colors hover:bg-surface-2"
+                            className="btn-outline w-full rounded-theme-md px-4 py-3 text-right text-sm font-medium"
                             style={{
                                 color: "var(--danger)",
                             }}
                         >
                             התנתק
                         </button>
+
+                        {/* Version - at bottom of drawer */}
+                        <div className="absolute bottom-0 left-0 right-0 px-4 py-3 border-t border-theme bg-surface-2">
+                            <div className="text-xs text-muted text-center">
+                                גרסה {FRONTEND_VERSION}
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

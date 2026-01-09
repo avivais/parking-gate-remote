@@ -643,33 +643,36 @@ export default function AdminPage() {
                 <div className="mb-6">
                     <nav className="flex gap-2 md:gap-4 border-b border-theme">
                         <button
-                            onClick={() => setActiveTab("users")}
+                            onClick={activeTab === "users" ? undefined : () => setActiveTab("users")}
+                            disabled={activeTab === "users"}
                             className={`border-b-2 px-3 md:px-4 py-2 text-xs md:text-sm font-medium transition-colors whitespace-nowrap -mb-px ${
                                 activeTab === "users"
-                                    ? "border-primary text-primary"
-                                    : "border-transparent text-muted hover:border-theme hover:text-text"
+                                    ? "border-primary text-primary nav-item-active"
+                                    : "border-transparent text-muted nav-item-inactive"
                             }`}
                             style={activeTab === "users" ? { borderColor: "var(--primary)", color: "var(--primary)" } : {}}
                         >
                             משתמשים
                         </button>
                         <button
-                            onClick={() => setActiveTab("logs")}
+                            onClick={activeTab === "logs" ? undefined : () => setActiveTab("logs")}
+                            disabled={activeTab === "logs"}
                             className={`border-b-2 px-3 md:px-4 py-2 text-xs md:text-sm font-medium transition-colors whitespace-nowrap -mb-px ${
                                 activeTab === "logs"
-                                    ? "border-primary text-primary"
-                                    : "border-transparent text-muted hover:border-theme hover:text-text"
+                                    ? "border-primary text-primary nav-item-active"
+                                    : "border-transparent text-muted nav-item-inactive"
                             }`}
                             style={activeTab === "logs" ? { borderColor: "var(--primary)", color: "var(--primary)" } : {}}
                         >
                             לוגים
                         </button>
                         <button
-                            onClick={() => setActiveTab("devices")}
+                            onClick={activeTab === "devices" ? undefined : () => setActiveTab("devices")}
+                            disabled={activeTab === "devices"}
                             className={`border-b-2 px-3 md:px-4 py-2 text-xs md:text-sm font-medium transition-colors whitespace-nowrap -mb-px ${
                                 activeTab === "devices"
-                                    ? "border-primary text-primary"
-                                    : "border-transparent text-muted hover:border-theme hover:text-text"
+                                    ? "border-primary text-primary nav-item-active"
+                                    : "border-transparent text-muted nav-item-inactive"
                             }`}
                             style={activeTab === "devices" ? { borderColor: "var(--primary)", color: "var(--primary)" } : {}}
                         >
@@ -693,70 +696,95 @@ export default function AdminPage() {
                             {/* Status Filter Buttons - Mobile: wrap, Desktop: no wrap */}
                             <div className="flex flex-wrap gap-2 md:flex-nowrap">
                                 <button
-                                    onClick={() => {
-                                        setUsersStatusFilter("pending");
-                                        setUsersPage(1);
-                                    }}
+                                    onClick={
+                                        usersStatusFilter === "pending"
+                                            ? undefined
+                                            : () => {
+                                                  setUsersStatusFilter("pending");
+                                                  setUsersPage(1);
+                                              }
+                                    }
+                                    disabled={usersStatusFilter === "pending"}
                                     className={`rounded-theme-md px-3 py-2 text-xs md:text-sm font-medium transition-colors whitespace-nowrap ${
                                         usersStatusFilter === "pending"
-                                            ? "bg-primary text-primary-contrast"
-                                            : "bg-surface-2 text-muted hover:bg-surface"
+                                            ? "bg-primary text-primary-contrast nav-item-active"
+                                            : "bg-surface-2 text-muted nav-item-inactive"
                                     }`}
                                     style={usersStatusFilter === "pending" ? {} : { color: "var(--muted)" }}
                                 >
                                     ממתינים
                                 </button>
                                 <button
-                                    onClick={() => {
-                                        setUsersStatusFilter("approved");
-                                        setUsersPage(1);
-                                    }}
+                                    onClick={
+                                        usersStatusFilter === "approved"
+                                            ? undefined
+                                            : () => {
+                                                  setUsersStatusFilter("approved");
+                                                  setUsersPage(1);
+                                              }
+                                    }
+                                    disabled={usersStatusFilter === "approved"}
                                     className={`rounded-theme-md px-3 py-2 text-xs md:text-sm font-medium transition-colors whitespace-nowrap ${
                                         usersStatusFilter === "approved"
-                                            ? "bg-primary text-primary-contrast"
-                                            : "bg-surface-2 text-muted hover:bg-surface"
+                                            ? "bg-primary text-primary-contrast nav-item-active"
+                                            : "bg-surface-2 text-muted nav-item-inactive"
                                     }`}
                                     style={usersStatusFilter === "approved" ? {} : { color: "var(--muted)" }}
                                 >
                                     מאושרים
                                 </button>
                                 <button
-                                    onClick={() => {
-                                        setUsersStatusFilter("rejected");
-                                        setUsersPage(1);
-                                    }}
+                                    onClick={
+                                        usersStatusFilter === "rejected"
+                                            ? undefined
+                                            : () => {
+                                                  setUsersStatusFilter("rejected");
+                                                  setUsersPage(1);
+                                              }
+                                    }
+                                    disabled={usersStatusFilter === "rejected"}
                                     className={`rounded-theme-md px-3 py-2 text-xs md:text-sm font-medium transition-colors whitespace-nowrap ${
                                         usersStatusFilter === "rejected"
-                                            ? "bg-primary text-primary-contrast"
-                                            : "bg-surface-2 text-muted hover:bg-surface"
+                                            ? "bg-primary text-primary-contrast nav-item-active"
+                                            : "bg-surface-2 text-muted nav-item-inactive"
                                     }`}
                                     style={usersStatusFilter === "rejected" ? {} : { color: "var(--muted)" }}
                                 >
                                     נדחו
                                 </button>
                                 <button
-                                    onClick={() => {
-                                        setUsersStatusFilter("archived");
-                                        setUsersPage(1);
-                                    }}
+                                    onClick={
+                                        usersStatusFilter === "archived"
+                                            ? undefined
+                                            : () => {
+                                                  setUsersStatusFilter("archived");
+                                                  setUsersPage(1);
+                                              }
+                                    }
+                                    disabled={usersStatusFilter === "archived"}
                                     className={`rounded-theme-md px-3 py-2 text-xs md:text-sm font-medium transition-colors whitespace-nowrap ${
                                         usersStatusFilter === "archived"
-                                            ? "bg-primary text-primary-contrast"
-                                            : "bg-surface-2 text-muted hover:bg-surface"
+                                            ? "bg-primary text-primary-contrast nav-item-active"
+                                            : "bg-surface-2 text-muted nav-item-inactive"
                                     }`}
                                     style={usersStatusFilter === "archived" ? {} : { color: "var(--muted)" }}
                                 >
                                     מושבתים
                                 </button>
                                 <button
-                                    onClick={() => {
-                                        setUsersStatusFilter("all");
-                                        setUsersPage(1);
-                                    }}
+                                    onClick={
+                                        usersStatusFilter === "all"
+                                            ? undefined
+                                            : () => {
+                                                  setUsersStatusFilter("all");
+                                                  setUsersPage(1);
+                                              }
+                                    }
+                                    disabled={usersStatusFilter === "all"}
                                     className={`rounded-theme-md px-3 py-2 text-xs md:text-sm font-medium transition-colors whitespace-nowrap ${
                                         usersStatusFilter === "all"
-                                            ? "bg-primary text-primary-contrast"
-                                            : "bg-surface-2 text-muted hover:bg-surface"
+                                            ? "bg-primary text-primary-contrast nav-item-active"
+                                            : "bg-surface-2 text-muted nav-item-inactive"
                                     }`}
                                     style={usersStatusFilter === "all" ? {} : { color: "var(--muted)" }}
                                 >
@@ -795,7 +823,7 @@ export default function AdminPage() {
                             <div className="mb-4">
                                 <button
                                     onClick={() => setApproveAllModalOpen(true)}
-                                    className="rounded-theme-md px-4 py-2 text-sm font-medium"
+                                    className="btn-success rounded-theme-md px-4 py-2 text-sm font-medium"
                                     style={{
                                         backgroundColor: "var(--success)",
                                         color: "var(--primary-contrast)",
@@ -997,7 +1025,7 @@ export default function AdminPage() {
                                                         אימייל
                                                     </th>
                                                     <th
-                                                        className="px-3 py-3 text-xs font-medium uppercase tracking-wider cursor-pointer hover:opacity-80 transition-opacity select-none"
+                                                        className="th-sortable px-3 py-3 text-xs font-medium uppercase tracking-wider select-none"
                                                         style={{ color: "var(--table-header-text)", textAlign: "right" }}
                                                         onClick={() => handleSort("name")}
                                                     >
@@ -1016,7 +1044,7 @@ export default function AdminPage() {
                                                         טלפון
                                                     </th>
                                                     <th
-                                                        className="px-2 py-3 text-xs font-medium uppercase tracking-wider cursor-pointer hover:opacity-80 transition-opacity select-none"
+                                                        className="th-sortable px-2 py-3 text-xs font-medium uppercase tracking-wider select-none"
                                                         style={{ color: "var(--table-header-text)", textAlign: "right" }}
                                                         onClick={() => handleSort("apartmentNumber")}
                                                     >
@@ -1038,7 +1066,7 @@ export default function AdminPage() {
                                                         מכשיר
                                                     </th>
                                                     <th
-                                                        className="px-2 py-3 text-xs font-medium uppercase tracking-wider cursor-pointer hover:opacity-80 transition-opacity select-none"
+                                                        className="th-sortable px-2 py-3 text-xs font-medium uppercase tracking-wider select-none"
                                                         style={{ color: "var(--table-header-text)", textAlign: "right" }}
                                                         onClick={() => handleSort("createdAt")}
                                                     >
@@ -1054,7 +1082,7 @@ export default function AdminPage() {
                                                         </span>
                                                     </th>
                                                     <th
-                                                        className="px-2 py-3 text-xs font-medium uppercase tracking-wider cursor-pointer hover:opacity-80 transition-opacity select-none"
+                                                        className="th-sortable px-2 py-3 text-xs font-medium uppercase tracking-wider select-none"
                                                         style={{ color: "var(--table-header-text)", textAlign: "right" }}
                                                         onClick={() => handleSort("approvalDate")}
                                                     >
@@ -1093,7 +1121,7 @@ export default function AdminPage() {
 
                                                         // First row with user info + first device (or "אין" if no devices)
                                                         const rows = [
-                                                            <tr key={`${user.id}-main`} className="cursor-pointer transition-colors" style={{ backgroundColor: "var(--surface)" }} onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "var(--surface-2)"; }} onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "var(--surface)"; }} onClick={() => openEditModal(user)}>
+                                                            <tr key={`${user.id}-main`} className="table-row cursor-pointer" onClick={() => openEditModal(user)}>
                                                                 <td rowSpan={numRows} className="px-3 py-4 text-sm align-middle" style={{ color: "var(--text)" }}>
                                                                     <div className="truncate max-w-[150px]">{user.email}</div>
                                                                 </td>
@@ -1140,7 +1168,7 @@ export default function AdminPage() {
                                                                             </span>
                                                                             <button
                                                                                 onClick={(e) => { e.stopPropagation(); handleResetDevice(user.id, devices[0].deviceId); }}
-                                                                                className="rounded-theme-sm px-1.5 py-0.5 text-xs font-medium"
+                                                                                className="btn-danger rounded-theme-sm px-1.5 py-0.5 text-xs font-medium"
                                                                                 style={{
                                                                                     backgroundColor: "var(--warning)",
                                                                                     color: "var(--primary-contrast)",
@@ -1174,32 +1202,20 @@ export default function AdminPage() {
                                                                             <>
                                                                                 <button
                                                                                     onClick={(e) => { e.stopPropagation(); handleApproveUser(user.id); }}
-                                                                                    className="rounded-theme-sm px-2 py-0.5 text-xs font-medium"
+                                                                                    className="btn-success rounded-theme-sm px-2 py-0.5 text-xs font-medium"
                                                                                     style={{
                                                                                         backgroundColor: "var(--success)",
                                                                                         color: "var(--primary-contrast)",
-                                                                                    }}
-                                                                                    onMouseEnter={(e) => {
-                                                                                        e.currentTarget.style.opacity = "0.9";
-                                                                                    }}
-                                                                                    onMouseLeave={(e) => {
-                                                                                        e.currentTarget.style.opacity = "1";
                                                                                     }}
                                                                                 >
                                                                                     אישור
                                                                                 </button>
                                                                                 <button
                                                                                     onClick={(e) => { e.stopPropagation(); openRejectModal(user); }}
-                                                                                    className="rounded-theme-sm px-2 py-0.5 text-xs font-medium"
+                                                                                    className="btn-danger rounded-theme-sm px-2 py-0.5 text-xs font-medium"
                                                                                     style={{
                                                                                         backgroundColor: "var(--danger)",
                                                                                         color: "var(--primary-contrast)",
-                                                                                    }}
-                                                                                    onMouseEnter={(e) => {
-                                                                                        e.currentTarget.style.opacity = "0.9";
-                                                                                    }}
-                                                                                    onMouseLeave={(e) => {
-                                                                                        e.currentTarget.style.opacity = "1";
                                                                                     }}
                                                                                 >
                                                                                     דחייה
@@ -1209,16 +1225,10 @@ export default function AdminPage() {
                                                                         {user.status === "approved" && !user.approvalEmailSentAt && (
                                                                             <button
                                                                                 onClick={(e) => { e.stopPropagation(); handleSendApprovalEmail(user.id); }}
-                                                                                className="rounded-theme-sm px-2 py-0.5 text-xs font-medium"
+                                                                                className="btn-primary rounded-theme-sm px-2 py-0.5 text-xs font-medium"
                                                                                 style={{
                                                                                     backgroundColor: "var(--primary)",
                                                                                     color: "var(--primary-contrast)",
-                                                                                }}
-                                                                                onMouseEnter={(e) => {
-                                                                                    e.currentTarget.style.opacity = "0.9";
-                                                                                }}
-                                                                                onMouseLeave={(e) => {
-                                                                                    e.currentTarget.style.opacity = "1";
                                                                                 }}
                                                                             >
                                                                                 שלח מייל
@@ -1226,16 +1236,10 @@ export default function AdminPage() {
                                                                         )}
                                                                         <button
                                                                             onClick={(e) => { e.stopPropagation(); openEditModal(user); }}
-                                                                            className="rounded-theme-sm px-2 py-0.5 text-xs font-medium"
+                                                                            className="btn-primary rounded-theme-sm px-2 py-0.5 text-xs font-medium"
                                                                             style={{
                                                                                 backgroundColor: "var(--primary)",
                                                                                 color: "var(--primary-contrast)",
-                                                                            }}
-                                                                            onMouseEnter={(e) => {
-                                                                                e.currentTarget.style.opacity = "0.9";
-                                                                            }}
-                                                                            onMouseLeave={(e) => {
-                                                                                e.currentTarget.style.opacity = "1";
                                                                             }}
                                                                         >
                                                                             עריכה
@@ -1243,16 +1247,10 @@ export default function AdminPage() {
                                                                         {user.status !== "archived" && (
                                                                             <button
                                                                                 onClick={(e) => { e.stopPropagation(); handleArchiveUser(user.id); }}
-                                                                                className="rounded-theme-sm px-2 py-0.5 text-xs font-medium"
+                                                                                className="btn-danger rounded-theme-sm px-2 py-0.5 text-xs font-medium"
                                                                                 style={{
                                                                                     backgroundColor: "var(--muted)",
                                                                                     color: "var(--primary-contrast)",
-                                                                                }}
-                                                                                onMouseEnter={(e) => {
-                                                                                    e.currentTarget.style.opacity = "0.9";
-                                                                                }}
-                                                                                onMouseLeave={(e) => {
-                                                                                    e.currentTarget.style.opacity = "1";
                                                                                 }}
                                                                             >
                                                                                 השבתה
@@ -1271,7 +1269,7 @@ export default function AdminPage() {
                                                                             </span>
                                                                             <button
                                                                                 onClick={(e) => { e.stopPropagation(); handleResetDevice(user.id, device.deviceId); }}
-                                                                                className="rounded-theme-sm px-1.5 py-0.5 text-xs font-medium"
+                                                                                className="btn-danger rounded-theme-sm px-1.5 py-0.5 text-xs font-medium"
                                                                                 style={{
                                                                                     backgroundColor: "var(--warning)",
                                                                                     color: "var(--primary-contrast)",
@@ -1304,7 +1302,7 @@ export default function AdminPage() {
                                             <button
                                                 onClick={() => setUsersPage((p) => Math.max(1, p - 1))}
                                                 disabled={usersData.page === 1}
-                                                className="rounded-theme-md border border-theme bg-surface px-3 py-2 text-xs md:text-sm font-medium hover:bg-surface-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="pagination-btn btn-outline rounded-theme-md border border-theme bg-surface px-3 py-2 text-xs md:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                                                 style={{ color: "var(--text)" }}
                                             >
                                                 הקודם
@@ -1330,7 +1328,7 @@ export default function AdminPage() {
                                                                 className={`min-w-[2rem] md:min-w-[2.5rem] rounded-theme-md border px-2 md:px-3 py-2 text-xs md:text-sm font-medium transition-colors ${
                                                                     isActive
                                                                         ? "bg-primary text-primary-contrast"
-                                                                        : "border-theme bg-surface text-muted hover:bg-surface-2"
+                                                                        : "pagination-btn btn-outline border-theme bg-surface text-muted"
                                                                 }`}
                                                                 style={isActive ? {} : { color: "var(--muted)" }}
                                                             >
@@ -1347,7 +1345,7 @@ export default function AdminPage() {
                                                     )
                                                 }
                                                 disabled={usersData.page === usersData.totalPages}
-                                                className="rounded-theme-md border border-theme bg-surface px-3 py-2 text-xs md:text-sm font-medium hover:bg-surface-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="pagination-btn btn-outline rounded-theme-md border border-theme bg-surface px-3 py-2 text-xs md:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                                                 style={{ color: "var(--text)" }}
                                             >
                                                 הבא
@@ -1816,23 +1814,17 @@ export default function AdminPage() {
                                         setSelectedUser(null);
                                         setRejectionReason("");
                                     }}
-                                    className="flex-1 rounded-theme-md border border-theme bg-surface px-4 py-2 text-sm font-medium hover:bg-surface-2"
+                                    className="btn-outline flex-1 rounded-theme-md border border-theme bg-surface px-4 py-2 text-sm font-medium"
                                     style={{ color: "var(--text)" }}
                                 >
                                     ביטול
                                 </button>
                                 <button
                                     onClick={handleRejectUser}
-                                    className="flex-1 rounded-theme-md px-4 py-2 text-sm font-medium"
+                                    className="btn-danger flex-1 rounded-theme-md px-4 py-2 text-sm font-medium"
                                     style={{
                                         backgroundColor: "var(--danger)",
                                         color: "var(--primary-contrast)",
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        e.currentTarget.style.opacity = "0.9";
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.opacity = "1";
                                     }}
                                 >
                                     דחייה
@@ -1857,23 +1849,17 @@ export default function AdminPage() {
                             <div className="flex gap-3">
                                 <button
                                     onClick={() => setApproveAllModalOpen(false)}
-                                    className="flex-1 rounded-theme-md border border-theme bg-surface px-4 py-2 text-sm font-medium hover:bg-surface-2"
+                                    className="btn-outline flex-1 rounded-theme-md border border-theme bg-surface px-4 py-2 text-sm font-medium"
                                     style={{ color: "var(--text)" }}
                                 >
                                     ביטול
                                 </button>
                                 <button
                                     onClick={handleApproveAll}
-                                    className="flex-1 rounded-theme-md px-4 py-2 text-sm font-medium"
+                                    className="btn-success flex-1 rounded-theme-md px-4 py-2 text-sm font-medium"
                                     style={{
                                         backgroundColor: "var(--success)",
                                         color: "var(--primary-contrast)",
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        e.currentTarget.style.opacity = "0.9";
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.opacity = "1";
                                     }}
                                 >
                                     אישור הכל
@@ -2098,17 +2084,11 @@ export default function AdminPage() {
                                                 setIsResettingPassword(true);
                                                 setPasswordFormData({ newPassword: "", confirmPassword: "" });
                                             }}
-                                            className="w-full rounded-theme-md border px-4 py-2.5 text-sm font-medium transition-colors"
+                                            className="btn-outline w-full rounded-theme-md border px-4 py-2.5 text-sm font-medium"
                                             style={{
                                                 borderColor: "var(--border)",
                                                 color: "var(--primary)",
                                                 backgroundColor: "transparent",
-                                            }}
-                                            onMouseEnter={(e) => {
-                                                e.currentTarget.style.backgroundColor = "var(--surface-hover)";
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                e.currentTarget.style.backgroundColor = "transparent";
                                             }}
                                         >
                                             🔒 שנה סיסמה
@@ -2181,7 +2161,7 @@ export default function AdminPage() {
                                                     passwordFormData.newPassword !== passwordFormData.confirmPassword ||
                                                     passwordFormData.newPassword.length < 6
                                                 }
-                                                className="w-full rounded-theme-md px-4 py-2 text-sm font-medium transition-colors"
+                                                className="btn-primary w-full rounded-theme-md px-4 py-2 text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed"
                                                 style={{
                                                     backgroundColor:
                                                         passwordFormData.newPassword &&
@@ -2191,20 +2171,6 @@ export default function AdminPage() {
                                                             ? "var(--primary)"
                                                             : "var(--muted)",
                                                     color: "var(--primary-contrast)",
-                                                    opacity:
-                                                        passwordFormData.newPassword &&
-                                                        passwordFormData.confirmPassword &&
-                                                        passwordFormData.newPassword === passwordFormData.confirmPassword &&
-                                                        passwordFormData.newPassword.length >= 6
-                                                            ? 1
-                                                            : 0.6,
-                                                    cursor:
-                                                        passwordFormData.newPassword &&
-                                                        passwordFormData.confirmPassword &&
-                                                        passwordFormData.newPassword === passwordFormData.confirmPassword &&
-                                                        passwordFormData.newPassword.length >= 6
-                                                            ? "pointer"
-                                                            : "not-allowed",
                                                 }}
                                             >
                                                 עדכן סיסמה
@@ -2216,7 +2182,7 @@ export default function AdminPage() {
                             <div className="mt-6 flex gap-2">
                                 <button
                                     onClick={closeEditModal}
-                                    className="modal-outline-btn flex-1 rounded-theme-md border border-theme bg-surface px-4 py-2 text-sm font-medium hover:bg-surface-2"
+                                    className="btn-outline modal-outline-btn flex-1 rounded-theme-md border border-theme bg-surface px-4 py-2 text-sm font-medium"
                                     style={{
                                         color: "var(--text)",
                                     }}
@@ -2226,12 +2192,10 @@ export default function AdminPage() {
                                 <button
                                     onClick={handleEditUser}
                                     disabled={!editFormHasChanges}
-                                    className="flex-1 rounded-theme-md px-4 py-2 text-sm font-medium transition-colors"
+                                    className="btn-primary flex-1 rounded-theme-md px-4 py-2 text-sm font-medium disabled:opacity-60 disabled:cursor-not-allowed"
                                     style={{
                                         backgroundColor: editFormHasChanges ? "var(--primary)" : "var(--muted)",
                                         color: "var(--primary-contrast)",
-                                        opacity: editFormHasChanges ? 1 : 0.6,
-                                        cursor: editFormHasChanges ? "pointer" : "not-allowed",
                                     }}
                                 >
                                     עדכן
@@ -2270,7 +2234,7 @@ export default function AdminPage() {
                             <div className="flex gap-2">
                                 <button
                                     onClick={cancelCloseEditModal}
-                                    className="modal-outline-btn flex-1 rounded-theme-md border border-theme bg-surface px-4 py-2 text-sm font-medium hover:bg-surface-2"
+                                    className="btn-outline modal-outline-btn flex-1 rounded-theme-md border border-theme bg-surface px-4 py-2 text-sm font-medium"
                                     style={{
                                         color: "var(--text)",
                                     }}
@@ -2279,7 +2243,7 @@ export default function AdminPage() {
                                 </button>
                                 <button
                                     onClick={confirmCloseEditModal}
-                                    className="flex-1 rounded-theme-md px-4 py-2 text-sm font-medium"
+                                    className="btn-danger flex-1 rounded-theme-md px-4 py-2 text-sm font-medium"
                                     style={{
                                         backgroundColor: "var(--danger)",
                                         color: "var(--primary-contrast)",

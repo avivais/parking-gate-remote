@@ -223,12 +223,10 @@ export default function MePage() {
                     <button
                         type="submit"
                         disabled={loading || !hasChanges}
-                        className="w-full rounded-theme-md px-4 py-3 font-medium transition-colors"
+                        className="btn-primary w-full rounded-theme-md px-4 py-3 font-medium disabled:opacity-60 disabled:cursor-not-allowed"
                         style={{
                             backgroundColor: loading || !hasChanges ? "var(--muted)" : "var(--primary)",
                             color: "var(--primary-contrast)",
-                            opacity: loading || !hasChanges ? 0.6 : 1,
-                            cursor: loading || !hasChanges ? "not-allowed" : "pointer",
                         }}
                     >
                         {loading ? "מעדכן..." : "עדכן"}

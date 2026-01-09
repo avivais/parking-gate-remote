@@ -292,14 +292,8 @@ export default function RegisterPage() {
                     <div className="text-center">
                         <Link
                             href="/login"
-                            className="text-sm font-medium focus-theme"
+                            className="link-hover text-sm font-medium focus-theme"
                             style={{ color: "var(--primary)" }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.opacity = "0.8";
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.opacity = "1";
-                            }}
                         >
                             יש לך חשבון? התחבר כאן
                         </Link>

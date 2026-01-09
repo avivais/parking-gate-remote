@@ -155,14 +155,8 @@ export default function LoginPage() {
                     <div className="text-center">
                         <Link
                             href="/register"
-                            className="text-sm font-medium focus-theme"
+                            className="link-hover text-sm font-medium focus-theme"
                             style={{ color: "var(--primary)" }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.opacity = "0.8";
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.opacity = "1";
-                            }}
                         >
                             אין לך חשבון? הירשם כאן
                         </Link>

@@ -151,14 +151,19 @@ export function ThemeButton() {
                                     return (
                                         <button
                                             key={id}
-                                            onClick={() => {
-                                                setTheme(id);
-                                                closePopover();
-                                            }}
+                                            onClick={
+                                                isActive
+                                                    ? undefined
+                                                    : () => {
+                                                          setTheme(id);
+                                                          closePopover();
+                                                      }
+                                            }
+                                            disabled={isActive}
                                             className={`rounded-theme-sm px-3 py-2 text-xs font-medium transition-colors text-right ${
                                                 isActive
-                                                    ? "bg-primary text-primary-contrast"
-                                                    : "bg-surface-2 text-muted hover:bg-surface"
+                                                    ? "btn-primary bg-primary text-primary-contrast nav-item-active"
+                                                    : "btn-outline bg-surface-2 text-muted nav-item-inactive"
                                             }`}
                                         >
                                             {theme.labelHe}
@@ -177,7 +182,7 @@ export function ThemeButton() {
                                 toggleMode();
                                 closePopover();
                             }}
-                            className="w-full rounded-theme-md px-4 py-3 text-right text-sm font-medium transition-colors hover:bg-surface-2"
+                            className="btn-outline w-full rounded-theme-md px-4 py-3 text-right text-sm font-medium"
                             style={{ color: "var(--text)" }}
                         >
                             <span className="flex items-center justify-between">
