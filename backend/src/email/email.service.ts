@@ -128,7 +128,7 @@ export class EmailService {
             <body style="font-family: Arial, sans-serif; direction: rtl; text-align: right;">
                 <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
                     <h1 style="color: #2c3e50;">החשבון שלך אושר</h1>
-                    <p>שלום ${firstName} ${lastName},</p>
+                    <p>שלום <span dir="ltr">${firstName} ${lastName}</span>,</p>
                     <p>אנו שמחים להודיע לך שהחשבון שלך במערכת פתיחת השער אושר בהצלחה.</p>
                     <p>כעת תוכל להתחבר למערכת ולהשתמש בשירות פתיחת השער מרחוק.</p>
                     <p>תוכל להתחבר באמצעות כתובת האימייל והסיסמה שהזנת בעת ההרשמה.</p>
