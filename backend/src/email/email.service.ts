@@ -42,6 +42,35 @@ export class EmailService {
         });
     }
 
+    /**
+     * Detects if a string contains Hebrew characters
+     * Hebrew Unicode range: U+0590 to U+05FF
+     */
+    private containsHebrew(text: string): boolean {
+        const hebrewRegex = /[\u0590-\u05FF]/;
+        return hebrewRegex.test(text);
+    }
+
+    /**
+     * Wraps a name with appropriate direction attribute based on content
+     * If name contains Hebrew, returns as-is (parent is RTL)
+     * If name is English/Latin, wraps with dir="ltr" to prevent reversal
+     */
+    private wrapNameWithDirection(name: string): string {
+        const fullName = name.trim();
+        if (!fullName) {
+            return name;
+        }
+        
+        // If name contains Hebrew characters, return as-is (parent context is RTL)
+        if (this.containsHebrew(fullName)) {
+            return fullName;
+        }
+        
+        // For English/Latin names, wrap with dir="ltr" to prevent reversal
+        return `<span dir="ltr">${fullName}</span>`;
+    }
+
     async sendApprovalEmail(
         email: string,
         firstName: string,
@@ -71,6 +100,10 @@ export class EmailService {
                   }
                 : emailAddress;
 
+            // Wrap names with appropriate direction attributes
+            const wrappedFirstName = this.wrapNameWithDirection(firstName);
+            const wrappedLastName = this.wrapNameWithDirection(lastName);
+
             // Load email template
             // Try multiple possible paths (dev and production)
             const possiblePaths = [
@@ -85,9 +118,9 @@ export class EmailService {
             for (const templatePath of possiblePaths) {
                 try {
                     htmlContent = readFileSync(templatePath, 'utf-8');
-                    // Replace placeholders
-                    htmlContent = htmlContent.replace(/\{\{firstName\}\}/g, firstName);
-                    htmlContent = htmlContent.replace(/\{\{lastName\}\}/g, lastName);
+                    // Replace placeholders with wrapped names (preserving spaces)
+                    htmlContent = htmlContent.replace(/\{\{firstName\}\}/g, wrappedFirstName);
+                    htmlContent = htmlContent.replace(/\{\{lastName\}\}/g, wrappedLastName);
                     htmlContent = htmlContent.replace(/\{\{email\}\}/g, email);
                     templateLoaded = true;
                     break;
@@ -117,6 +150,8 @@ export class EmailService {
     }
 
     private getFallbackEmailContent(firstName: string, lastName: string): string {
+        const wrappedFirstName = this.wrapNameWithDirection(firstName);
+        const wrappedLastName = this.wrapNameWithDirection(lastName);
         return `
             <!DOCTYPE html>
             <html dir="rtl" lang="he">
@@ -128,7 +163,7 @@ export class EmailService {
             <body style="font-family: Arial, sans-serif; direction: rtl; text-align: right;">
                 <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
                     <h1 style="color: #2c3e50;">החשבון שלך אושר</h1>
-                    <p>שלום <span dir="ltr">${firstName} ${lastName}</span>,</p>
+                    <p>שלום ${wrappedFirstName} ${wrappedLastName},</p>
                     <p>אנו שמחים להודיע לך שהחשבון שלך במערכת פתיחת השער אושר בהצלחה.</p>
                     <p>כעת תוכל להתחבר למערכת ולהשתמש בשירות פתיחת השער מרחוק.</p>
                     <p>תוכל להתחבר באמצעות כתובת האימייל והסיסמה שהזנת בעת ההרשמה.</p>
