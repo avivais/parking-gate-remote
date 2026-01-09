@@ -96,10 +96,6 @@ export class AdminService {
         // Build filter
         const filter: any = {};
 
-        if (status !== UserStatusFilter.ALL) {
-            filter.status = status;
-        }
-
         // Build $or search for q across email, phone, firstName, lastName
         if (q) {
             filter.$or = [
@@ -108,6 +104,20 @@ export class AdminService {
                 { firstName: { $regex: q, $options: 'i' } },
                 { lastName: { $regex: q, $options: 'i' } },
             ];
+        }
+
+        // Apply status filter - must be combined with $or if it exists
+        if (status !== UserStatusFilter.ALL) {
+            if (filter.$or) {
+                // When both status and $or exist, use $and to combine them properly
+                filter.$and = [
+                    { status },
+                    { $or: filter.$or },
+                ];
+                delete filter.$or;
+            } else {
+                filter.status = status;
+            }
         }
 
         // Calculate pagination

@@ -22,6 +22,7 @@ import { ResetDeviceDto } from './dto/reset-device.dto';
 
 @Controller('admin')
 @UseGuards(AuthGuard('jwt'), ApprovedGuard, AdminGuard)
+@SkipThrottle()
 export class AdminController {
     constructor(private readonly adminService: AdminService) {}
 

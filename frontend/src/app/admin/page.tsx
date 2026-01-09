@@ -241,6 +241,13 @@ export default function AdminPage() {
         }
     }, [activeTab, loadUsers, loadLogs, loadDeviceStatus]);
 
+    // Reload users when status filter changes
+    useEffect(() => {
+        if (activeTab === "users") {
+            loadUsers();
+        }
+    }, [usersStatusFilter, activeTab, loadUsers]);
+
     // Handle approve user
     const handleApproveUser = async (userId: string) => {
         try {
@@ -249,7 +256,9 @@ export default function AdminPage() {
                 body: { status: "approved" },
             });
             toast.success("המשתמש אושר בהצלחה");
-            loadUsers();
+            // If currently on pending tab, the user will disappear. Optionally switch to approved tab.
+            // For now, just refresh the current view
+            await loadUsers();
         } catch (err) {
             if (err instanceof ApiError) {
                 toast.error(err.message || "שגיאה באישור המשתמש");
@@ -726,7 +735,7 @@ export default function AdminPage() {
                             <div className="flex items-center justify-center py-12">
                                 <div className="text-lg text-muted">טוען...</div>
                             </div>
-                        ) : error && error.includes("הרשאה") ? (
+                        ) : error ? (
                             <div className="rounded-theme-md border p-4" style={{ backgroundColor: "var(--danger)", borderColor: "var(--danger)", opacity: 0.1 }}>
                                 <p style={{ color: "var(--danger)" }}>{error}</p>
                             </div>
@@ -1215,7 +1224,7 @@ export default function AdminPage() {
                             <div className="flex items-center justify-center py-12">
                                 <div className="text-lg text-muted">טוען...</div>
                             </div>
-                        ) : error && error.includes("הרשאה") ? (
+                        ) : error ? (
                             <div className="rounded-theme-md border p-4" style={{ backgroundColor: "var(--danger)", borderColor: "var(--danger)", opacity: 0.1 }}>
                                 <p style={{ color: "var(--danger)" }}>{error}</p>
                             </div>
@@ -1441,7 +1450,7 @@ export default function AdminPage() {
                             <div className="flex items-center justify-center py-12">
                                 <div className="text-lg text-muted">טוען...</div>
                             </div>
-                        ) : error && error.includes("הרשאה") ? (
+                        ) : error ? (
                             <div className="rounded-theme-md border p-4" style={{ backgroundColor: "var(--danger)", borderColor: "var(--danger)", opacity: 0.1 }}>
                                 <p style={{ color: "var(--danger)" }}>{error}</p>
                             </div>
