@@ -75,7 +75,6 @@ body {
 .btn-primary {
     background-color: var(--primary);
     color: var(--primary-contrast);
-    border-radius: var(--radius-md);
     transition: background-color 0.2s ease, transform 0.15s ease;
 }
 
@@ -396,41 +395,41 @@ select,
         transition: background-color 0.2s ease, transform 0.15s ease;
     }
 
-    /* Success buttons (green) */
+    /* Success buttons (green) - strong darken */
     .btn-success:hover:not(:disabled),
     button[style*="--success"]:hover:not(:disabled) {
-        filter: brightness(0.9);
+        filter: brightness(0.8);
         transform: translateY(-1px);
-        transition: filter 0.2s ease, transform 0.15s ease;
+        transition: filter 0.15s ease, transform 0.15s ease;
     }
 
-    /* Danger buttons (red) */
+    /* Danger buttons (red) - strong darken */
     .btn-danger:hover:not(:disabled),
     button[style*="--danger"]:hover:not(:disabled) {
-        filter: brightness(0.9);
+        filter: brightness(0.8);
         transform: translateY(-1px);
-        transition: filter 0.2s ease, transform 0.15s ease;
+        transition: filter 0.15s ease, transform 0.15s ease;
     }
 
-    /* Warning buttons */
+    /* Warning buttons - strong darken */
     .btn-warning:hover:not(:disabled),
     button[style*="--warning"]:hover:not(:disabled) {
-        filter: brightness(0.9);
+        filter: brightness(0.8);
         transform: translateY(-1px);
-        transition: filter 0.2s ease, transform 0.15s ease;
+        transition: filter 0.15s ease, transform 0.15s ease;
     }
 
-    /* Muted buttons (gray/disabled style) */
+    /* Muted buttons (gray/disabled style) - strong darken */
     button[style*="--muted"]:hover:not(:disabled) {
-        filter: brightness(0.9);
+        filter: brightness(0.8);
         transform: translateY(-1px);
-        transition: filter 0.2s ease, transform 0.15s ease;
+        transition: filter 0.15s ease, transform 0.15s ease;
     }
 
-    /* Outlined/secondary buttons */
+    /* Outlined/secondary buttons - consistent darken */
     .btn-outline:hover:not(:disabled) {
-        background-color: var(--surface-2);
-        transition: background-color 0.2s ease;
+        filter: brightness(0.8);
+        transition: filter 0.15s ease;
     }
 
     /* All buttons - ensure hover state */
@@ -444,61 +443,65 @@ select,
         pointer-events: none;
     }
 
-    /* Inactive navigation items - clear bg change on hover */
+    /* Inactive navigation items - strong darken for consistency */
     .nav-item-inactive:hover {
-        background-color: var(--surface-2);
-        transition: background-color 0.2s ease;
+        filter: brightness(0.8);
+        transition: filter 0.15s ease;
     }
 
-    /* Select dropdowns */
+    /* Select dropdowns - border + darken */
     select.input-theme:hover:not(:disabled) {
         border-color: var(--primary);
-        transition: border-color 0.2s ease;
+        filter: brightness(0.95);
+        transition: border-color 0.15s ease, filter 0.15s ease;
     }
 
-    /* Clickable table headers */
-    .th-sortable:hover {
-        background-color: var(--surface-2);
+    /* Clickable table headers - consistent darken on hover */
+    .th-sortable {
         cursor: pointer;
-        transition: background-color 0.15s ease;
+    }
+
+    .th-sortable:hover {
+        filter: brightness(0.8);
+        transition: filter 0.15s ease;
     }
 
     /* Text links */
     .link-hover:hover,
     a[href]:hover {
         text-decoration: underline;
-        opacity: 0.85;
+        opacity: 0.7;
         transition: opacity 0.15s ease;
     }
 
-    /* Pagination buttons */
+    /* Pagination buttons - strong darken */
     .pagination-btn:hover:not(:disabled) {
-        background-color: var(--surface-2);
-        transition: background-color 0.15s ease;
+        filter: brightness(0.8);
+        transition: filter 0.15s ease;
     }
 
-    /* Table row hover - use surface-2 for more visible contrast */
+    /* Table row hover - strong darken for visibility */
     .table-row:hover {
-        background-color: var(--surface-2) !important;
-        transition: background-color 0.15s ease;
+        filter: brightness(0.85);
+        transition: filter 0.15s ease;
     }
 
     /* Theme selection buttons in theme menu */
     .theme-button:hover:not([aria-selected="true"]) {
-        background-color: var(--surface-2);
-        transition: background-color 0.2s ease;
+        filter: brightness(0.8);
+        transition: filter 0.15s ease;
     }
 
     /* Status filter buttons */
     [role="tab"]:not([aria-selected="true"]):hover,
     button[role="tab"]:not([aria-selected="true"]):hover {
-        background-color: var(--surface-2);
-        transition: background-color 0.2s ease;
+        filter: brightness(0.8);
+        transition: filter 0.15s ease;
     }
 
     /* Tab buttons */
     .tab-button:not(.active):hover {
-        background-color: var(--surface-2);
-        transition: background-color 0.2s ease;
+        filter: brightness(0.8);
+        transition: filter 0.15s ease;
     }
 }
