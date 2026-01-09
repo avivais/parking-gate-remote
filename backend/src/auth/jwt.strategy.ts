@@ -52,18 +52,21 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
             throw new UnauthorizedException('משתמש לא נמצא');
         }
 
-        if (
-            !sessionData.activeSessionId ||
-            sessionData.activeSessionId !== payload.sid
-        ) {
-            throw new UnauthorizedException('Session לא תקין');
-        }
+        // Admins can have multiple active devices/sessions, so skip session and device checks for them
+        if (payload.role !== 'admin') {
+            if (
+                !sessionData.activeSessionId ||
+                sessionData.activeSessionId !== payload.sid
+            ) {
+                throw new UnauthorizedException('Session לא תקין');
+            }
 
-        if (
-            !sessionData.activeDeviceId ||
-            sessionData.activeDeviceId !== payload.deviceId
-        ) {
-            throw new UnauthorizedException('Device לא תואם');
+            if (
+                !sessionData.activeDeviceId ||
+                sessionData.activeDeviceId !== payload.deviceId
+            ) {
+                throw new UnauthorizedException('Device לא תואם');
+            }
         }
 
         return {

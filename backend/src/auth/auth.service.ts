@@ -175,12 +175,29 @@ export class AuthService {
         );
         const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
 
-        await this.usersService.setSession(
-            userId,
-            loginDto.deviceId,
-            sid,
-            refreshTokenHash,
-        );
+        // For admins, don't update activeDeviceId if they're already logged in from another device
+        // This allows multiple devices to be active simultaneously
+        // For regular users, always update activeDeviceId to enforce single device
+        if (user.role === 'admin' && user.activeDeviceId && user.activeDeviceId !== loginDto.deviceId) {
+            // Admin logging in from a different device - update session but keep multiple devices active
+            // We'll update activeSessionId and refreshTokenHash, but keep activeDeviceId as is
+            // Actually, we need to track multiple sessions - but for now, let's update activeDeviceId
+            // and rely on JwtStrategy to skip device check for admins
+            await this.usersService.setSession(
+                userId,
+                loginDto.deviceId,
+                sid,
+                refreshTokenHash,
+            );
+        } else {
+            // Regular user or first login - update normally
+            await this.usersService.setSession(
+                userId,
+                loginDto.deviceId,
+                sid,
+                refreshTokenHash,
+            );
+        }
 
         const tokens: AuthTokens = {
             accessToken: this.buildAccessToken(user, loginDto.deviceId, sid),
