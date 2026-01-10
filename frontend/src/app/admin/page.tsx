@@ -101,6 +101,8 @@ export default function AdminPage() {
     const [logsOpenedBy, setLogsOpenedBy] = useState<OpenedByFilter>("all");
     const [logsPage, setLogsPage] = useState(1);
     const [logsLimit, setLogsLimit] = useState(50);
+    const [selectedLog, setSelectedLog] = useState<PaginatedLogsResponse['items'][0] | null>(null);
+    const [logModalOpen, setLogModalOpen] = useState(false);
 
     // Device status state
     const [deviceStatusData, setDeviceStatusData] = useState<DeviceStatusResponse | null>(null);
@@ -595,17 +597,20 @@ export default function AdminPage() {
                     setEditModalConfirmClose(false);
                     setPasswordFormData({ newPassword: "", confirmPassword: "" });
                     setIsResettingPassword(false);
+                } else if (logModalOpen) {
+                    setLogModalOpen(false);
+                    setSelectedLog(null);
                 }
             }
         };
 
-        if (rejectModalOpen || approveAllModalOpen || editModalOpen) {
+        if (rejectModalOpen || approveAllModalOpen || editModalOpen || logModalOpen) {
             document.addEventListener("keydown", handleEscapeKey);
             return () => {
                 document.removeEventListener("keydown", handleEscapeKey);
             };
         }
-    }, [rejectModalOpen, approveAllModalOpen, editModalOpen, editFormHasChanges, isResettingPassword, editModalConfirmClose]);
+    }, [rejectModalOpen, approveAllModalOpen, editModalOpen, logModalOpen, editFormHasChanges, isResettingPassword, editModalConfirmClose]);
 
     // Confirm close edit modal (discard changes)
     const confirmCloseEditModal = () => {
@@ -1436,7 +1441,11 @@ export default function AdminPage() {
                                         logsData.items.map((log) => (
                                             <div
                                                 key={log.id}
-                                                className="rounded-theme-md border p-4 space-y-2"
+                                                onClick={() => {
+                                                    setSelectedLog(log);
+                                                    setLogModalOpen(true);
+                                                }}
+                                                className="rounded-theme-md border p-4 space-y-2 cursor-pointer"
                                                 style={{ backgroundColor: "var(--surface)", borderColor: "var(--border)" }}
                                             >
                                                 <div className="flex items-start justify-between">
@@ -1478,27 +1487,35 @@ export default function AdminPage() {
                                 </div>
 
                                 {/* Desktop: Table View */}
-                                <div className="hidden md:block overflow-hidden rounded-theme-lg bg-surface shadow-theme-md">
-                                    <div className="overflow-x-auto">
-                                        <table className="min-w-full divide-y" style={{ borderColor: "var(--table-border)" }}>
+                                <div className="hidden md:block rounded-theme-lg bg-surface shadow-theme-md" style={{ overflow: 'hidden' }}>
+                                    <div style={{ overflow: 'hidden', width: '100%' }}>
+                                        <table className="w-full divide-y" style={{ tableLayout: 'fixed', width: '100%', borderColor: "var(--table-border)" }}>
+                                            <colgroup>
+                                                <col style={{ width: '140px' }} />
+                                                <col style={{ width: '130px' }} />
+                                                <col style={{ width: '180px' }} />
+                                                <col style={{ width: '110px' }} />
+                                                <col style={{ width: '140px' }} />
+                                                <col style={{ width: 'auto' }} />
+                                            </colgroup>
                                             <thead className="table-header">
                                                 <tr>
-                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
+                                                    <th className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
                                                         תאריך ושעה
                                                     </th>
-                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
+                                                    <th className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
                                                         נפתח על ידי
                                                     </th>
-                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
+                                                    <th className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
                                                         אימייל
                                                     </th>
-                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
+                                                    <th className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
                                                         מזהה מכשיר
                                                     </th>
-                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
+                                                    <th className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
                                                         IP
                                                     </th>
-                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
+                                                    <th className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
                                                         User Agent
                                                     </th>
                                                 </tr>
@@ -1508,7 +1525,7 @@ export default function AdminPage() {
                                                     <tr>
                                                         <td
                                                             colSpan={6}
-                                                            className="px-6 py-4 text-center text-sm text-muted"
+                                                            className="px-3 py-4 text-center text-sm text-muted"
                                                         >
                                                             אין לוגים להצגה
                                                         </td>
@@ -1517,31 +1534,33 @@ export default function AdminPage() {
                                                     logsData.items.map((log) => (
                                                         <tr
                                                             key={log.id}
-                                                            className="table-row"
+                                                            onClick={() => {
+                                                                setSelectedLog(log);
+                                                                setLogModalOpen(true);
+                                                            }}
+                                                            className="table-row cursor-pointer"
                                                         >
-                                                            <td className="whitespace-nowrap px-6 py-4 text-sm text-muted">
+                                                            <td className="px-3 py-4 text-sm text-muted overflow-hidden text-ellipsis" style={{ whiteSpace: 'nowrap' }} title={new Date(log.createdAt).toLocaleString("he-IL")}>
                                                                 {new Date(log.createdAt).toLocaleString("he-IL")}
                                                             </td>
-                                                            <td className="whitespace-nowrap px-6 py-4 text-sm" style={{ color: "var(--text)" }}>
+                                                            <td className="px-3 py-4 text-sm overflow-hidden text-ellipsis" style={{ whiteSpace: 'nowrap', color: "var(--text)" }}>
                                                                 {log.openedBy === "user"
                                                                     ? "משתמש"
                                                                     : "אדמין (דלת אחורית)"}
                                                             </td>
-                                                            <td className="whitespace-nowrap px-6 py-4 text-sm" style={{ color: "var(--text)" }}>
+                                                            <td className="px-3 py-4 text-sm overflow-hidden text-ellipsis" style={{ whiteSpace: 'nowrap', color: "var(--text)" }} title={log.email || undefined}>
                                                                 {log.email || "-"}
                                                             </td>
-                                                            <td className="whitespace-nowrap px-6 py-4 text-sm font-mono text-muted">
+                                                            <td className="px-3 py-4 text-sm font-mono text-muted overflow-hidden text-ellipsis" style={{ whiteSpace: 'nowrap' }} title={log.deviceId || undefined}>
                                                                 {log.deviceId
                                                                     ? log.deviceId.substring(0, 8) + "..."
                                                                     : "-"}
                                                             </td>
-                                                            <td className="whitespace-nowrap px-6 py-4 text-sm font-mono text-muted">
+                                                            <td className="px-3 py-4 text-sm font-mono text-muted overflow-hidden text-ellipsis" style={{ whiteSpace: 'nowrap' }} title={log.ip || undefined}>
                                                                 {log.ip || "-"}
                                                             </td>
-                                                            <td className="px-6 py-4 text-sm text-muted">
-                                                                <div className="max-w-xs truncate">
-                                                                    {log.userAgent || "-"}
-                                                                </div>
+                                                            <td className="px-3 py-4 text-sm text-muted overflow-hidden text-ellipsis" style={{ whiteSpace: 'nowrap' }} title={log.userAgent || undefined}>
+                                                                {log.userAgent || "-"}
                                                             </td>
                                                         </tr>
                                                     ))
@@ -1561,7 +1580,7 @@ export default function AdminPage() {
                                             <button
                                                 onClick={() => setLogsPage((p) => Math.max(1, p - 1))}
                                                 disabled={logsData.page === 1}
-                                                className="rounded-theme-md border border-theme bg-surface px-3 py-2 text-xs md:text-sm font-medium hover:bg-surface-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="pagination-btn rounded-theme-md border border-theme bg-surface px-3 py-2 text-xs md:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                                                 style={{ color: "var(--text)" }}
                                             >
                                                 הקודם
@@ -1604,7 +1623,7 @@ export default function AdminPage() {
                                                     )
                                                 }
                                                 disabled={logsData.page === logsData.totalPages}
-                                                className="rounded-theme-md border border-theme bg-surface px-3 py-2 text-xs md:text-sm font-medium hover:bg-surface-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                className="pagination-btn rounded-theme-md border border-theme bg-surface px-3 py-2 text-xs md:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                                                 style={{ color: "var(--text)" }}
                                             >
                                                 הבא
@@ -1614,6 +1633,132 @@ export default function AdminPage() {
                                 )}
                             </>
                         ) : null}
+                    </div>
+                )}
+
+                {/* Log Details Modal */}
+                {logModalOpen && selectedLog && (
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center"
+                        style={{
+                            backgroundColor: "rgba(0, 0, 0, 0.5)",
+                            backdropFilter: "blur(4px)",
+                            WebkitBackdropFilter: "blur(4px)",
+                        }}
+                        onClick={(e) => {
+                            if (e.target === e.currentTarget) {
+                                setLogModalOpen(false);
+                                setSelectedLog(null);
+                            }
+                        }}
+                    >
+                        <div
+                            className="bg-surface modal-border-responsive w-full max-w-2xl p-6 shadow-theme-lg max-h-[90vh] overflow-y-auto"
+                            style={{ borderRadius: 0 }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-bold" style={{ color: "var(--text)" }}>
+                                    פרטי לוג
+                                </h3>
+                                <button
+                                    onClick={() => {
+                                        setLogModalOpen(false);
+                                        setSelectedLog(null);
+                                    }}
+                                    className="p-1 hover:bg-surface-2 transition-colors"
+                                    aria-label="סגור"
+                                >
+                                    <svg
+                                        className="w-6 h-6"
+                                        style={{ color: "var(--muted)" }}
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M6 18L18 6M6 6l12 12"
+                                        />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-xs font-medium uppercase tracking-wider text-muted block mb-1">
+                                        תאריך ושעה
+                                    </label>
+                                    <p className="text-sm" style={{ color: "var(--text)" }}>
+                                        {new Date(selectedLog.createdAt).toLocaleString("he-IL", {
+                                            dateStyle: "long",
+                                            timeStyle: "medium",
+                                        })}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="text-xs font-medium uppercase tracking-wider text-muted block mb-1">
+                                        נפתח על ידי
+                                    </label>
+                                    <p className="text-sm" style={{ color: "var(--text)" }}>
+                                        {selectedLog.openedBy === "user"
+                                            ? "משתמש"
+                                            : "אדמין (דלת אחורית)"}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="text-xs font-medium uppercase tracking-wider text-muted block mb-1">
+                                        אימייל
+                                    </label>
+                                    <p className="text-sm font-mono break-all" style={{ color: "var(--text)" }}>
+                                        {selectedLog.email || "-"}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="text-xs font-medium uppercase tracking-wider text-muted block mb-1">
+                                        מזהה מכשיר
+                                    </label>
+                                    <p className="text-sm font-mono break-all" style={{ color: "var(--text)" }}>
+                                        {selectedLog.deviceId || "-"}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="text-xs font-medium uppercase tracking-wider text-muted block mb-1">
+                                        כתובת IP
+                                    </label>
+                                    <p className="text-sm font-mono break-all" style={{ color: "var(--text)" }}>
+                                        {selectedLog.ip || "-"}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="text-xs font-medium uppercase tracking-wider text-muted block mb-1">
+                                        User Agent
+                                    </label>
+                                    <p className="text-sm break-all" style={{ color: "var(--text)" }}>
+                                        {selectedLog.userAgent || "-"}
+                                    </p>
+                                </div>
+
+                                <div className="pt-4 border-t" style={{ borderColor: "var(--border)" }}>
+                                    <button
+                                        onClick={() => {
+                                            setLogModalOpen(false);
+                                            setSelectedLog(null);
+                                        }}
+                                        className="btn-primary w-full rounded-theme-md px-4 py-2 text-sm font-medium"
+                                    >
+                                        סגור
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 )}
 

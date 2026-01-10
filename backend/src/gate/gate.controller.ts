@@ -15,6 +15,7 @@ import { AdminGuard } from '../auth/admin.guard';
 import { GateThrottlerGuard } from './gate-throttler.guard';
 import { Request as ExpressRequest } from 'express';
 import { UsersService } from '../users/users.service';
+import { getClientIp } from '../utils/ip-extractor';
 
 interface AuthenticatedUser {
     userId: string;
@@ -66,7 +67,7 @@ export class GateController {
             email,
             deviceId: req.user.deviceId,
             sessionId: req.user.sid,
-            ip: req.ip,
+            ip: getClientIp(req),
             userAgent: req.get('user-agent') ?? undefined,
         });
     }
@@ -91,7 +92,7 @@ export class GateController {
         }
 
         return this.gateService.openByAdminBackdoor({
-            ip: req.ip,
+            ip: getClientIp(req),
             userAgent: req.get('user-agent') ?? undefined,
         });
     }

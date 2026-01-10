@@ -11,6 +11,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { GateLog, GateLogDocument } from './schemas/gate-log.schema';
 import { ThrottlerException } from '@nestjs/throttler';
+import { getClientIp } from '../utils/ip-extractor';
 
 interface AuthenticatedRequest extends Request {
     user?: {
@@ -74,7 +75,7 @@ export class GateExceptionFilter implements ExceptionFilter {
                     userId,
                     deviceId,
                     sessionId,
-                    ip: request.ip,
+                    ip: getClientIp(request),
                     userAgent: request.get('user-agent') ?? undefined,
                     openedBy: 'user',
                     status: 'blocked_rate_limit',

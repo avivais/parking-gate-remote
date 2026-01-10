@@ -7,6 +7,11 @@ import * as cookieParser from 'cookie-parser';
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
 
+    // Trust proxy - needed to get real client IP from Cloudflare headers
+    // Access the underlying Express instance to set trust proxy
+    const expressApp = app.getHttpAdapter().getInstance();
+    expressApp.set('trust proxy', true);
+
     // Configure WebSocket adapter for Socket.IO with CORS
     app.useWebSocketAdapter(new SocketIOAdapter(app));
 
