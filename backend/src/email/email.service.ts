@@ -101,6 +101,12 @@ export class EmailService {
             // Format full name with appropriate direction
             const formattedFullName = this.formatFullName(firstName, lastName);
 
+            // Get homepage URL from config, default to https://mitzpe6-8.com
+            const homepageUrl = this.configService.get<string>(
+                'HOMEPAGE_URL',
+                'https://mitzpe6-8.com',
+            );
+
             // Load email template
             // Try multiple possible paths (dev and production)
             const possiblePaths = [
@@ -118,6 +124,7 @@ export class EmailService {
                     // Replace placeholders
                     htmlContent = htmlContent.replace(/\{\{fullName\}\}/g, formattedFullName);
                     htmlContent = htmlContent.replace(/\{\{email\}\}/g, email);
+                    htmlContent = htmlContent.replace(/\{\{homepageUrl\}\}/g, homepageUrl);
                     templateLoaded = true;
                     break;
                 } catch (error) {

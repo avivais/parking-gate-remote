@@ -11,147 +11,193 @@
             text-align: right;
             margin: 0;
             padding: 0;
-            background-color: #f5f5f5;
+            background-color: #f0f2f5;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .email-wrapper {
+            background-color: #f0f2f5;
+            padding: 40px 20px;
+            min-height: 100vh;
         }
         .container {
             max-width: 600px;
             margin: 0 auto;
-            padding: 20px;
             background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
             direction: rtl;
             text-align: right;
         }
         .header {
-            background-color: #2c3e50;
+            background: linear-gradient(135deg, #1e3c72 0%, #2c3e50 100%);
             color: white;
-            padding: 20px;
+            padding: 40px 30px;
             text-align: center;
-            border-radius: 5px 5px 0 0;
             direction: rtl;
         }
         .header h1 {
             margin: 0;
-            font-size: 24px;
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
             direction: rtl;
             text-align: center;
         }
         .content {
-            padding: 30px 20px;
-            line-height: 1.6;
+            padding: 40px 30px;
+            line-height: 1.8;
             color: #333333;
             direction: rtl;
             text-align: right;
         }
-        .greeting {
-            font-size: 18px;
+        .success-icon-wrapper {
+            text-align: center;
+            margin: 30px 0 35px 0;
+        }
+        .success-icon {
+            display: inline-block;
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            border-radius: 50%;
+            text-align: center;
+            line-height: 80px;
+            box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+        }
+        .success-icon span {
+            color: white;
+            font-size: 48px;
             font-weight: bold;
-            margin-bottom: 20px;
+        }
+        .greeting {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 25px;
             color: #2c3e50;
             direction: rtl;
             text-align: right;
         }
         .message {
-            margin-bottom: 20px;
+            margin-bottom: 30px;
             font-size: 16px;
+            line-height: 1.8;
+            color: #555555;
             direction: rtl;
             text-align: right;
         }
         .message p {
+            margin: 12px 0;
             direction: rtl;
             text-align: right;
             unicode-bidi: bidi-override;
-        }
-        .details {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 20px 0;
-            direction: rtl;
-            text-align: right;
-        }
-        .details p {
-            margin: 8px 0;
-            direction: rtl;
-            text-align: right;
-            unicode-bidi: bidi-override;
-        }
-        .details strong {
-            color: #2c3e50;
         }
         .instructions {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 2px solid #e9ecef;
+            margin-top: 35px;
+            padding-top: 30px;
+            border-top: 3px solid #e9ecef;
             direction: rtl;
             text-align: right;
         }
         .instructions h2 {
             color: #2c3e50;
-            font-size: 18px;
-            margin-bottom: 15px;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
             direction: rtl;
             text-align: right;
         }
         .instructions ol {
-            padding-right: 20px;
+            padding-right: 25px;
+            margin: 0;
             direction: rtl;
             text-align: right;
         }
         .instructions li {
-            margin-bottom: 10px;
+            margin-bottom: 14px;
+            padding-bottom: 8px;
             direction: rtl;
             text-align: right;
             unicode-bidi: bidi-override;
+            font-size: 16px;
+            line-height: 1.7;
+            color: #444444;
+        }
+        .instructions li a {
+            color: #1e3c72;
+            text-decoration: none;
+            font-weight: 600;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 2px;
+            transition: all 0.2s ease;
+        }
+        .instructions li a:hover {
+            color: #3498db;
+            border-bottom-color: #1e3c72;
         }
         .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #e9ecef;
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid #e9ecef;
             text-align: center;
             color: #6c757d;
-            font-size: 14px;
+            font-size: 15px;
             direction: rtl;
+            background-color: #f8f9fa;
+            padding: 25px 30px;
         }
         .footer p {
+            margin: 10px 0;
             direction: rtl;
             text-align: center;
             unicode-bidi: bidi-override;
+            line-height: 1.6;
         }
-        .success-icon {
-            text-align: center;
-            font-size: 48px;
-            margin: 20px 0;
+        .footer .signature {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-top: 15px;
         }
     </style>
 </head>
-<body style="direction: rtl; text-align: right; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5;">
-    <div class="container" style="max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff; direction: rtl; text-align: right;">
-        <div class="header" style="background-color: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; direction: rtl;">
-            <h1 style="margin: 0; font-size: 24px; direction: rtl; text-align: center;">החשבון שלך אושר בהצלחה</h1>
-        </div>
-        <div class="content" style="padding: 30px 20px; line-height: 1.6; color: #333333; direction: rtl; text-align: right;">
-            <div class="success-icon" style="text-align: center; font-size: 48px; margin: 20px 0;">✓</div>
-            <div class="greeting" style="font-size: 18px; font-weight: bold; margin-bottom: 20px; color: #2c3e50; direction: rtl; text-align: right;">שלום {{fullName}},</div>
-
-            <div class="message" style="margin-bottom: 20px; font-size: 16px; direction: rtl; text-align: right;">
-                <p style="direction: rtl; text-align: right; unicode-bidi: bidi-override;">אנו שמחים להודיע לך שהחשבון שלך במערכת פתיחת השער אושר בהצלחה.</p>
-                <p style="direction: rtl; text-align: right; unicode-bidi: bidi-override;">כעת תוכל להתחבר למערכת ולהשתמש בשירות פתיחת השער מרחוק.</p>
+<body>
+    <div class="email-wrapper" style="background-color: #f0f2f5; padding: 40px 20px; min-height: 100vh;">
+        <div class="container" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); overflow: hidden; direction: rtl; text-align: right;">
+            <div class="header" style="background: linear-gradient(135deg, #1e3c72 0%, #2c3e50 100%); color: white; padding: 40px 30px; text-align: center; direction: rtl;">
+                <h1 style="margin: 0; font-size: 28px; font-weight: 600; letter-spacing: 0.5px; direction: rtl; text-align: center;">החשבון שלך אושר בהצלחה</h1>
             </div>
+            <div class="content" style="padding: 40px 30px; line-height: 1.8; color: #333333; direction: rtl; text-align: right;">
+                <div class="success-icon-wrapper" style="text-align: center; margin: 30px 0 35px 0;">
+                    <div class="success-icon" style="display: inline-block; width: 80px; height: 80px; background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); border-radius: 50%; text-align: center; line-height: 80px; box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);">
+                        <span style="color: white; font-size: 48px; font-weight: bold;">✓</span>
+                    </div>
+                </div>
 
-            <div class="instructions" style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #e9ecef; direction: rtl; text-align: right;">
-                <h2 style="color: #2c3e50; font-size: 18px; margin-bottom: 15px; direction: rtl; text-align: right;">איך להתחבר:</h2>
-                <ol style="padding-right: 20px; direction: rtl; text-align: right;">
-                    <li style="margin-bottom: 10px; direction: rtl; text-align: right; unicode-bidi: bidi-override;">גש לדף ההתחברות של המערכת</li>
-                    <li style="margin-bottom: 10px; direction: rtl; text-align: right; unicode-bidi: bidi-override;">הזן את כתובת האימייל שלך</li>
-                    <li style="margin-bottom: 10px; direction: rtl; text-align: right; unicode-bidi: bidi-override;">הזן את הסיסמה שהגדרת בעת ההרשמה</li>
-                    <li style="margin-bottom: 10px; direction: rtl; text-align: right; unicode-bidi: bidi-override;">לחץ על כפתור "התחבר"</li>
-                    <li style="margin-bottom: 10px; direction: rtl; text-align: right; unicode-bidi: bidi-override;">לאחר ההתחברות, תוכל לפתוח את השער באמצעות הכפתור הראשי</li>
-                </ol>
-            </div>
+                <div class="greeting" style="font-size: 20px; font-weight: 600; margin-bottom: 25px; color: #2c3e50; direction: rtl; text-align: right;">שלום {{fullName}},</div>
 
-            <div class="footer" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e9ecef; text-align: center; color: #6c757d; font-size: 14px; direction: rtl;">
-                <p style="direction: rtl; text-align: center; unicode-bidi: bidi-override;">אם יש לך שאלות או בעיות, אנא צור קשר עם מנהל המערכת.</p>
-                <p style="direction: rtl; text-align: center; unicode-bidi: bidi-override;">בברכה,<br>ועד הבית</p>
+                <div class="message" style="margin-bottom: 30px; font-size: 16px; line-height: 1.8; color: #555555; direction: rtl; text-align: right;">
+                    <p style="margin: 12px 0; direction: rtl; text-align: right; unicode-bidi: bidi-override;">אנו שמחים להודיע לך שהחשבון שלך במערכת פתיחת השער אושר בהצלחה.</p>
+                    <p style="margin: 12px 0; direction: rtl; text-align: right; unicode-bidi: bidi-override;">כעת תוכל להתחבר למערכת ולהשתמש בשירות פתיחת השער מרחוק.</p>
+                </div>
+
+                <div class="instructions" style="margin-top: 35px; padding-top: 30px; border-top: 3px solid #e9ecef; direction: rtl; text-align: right;">
+                    <h2 style="color: #2c3e50; font-size: 20px; font-weight: 600; margin-bottom: 20px; direction: rtl; text-align: right;">איך להתחבר:</h2>
+                    <ol style="padding-right: 25px; margin: 0; direction: rtl; text-align: right;">
+                        <li style="margin-bottom: 14px; padding-bottom: 8px; direction: rtl; text-align: right; unicode-bidi: bidi-override; font-size: 16px; line-height: 1.7; color: #444444;">
+                            <a href="{{homepageUrl}}" style="color: #1e3c72; text-decoration: none; font-weight: 600; border-bottom: 2px solid #3498db; padding-bottom: 2px;">גש לדף ההתחברות של המערכת</a>
+                        </li>
+                        <li style="margin-bottom: 14px; padding-bottom: 8px; direction: rtl; text-align: right; unicode-bidi: bidi-override; font-size: 16px; line-height: 1.7; color: #444444;">הזן את כתובת האימייל שלך</li>
+                        <li style="margin-bottom: 14px; padding-bottom: 8px; direction: rtl; text-align: right; unicode-bidi: bidi-override; font-size: 16px; line-height: 1.7; color: #444444;">הזן את הסיסמה שהגדרת בעת ההרשמה</li>
+                        <li style="margin-bottom: 14px; padding-bottom: 8px; direction: rtl; text-align: right; unicode-bidi: bidi-override; font-size: 16px; line-height: 1.7; color: #444444;">לחץ על כפתור "התחבר"</li>
+                        <li style="margin-bottom: 14px; padding-bottom: 8px; direction: rtl; text-align: right; unicode-bidi: bidi-override; font-size: 16px; line-height: 1.7; color: #444444;">לאחר ההתחברות, תוכל לפתוח את השער באמצעות הכפתור הראשי</li>
+                    </ol>
+                </div>
+
+                <div class="footer" style="margin-top: 40px; padding-top: 30px; border-top: 2px solid #e9ecef; text-align: center; color: #6c757d; font-size: 15px; direction: rtl; background-color: #f8f9fa; padding: 25px 30px;">
+                    <p style="margin: 10px 0; direction: rtl; text-align: center; unicode-bidi: bidi-override; line-height: 1.6;">אם יש לך שאלות או בעיות, אנא צור קשר עם מנהל המערכת.</p>
+                    <p class="signature" style="margin: 15px 0 10px 0; direction: rtl; text-align: center; unicode-bidi: bidi-override; font-weight: 600; color: #2c3e50;">בברכה,<br>ועד הבית</p>
+                </div>
             </div>
         </div>
     </div>
