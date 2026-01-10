@@ -1,5 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { spawn, IPty } from 'node-pty';
+import * as fs from 'fs';
+import * as path from 'path';
 
 interface TerminalSession {
     pty: IPty;
@@ -9,9 +11,41 @@ interface TerminalSession {
 }
 
 @Injectable()
-export class TerminalService {
+export class TerminalService implements OnModuleInit {
     private readonly logger = new Logger(TerminalService.name);
     private sessions = new Map<string, TerminalSession>();
+    private sshKeyPath: string | null = null;
+
+    async onModuleInit() {
+        // Prepare SSH key with correct permissions on module initialization
+        await this.prepareSshKey();
+    }
+
+    private async prepareSshKey(): Promise<void> {
+        const originalKeyPath = '/app/ssh-keys/container_key';
+        const tempKeyPath = path.join('/tmp', 'container_key_secure');
+
+        try {
+            // Check if original key exists
+            if (!fs.existsSync(originalKeyPath)) {
+                this.logger.error(`SSH key not found at ${originalKeyPath}`);
+                return;
+            }
+
+            // Copy the key to a temporary location
+            fs.copyFileSync(originalKeyPath, tempKeyPath);
+
+            // Set proper permissions (0600 = read/write for owner only)
+            fs.chmodSync(tempKeyPath, 0o600);
+
+            this.sshKeyPath = tempKeyPath;
+            this.logger.log(`SSH key prepared with secure permissions at ${tempKeyPath}`);
+        } catch (error) {
+            this.logger.error(`Failed to prepare SSH key:`, error);
+            // Fall back to original path (will fail if permissions are wrong, but at least we tried)
+            this.sshKeyPath = originalKeyPath;
+        }
+    }
 
     createTerminal(sessionId: string, userId: string, outputCallback?: (data: string) => void): void {
         if (this.sessions.has(sessionId)) {
@@ -20,6 +54,15 @@ export class TerminalService {
         }
 
         try {
+            // Ensure SSH key is prepared (in case onModuleInit hasn't run yet)
+            if (!this.sshKeyPath) {
+                this.prepareSshKey();
+                // If still not prepared, use original path as fallback
+                if (!this.sshKeyPath) {
+                    this.sshKeyPath = '/app/ssh-keys/container_key';
+                }
+            }
+
             this.logger.log(`Connecting to ubuntu@host.docker.internal via SSH`);
 
             // SSH to the host as ubuntu user
@@ -34,7 +77,7 @@ export class TerminalService {
                 '-o',
                 'LogLevel=ERROR', // Suppress SSH warnings to stderr
                 '-i',
-                '/app/ssh-keys/container_key', // Path to the private key mounted in the container
+                this.sshKeyPath, // Use the prepared key with correct permissions
                 'ubuntu@host.docker.internal', // Use host.docker.internal to reach the host
                 '/bin/bash', // Full path to bash
                 '-i', // Interactive shell
