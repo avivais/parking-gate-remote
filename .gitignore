@@ -13,3 +13,6 @@ mqtt/certs/*.srl
 # VSCode/Cursor workspace settings (user-specific)
 .vscode/
 
+
+# Deployment archives
+*.tar.gz
