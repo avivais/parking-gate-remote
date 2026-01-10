@@ -47,7 +47,8 @@ export function NavigationGuard({ children }: { children: React.ReactNode }) {
         }
 
         // Rule 5: Admin route - allow only if user.role === 'admin' AND approved
-        if (pathname === "/admin") {
+        // Handle both /admin and /admin/* routes
+        if (pathname === "/admin" || pathname.startsWith("/admin/")) {
             if (user.role !== "admin") {
                 router.replace("/");
             }

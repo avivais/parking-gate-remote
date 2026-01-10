@@ -55,9 +55,12 @@ echo "  - Frontend files..."
 cp -r "$LOCAL_PROJECT_ROOT/frontend/.next" "$TEMP_DIR/frontend/" 2>/dev/null || { echo "Warning: frontend/.next not found. Make sure to build frontend first."; }
 cp "$LOCAL_PROJECT_ROOT/frontend/package.json" "$TEMP_DIR/frontend/" 2>/dev/null || true
 cp "$LOCAL_PROJECT_ROOT/frontend/package-lock.json" "$TEMP_DIR/frontend/" 2>/dev/null || true
-cp "$LOCAL_PROJECT_ROOT/frontend/next.config.ts" "$TEMP_DIR/frontend/" 2>/dev/null || true
+cp "$LOCAL_PROJECT_ROOT/frontend/next.config.js" "$TEMP_DIR/frontend/" 2>/dev/null || true
 cp -r "$LOCAL_PROJECT_ROOT/frontend/public" "$TEMP_DIR/frontend/" 2>/dev/null || true
 cp "$LOCAL_PROJECT_ROOT/frontend/Dockerfile.prod" "$TEMP_DIR/frontend/Dockerfile" 2>/dev/null || true
+# Copy admin route files for App Router
+mkdir -p "$TEMP_DIR/frontend/src/app/admin"
+cp -r "$LOCAL_PROJECT_ROOT/frontend/src/app/admin"/* "$TEMP_DIR/frontend/src/app/admin/" 2>/dev/null || true
 
 # Copy docker-compose files
 echo "  - Docker Compose files..."
