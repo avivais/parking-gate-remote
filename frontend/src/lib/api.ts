@@ -40,6 +40,13 @@ export function setAccessToken(token: string | null): void {
 }
 
 /**
+ * Get the current access token from memory
+ */
+export function getAccessToken(): string | null {
+    return accessToken;
+}
+
+/**
  * Clear the access token from memory (called by AuthContext)
  */
 export function clearAccessToken(): void {

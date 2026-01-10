@@ -2,6 +2,9 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+# Install build dependencies for native modules (node-pty) and SSH client
+RUN apk add --no-cache python3 make g++ linux-headers bash curl openssh-client
+
 # Copy package files
 COPY package*.json ./
 

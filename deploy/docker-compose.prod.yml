@@ -20,14 +20,18 @@ services:
 
     backend:
         build:
-            context: ./backend
+            context: ../backend
             dockerfile: Dockerfile
         container_name: parking-backend
         restart: always
         env_file:
-            - ./backend/.env
+            - ../backend/.env
         ports:
             - "127.0.0.1:3001:3001"
+        volumes:
+            - ../ssh-keys/container_key:/app/ssh-keys/container_key:ro
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
         depends_on:
             mongo:
                 condition: service_healthy
@@ -46,7 +50,7 @@ services:
 
     frontend:
         build:
-            context: ./frontend
+            context: ../frontend
             dockerfile: Dockerfile
             args:
                 - NEXT_PUBLIC_API_BASE=https://api.mitzpe6-8.com/api

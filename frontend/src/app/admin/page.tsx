@@ -11,8 +11,9 @@ import type {
     DeviceStatusResponse,
 } from "@/types/auth";
 import toast from "react-hot-toast";
+import { Terminal } from "@/components/Terminal";
 
-type Tab = "users" | "logs" | "devices";
+type Tab = "users" | "logs" | "devices" | "terminal";
 
 type UserStatusFilter = "pending" | "approved" | "rejected" | "archived" | "all";
 
@@ -677,6 +678,18 @@ export default function AdminPage() {
                             style={activeTab === "devices" ? { borderColor: "var(--primary)", color: "var(--primary)" } : {}}
                         >
                             מכשירים
+                        </button>
+                        <button
+                            onClick={activeTab === "terminal" ? undefined : () => setActiveTab("terminal")}
+                            disabled={activeTab === "terminal"}
+                            className={`border-b-2 px-3 md:px-4 py-2 text-xs md:text-sm font-medium transition-colors whitespace-nowrap -mb-px ${
+                                activeTab === "terminal"
+                                    ? "border-primary text-primary nav-item-active"
+                                    : "border-transparent text-muted nav-item-inactive"
+                            }`}
+                            style={activeTab === "terminal" ? { borderColor: "var(--primary)", color: "var(--primary)" } : {}}
+                        >
+                            מסוף
                         </button>
                     </nav>
                 </div>
@@ -1786,6 +1799,16 @@ export default function AdminPage() {
                                 </div>
                             </>
                         ) : null}
+                    </div>
+                )}
+
+                {/* Terminal Tab */}
+                {activeTab === "terminal" && (
+                    <div className="h-[600px] w-full rounded-theme-md bg-surface p-4 shadow-theme-md">
+                        <h2 className="mb-4 text-lg font-semibold" style={{ color: "var(--text)" }}>
+                            מסוף שרת
+                        </h2>
+                        <Terminal className="h-full" />
                     </div>
                 )}
 
