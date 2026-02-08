@@ -85,6 +85,10 @@ export class MqttGateDeviceService
     }
 
     async onModuleInit() {
+        const mode = this.configService.get<string>('GATE_DEVICE_MODE', 'stub');
+        if (mode !== 'mqtt') {
+            return; // Skip MQTT connection when using stub
+        }
         await this.connect();
     }
 

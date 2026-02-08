@@ -5,9 +5,11 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
+import { EmailModule } from '../email/email.module';
 import { JwtStrategy } from './jwt.strategy';
 import { ApprovedGuard } from './approved.guard';
 import { AdminGuard } from './admin.guard';
+import { ForgotPasswordThrottlerGuard } from './forgot-password-throttler.guard';
 
 type ExpiresInType =
     | number
@@ -17,6 +19,7 @@ type ExpiresInType =
     imports: [
         ConfigModule,
         UsersModule,
+        EmailModule,
         PassportModule.register({ defaultStrategy: 'jwt' }),
         JwtModule.registerAsync({
             imports: [ConfigModule],
@@ -37,7 +40,13 @@ type ExpiresInType =
             },
         }),
     ],
-    providers: [AuthService, JwtStrategy, ApprovedGuard, AdminGuard],
+    providers: [
+        AuthService,
+        JwtStrategy,
+        ApprovedGuard,
+        AdminGuard,
+        ForgotPasswordThrottlerGuard,
+    ],
     controllers: [AuthController],
     exports: [AuthService, ApprovedGuard, AdminGuard],
 })

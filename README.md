@@ -251,6 +251,9 @@ done
 | `MQTT_CMD_TOPIC` | `pgr/mitspe6/gate/cmd` | Command topic |
 | `MQTT_ACK_TOPIC` | `pgr/mitspe6/gate/ack` | ACK topic |
 | `MQTT_STATUS_TOPIC` | `pgr/mitspe6/gate/status` | Status topic |
+| `PASSWORD_RESET_EXPIRY_MINUTES` | `60` | Expiry in minutes for password-reset links |
+
+The `POST /auth/forgot-password` endpoint is rate-limited to 3 requests per 15 minutes per IP.
 
 ## Troubleshooting
 

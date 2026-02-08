@@ -16,3 +16,11 @@ mqtt/certs/*.srl
 
 # Deployment archives
 *.tar.gz
+
+# Local run logs (scripts/start-local.sh)
+backend.log
+frontend.log
+mcu-sim.log
+
+# MCU simulator dependencies
+mcu-sim/node_modules/

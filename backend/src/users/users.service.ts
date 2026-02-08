@@ -45,6 +45,32 @@ export class UsersService {
         return this.userModel.findOne({ email }).exec();
     }
 
+    async findWithValidResetToken(): Promise<UserDocument[]> {
+        const now = new Date();
+        return this.userModel
+            .find({
+                resetPasswordExpiresAt: { $exists: true, $gt: now },
+                resetPasswordTokenHash: { $exists: true, $ne: null },
+            })
+            .select('+resetPasswordTokenHash')
+            .exec();
+    }
+
+    async clearPasswordResetAndSetPassword(
+        userId: string,
+        passwordHash: string,
+    ): Promise<void> {
+        await this.userModel
+            .findByIdAndUpdate(userId, {
+                passwordHash,
+                $unset: {
+                    resetPasswordTokenHash: 1,
+                    resetPasswordExpiresAt: 1,
+                },
+            })
+            .exec();
+    }
+
     async findByEmailWithPassword(email: string): Promise<UserDocument | null> {
         return this.userModel.findOne({ email }).select('+passwordHash').exec();
     }

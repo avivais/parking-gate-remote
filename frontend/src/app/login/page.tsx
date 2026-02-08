@@ -139,6 +139,15 @@ export default function LoginPage() {
                                 style={{ color: "var(--text)" }}
                                 placeholder="••••••••"
                             />
+                            <div className="mt-2 text-left">
+                                <Link
+                                    href="/forgot-password"
+                                    className="link-hover text-sm font-medium focus-theme"
+                                    style={{ color: "var(--primary)" }}
+                                >
+                                    שכחת את הסיסמה?
+                                </Link>
+                            </div>
                         </div>
                     </div>
 

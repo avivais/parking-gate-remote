@@ -156,6 +156,93 @@ export class EmailService {
         }
     }
 
+    async sendPasswordResetEmail(
+        email: string,
+        resetLink: string,
+        expiresInMinutes: number = 60,
+    ): Promise<void> {
+        if (!this.transporter) {
+            this.logger.warn(
+                'Email transporter not configured. Skipping password reset email.',
+            );
+            return;
+        }
+
+        try {
+            const emailAddress = this.configService.get<string>(
+                'EMAIL_FROM',
+                this.configService.get<string>('EMAIL_USER', 'noreply@example.com'),
+            );
+            const emailFromName = this.configService.get<string>(
+                'EMAIL_FROM_NAME',
+            );
+            const emailFrom = emailFromName
+                ? { name: emailFromName, address: emailAddress }
+                : emailAddress;
+
+            const possiblePaths = [
+                join(__dirname, 'templates', 'reset-password.he.html'),
+                join(process.cwd(), 'backend', 'src', 'email', 'templates', 'reset-password.he.html'),
+                join(process.cwd(), 'src', 'email', 'templates', 'reset-password.he.html'),
+            ];
+
+            let htmlContent: string = this.getFallbackPasswordResetContent(resetLink);
+            let templateLoaded = false;
+
+            for (const templatePath of possiblePaths) {
+                try {
+                    htmlContent = readFileSync(templatePath, 'utf-8');
+                    htmlContent = htmlContent.replace(/\{\{resetLink\}\}/g, resetLink);
+                    htmlContent = htmlContent.replace(/\{\{expiresIn\}\}/g, String(expiresInMinutes));
+                    templateLoaded = true;
+                    break;
+                } catch {
+                    continue;
+                }
+            }
+
+            if (!templateLoaded) {
+                this.logger.warn('Failed to load reset-password template, using fallback');
+            }
+
+            const bccEmail = this.configService.get<string>('BCC_EMAIL')?.trim();
+            const mailOptions = {
+                from: emailFrom,
+                to: email,
+                subject: 'איפוס סיסמה - מערכת פתיחת שער',
+                html: htmlContent,
+                ...(bccEmail && { bcc: bccEmail }),
+            };
+
+            await this.transporter.sendMail(mailOptions);
+            this.logger.log(`Password reset email sent to ${email}`);
+        } catch (error) {
+            this.logger.error(`Failed to send password reset email to ${email}:`, error);
+            throw error;
+        }
+    }
+
+    private getFallbackPasswordResetContent(resetLink: string): string {
+        return `
+            <!DOCTYPE html>
+            <html dir="rtl" lang="he">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>איפוס סיסמה</title>
+            </head>
+            <body style="font-family: Arial, sans-serif; direction: rtl; text-align: right;">
+                <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <h1 style="color: #2c3e50;">איפוס סיסמה</h1>
+                    <p>ביקשת לאפס את הסיסמה. לחץ על הקישור למטה כדי לבחור סיסמה חדשה:</p>
+                    <p><a href="${resetLink}" style="color: #1e3c72;">איפוס סיסמה</a></p>
+                    <p>בברכה,<br>ועד הבית</p>
+                </div>
+            </body>
+            </html>
+        `;
+    }
+
     private getFallbackEmailContent(firstName: string, lastName: string): string {
         const formattedFullName = this.formatFullName(firstName, lastName);
         return `

@@ -237,15 +237,15 @@ textarea.input-theme.focus-theme:focus-visible {
     --normal-text: var(--text);
 }
 
-/* React Hot Toast layout overrides
-   Goal: keep icon + message as ONE centered row (no wrapping).
-   IMPORTANT: avoid styling deep nested divs (can break the built-in icons). */
+/* React Hot Toast — one line on desktop, wrap on narrow screens */
 .toast-theme {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
-    justify-content: center !important;
+    justify-content: flex-start !important;
     gap: 0.5rem !important;
+    max-width: min(calc(100vw - 2rem), 560px) !important;
+    padding: 0.75rem 1rem !important;
 }
 
 /* Icon wrapper (first child) */
@@ -253,13 +253,25 @@ textarea.input-theme.focus-theme:focus-visible {
     flex: 0 0 auto !important;
 }
 
-/* Message wrapper (last child) — react-hot-toast defaults to flex:1 + pre-line; override it */
+/* Message: single line when space allows (desktop), wrap on narrow screens */
 .toast-theme > div:last-child {
-    flex: 0 1 auto !important;
-    margin: 0 10px !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    margin: 0 0.75rem !important;
+    padding: 0.125rem 0 !important;
     white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+    text-align: right !important;
+}
+
+@media (max-width: 640px) {
+    .toast-theme {
+        max-width: min(calc(100vw - 2rem), 360px) !important;
+    }
+    .toast-theme > div:last-child {
+        white-space: normal !important;
+    }
 }
 
 /* Pro theme dark mode: increase input border contrast (without changing global borders) */

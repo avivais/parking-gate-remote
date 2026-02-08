@@ -3,13 +3,15 @@ import {
     ConflictException,
     ForbiddenException,
     Injectable,
+    Logger,
     UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
-import { randomUUID } from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
 import { UsersService } from '../users/users.service';
+import { EmailService } from '../email/email.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { UpdateMeDto } from './dto/update-me.dto';
@@ -40,10 +42,13 @@ export interface MeResponse {
 
 @Injectable()
 export class AuthService {
+    private readonly logger = new Logger(AuthService.name);
+
     constructor(
         private readonly usersService: UsersService,
         private readonly jwtService: JwtService,
         private readonly configService: ConfigService,
+        private readonly emailService: EmailService,
     ) {}
 
     private buildAccessToken(
@@ -403,5 +408,70 @@ export class AuthService {
 
         // Return sanitized user (password hash is not selected by default)
         return updatedUser.toObject();
+    }
+
+    async requestPasswordReset(email: string): Promise<void> {
+        const user = await this.usersService.findByEmail(email);
+        if (!user) {
+            return;
+        }
+
+        const expiryMinutes =
+            this.configService.get<number>('PASSWORD_RESET_EXPIRY_MINUTES') ?? 60;
+        const expiresAt = new Date(
+            Date.now() + expiryMinutes * 60 * 1000,
+        );
+        const token = randomBytes(32).toString('hex');
+        const resetPasswordTokenHash = await bcrypt.hash(token, 10);
+
+        await this.usersService.updateUser((user as UserDocument)._id.toString(), {
+            resetPasswordTokenHash,
+            resetPasswordExpiresAt: expiresAt,
+        });
+
+        const homepageUrl =
+            this.configService.get<string>('HOMEPAGE_URL') ??
+            'https://mitzpe6-8.com';
+        const resetLink = `${homepageUrl}/reset-password?token=${token}`;
+
+        try {
+            await this.emailService.sendPasswordResetEmail(
+                email,
+                resetLink,
+                expiryMinutes,
+            );
+        } catch (err) {
+            this.logger.error(
+                `Failed to send password reset email to ${email}`,
+                err,
+            );
+        }
+    }
+
+    async resetPassword(token: string, newPassword: string): Promise<void> {
+        const candidates = await this.usersService.findWithValidResetToken();
+        let matchedUser: UserDocument | null = null;
+
+        for (const user of candidates) {
+            if (
+                user.resetPasswordTokenHash &&
+                (await bcrypt.compare(token, user.resetPasswordTokenHash))
+            ) {
+                matchedUser = user;
+                break;
+            }
+        }
+
+        if (!matchedUser) {
+            throw new BadRequestException(
+                'הקישור לא תקף או שפג תוקפו. נסה לבקש קישור חדש.',
+            );
+        }
+
+        const passwordHash = await bcrypt.hash(newPassword, 10);
+        await this.usersService.clearPasswordResetAndSetPassword(
+            matchedUser._id.toString(),
+            passwordHash,
+        );
     }
 }

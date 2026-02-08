@@ -15,9 +15,10 @@ export function NavigationGuard({ children }: { children: React.ReactNode }) {
             return;
         }
 
-        // Rule 1: If NOT authenticated - allow only /login and /register
+        // Rule 1: If NOT authenticated - allow only /login, /register, /forgot-password, /reset-password
         if (!user) {
-            if (pathname !== "/login" && pathname !== "/register") {
+            const publicPaths = ["/login", "/register", "/forgot-password", "/reset-password"];
+            if (!publicPaths.includes(pathname)) {
                 router.replace("/login");
             }
             return;
@@ -68,8 +69,9 @@ export function NavigationGuard({ children }: { children: React.ReactNode }) {
 
     // Additional client-side checks for user status
     if (!user) {
-        // Not authenticated - middleware should have redirected, but handle edge cases
-        if (pathname !== "/login" && pathname !== "/register") {
+        // Not authenticated - allow public pages only
+        const publicPaths = ["/login", "/register", "/forgot-password", "/reset-password"];
+        if (!publicPaths.includes(pathname)) {
             return null;
         }
     } else {

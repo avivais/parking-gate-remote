@@ -10,14 +10,18 @@ import {
     UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { Response } from 'express';
 import { AuthService, MeResponse } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { UpdateMeDto } from './dto/update-me.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { User } from '../users/schemas/user.schema';
 import { Request as ExpressRequest } from 'express';
 import { ApprovedGuard } from './approved.guard';
+import { ForgotPasswordThrottlerGuard } from './forgot-password-throttler.guard';
 
 interface AuthenticatedRequestUser {
     userId: string;
@@ -37,6 +41,31 @@ export class AuthController {
     @Post('register')
     register(@Body() registerDto: RegisterDto): Promise<User> {
         return this.authService.register(registerDto);
+    }
+
+    @SkipThrottle()
+    @UseGuards(ForgotPasswordThrottlerGuard)
+    @Throttle({ default: { limit: 3, ttl: 900000 } })
+    @Post('forgot-password')
+    async forgotPassword(
+        @Body() body: ForgotPasswordDto,
+    ): Promise<{ message: string }> {
+        await this.authService.requestPasswordReset(body.email);
+        return {
+            message:
+                'אם החשבון קיים, נשלח אליך אימייל עם קישור לאיפוס הסיסמה.',
+        };
+    }
+
+    @Post('reset-password')
+    async resetPassword(
+        @Body() body: ResetPasswordDto,
+    ): Promise<{ success: true; message: string }> {
+        await this.authService.resetPassword(body.token, body.newPassword);
+        return {
+            success: true,
+            message: 'הסיסמה עודכנה. אפשר להתחבר.',
+        };
     }
 
     @Post('login')
