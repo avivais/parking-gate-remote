@@ -122,3 +122,22 @@ export interface DeviceStatusResponse {
     total: number;
 }
 
+export interface DiagnosticLogEntry {
+    ts: number;
+    level: string;
+    event: string;
+    message?: string;
+}
+
+export interface DeviceDiagnosticDoc {
+    receivedAt: string;
+    sessionId?: string;
+    fwVersion?: string;
+    entries: DiagnosticLogEntry[];
+}
+
+export interface DeviceDiagnosticsResponse {
+    deviceId: string;
+    diagnostics: DeviceDiagnosticDoc[];
+}
+

@@ -10,6 +10,7 @@ import type {
     PaginatedLogsResponse,
     AdminUser,
     DeviceStatusResponse,
+    DeviceDiagnosticsResponse,
 } from "@/types/auth";
 import toast from "react-hot-toast";
 import { Terminal } from "@/components/Terminal";
@@ -171,6 +172,13 @@ export default function AdminPageContent({ defaultTab }: AdminPageContentProps) 
 
     // Device status state
     const [deviceStatusData, setDeviceStatusData] = useState<DeviceStatusResponse | null>(null);
+
+    // Diagnostics modal state
+    const [diagnosticsModalOpen, setDiagnosticsModalOpen] = useState(false);
+    const [diagnosticsDeviceId, setDiagnosticsDeviceId] = useState<string | null>(null);
+    const [diagnosticsData, setDiagnosticsData] = useState<DeviceDiagnosticsResponse | null>(null);
+    const [diagnosticsLoading, setDiagnosticsLoading] = useState(false);
+    const [diagnosticsError, setDiagnosticsError] = useState<string | null>(null);
 
     // Debounce users search and update URL (skip on initial mount)
     useEffect(() => {
@@ -425,6 +433,35 @@ export default function AdminPageContent({ defaultTab }: AdminPageContentProps) 
                 setLoading(false);
             }
         }
+    }, []);
+
+    const openDiagnostics = useCallback((deviceId: string) => {
+        setDiagnosticsDeviceId(deviceId);
+        setDiagnosticsModalOpen(true);
+        setDiagnosticsData(null);
+        setDiagnosticsError(null);
+        setDiagnosticsLoading(true);
+        apiRequest<DeviceDiagnosticsResponse>(
+            `/gate/devices/${encodeURIComponent(deviceId)}/diagnostics?limit=50`,
+        )
+            .then((result) => {
+                setDiagnosticsData(result);
+                setDiagnosticsError(null);
+            })
+            .catch((err) => {
+                setDiagnosticsData(null);
+                setDiagnosticsError(err instanceof ApiError ? err.message : "שגיאה בטעינת לוג אבחון");
+            })
+            .finally(() => {
+                setDiagnosticsLoading(false);
+            });
+    }, []);
+
+    const closeDiagnostics = useCallback(() => {
+        setDiagnosticsModalOpen(false);
+        setDiagnosticsDeviceId(null);
+        setDiagnosticsData(null);
+        setDiagnosticsError(null);
     }, []);
 
     // Load data when tab or filters change
@@ -792,17 +829,19 @@ export default function AdminPageContent({ defaultTab }: AdminPageContentProps) 
                 } else if (logModalOpen) {
                     setLogModalOpen(false);
                     setSelectedLog(null);
+                } else if (diagnosticsModalOpen) {
+                    closeDiagnostics();
                 }
             }
         };
 
-        if (rejectModalOpen || approveAllModalOpen || editModalOpen || logModalOpen) {
+        if (rejectModalOpen || approveAllModalOpen || editModalOpen || logModalOpen || diagnosticsModalOpen) {
             document.addEventListener("keydown", handleEscapeKey);
             return () => {
                 document.removeEventListener("keydown", handleEscapeKey);
             };
         }
-    }, [rejectModalOpen, approveAllModalOpen, editModalOpen, logModalOpen, editFormHasChanges, isResettingPassword, editModalConfirmClose]);
+    }, [rejectModalOpen, approveAllModalOpen, editModalOpen, logModalOpen, diagnosticsModalOpen, closeDiagnostics, editFormHasChanges, isResettingPassword, editModalConfirmClose]);
 
     // Confirm close edit modal (discard changes)
     const confirmCloseEditModal = () => {
@@ -1954,6 +1993,112 @@ export default function AdminPageContent({ defaultTab }: AdminPageContentProps) 
                     </div>
                 )}
 
+                {/* Diagnostics Modal */}
+                {diagnosticsModalOpen && diagnosticsDeviceId && (
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center"
+                        style={{
+                            backgroundColor: "rgba(0, 0, 0, 0.5)",
+                            backdropFilter: "blur(4px)",
+                            WebkitBackdropFilter: "blur(4px)",
+                        }}
+                        onClick={closeDiagnostics}
+                    >
+                        <div
+                            className="bg-surface modal-border-responsive w-full max-w-2xl p-6 shadow-theme-lg max-h-[90vh] overflow-y-auto"
+                            style={{ borderRadius: 0 }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-bold" style={{ color: "var(--text)" }}>
+                                    לוג אבחון: {diagnosticsDeviceId}
+                                </h3>
+                                <button
+                                    onClick={closeDiagnostics}
+                                    className="p-1 hover:bg-surface-2 transition-colors"
+                                    aria-label="סגור"
+                                >
+                                    <svg
+                                        className="w-6 h-6"
+                                        style={{ color: "var(--muted)" }}
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M6 18L18 6M6 6l12 12"
+                                        />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
+                                {diagnosticsLoading && (
+                                    <p className="text-muted">טוען...</p>
+                                )}
+                                {diagnosticsError && (
+                                    <p className="text-sm" style={{ color: "var(--danger)" }}>{diagnosticsError}</p>
+                                )}
+                                {!diagnosticsLoading && !diagnosticsError && diagnosticsData && (
+                                    diagnosticsData.diagnostics.length === 0 ? (
+                                        <p className="text-muted">אין לוגי אבחון למכשיר זה</p>
+                                    ) : (
+                                        <div className="space-y-6">
+                                            {diagnosticsData.diagnostics.map((doc, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    className="rounded-theme-md border p-4 space-y-2"
+                                                    style={{ borderColor: "var(--border)" }}
+                                                >
+                                                    <div className="text-sm font-medium" style={{ color: "var(--text)" }}>
+                                                        {new Date(doc.receivedAt).toLocaleString("he-IL")}
+                                                    </div>
+                                                    {(doc.sessionId != null || doc.fwVersion != null) && (
+                                                        <div className="flex flex-wrap gap-2 text-xs text-muted">
+                                                            {doc.sessionId != null && <span>session: {doc.sessionId}</span>}
+                                                            {doc.fwVersion != null && <span>fw: {doc.fwVersion}</span>}
+                                                        </div>
+                                                    )}
+                                                    <div className="space-y-1">
+                                                        {doc.entries.map((entry, i) => (
+                                                            <div
+                                                                key={i}
+                                                                className="flex flex-wrap items-baseline gap-2 text-xs"
+                                                            >
+                                                                <span className="text-muted shrink-0">
+                                                                    {new Date(entry.ts).toLocaleString("he-IL", { timeStyle: "medium" })}
+                                                                </span>
+                                                                <span
+                                                                    className={`shrink-0 font-medium ${
+                                                                        entry.level === "error"
+                                                                            ? "text-danger"
+                                                                            : entry.level === "warn"
+                                                                            ? "text-warning"
+                                                                            : "text-muted"
+                                                                    }`}
+                                                                >
+                                                                    [{entry.level}]
+                                                                </span>
+                                                                <span style={{ color: "var(--text)" }}>{entry.event}</span>
+                                                                {entry.message != null && entry.message !== "" && (
+                                                                    <span className="text-muted">— {entry.message}</span>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Devices Tab */}
                 {activeTab === "devices" && (
                     <div className="space-y-4">
@@ -1999,7 +2144,16 @@ export default function AdminPageContent({ defaultTab }: AdminPageContentProps) 
                                         deviceStatusData.items.map((device) => (
                                             <div
                                                 key={device.deviceId}
-                                                className="rounded-theme-md border p-4 space-y-3"
+                                                role="button"
+                                                tabIndex={0}
+                                                onClick={() => openDiagnostics(device.deviceId)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === "Enter" || e.key === " ") {
+                                                        e.preventDefault();
+                                                        openDiagnostics(device.deviceId);
+                                                    }
+                                                }}
+                                                className="rounded-theme-md border p-4 space-y-3 cursor-pointer hover:bg-surface-2 transition-colors"
                                                 style={{ backgroundColor: "var(--surface)", borderColor: "var(--border)" }}
                                             >
                                                 <div className="flex items-start justify-between">
@@ -2093,7 +2247,16 @@ export default function AdminPageContent({ defaultTab }: AdminPageContentProps) 
                                                     deviceStatusData.items.map((device) => (
                                                         <tr
                                                             key={device.deviceId}
-                                                            className="table-row"
+                                                            role="button"
+                                                            tabIndex={0}
+                                                            onClick={() => openDiagnostics(device.deviceId)}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === "Enter" || e.key === " ") {
+                                                                    e.preventDefault();
+                                                                    openDiagnostics(device.deviceId);
+                                                                }
+                                                            }}
+                                                            className="table-row cursor-pointer hover:bg-surface-2"
                                                         >
                                                             <td className="whitespace-nowrap px-6 py-4 text-sm font-mono" style={{ color: "var(--text)" }}>
                                                                 {device.deviceId}

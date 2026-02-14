@@ -375,14 +375,14 @@ export class MqttGateDeviceService
             const entries = body.entries
                 .slice(0, 100)
                 .filter(
-                    (e): e is { ts: number; level: unknown; event: string; message?: string } =>
+                    (e): e is { ts: number; level: string; event: string; message?: string } =>
                         typeof e?.ts === 'number' &&
                         e?.event !== undefined &&
                         typeof e?.event === 'string',
                 )
                 .map((e) => ({
                     ts: e.ts,
-                    level: levelToString(e.level).slice(0, 16),
+                    level: levelToString(e.level as unknown).slice(0, 16),
                     event: String(e.event).slice(0, 64),
                     message:
                         e.message != null
