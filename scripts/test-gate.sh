@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Quick test script for gate hardening features
-# Usage: ./test-gate.sh <your-jwt-token>
+# Usage: from repo root: ./scripts/test-gate.sh <your-jwt-token>
 
 set -e
 
@@ -9,7 +9,7 @@ TOKEN="${1}"
 BASE_URL="http://localhost:3001/api"
 
 if [ -z "$TOKEN" ]; then
-    echo "Usage: ./test-gate.sh <your-jwt-token>"
+    echo "Usage: ./scripts/test-gate.sh <your-jwt-token>"
     echo ""
     echo "To get your token:"
     echo "1. Open browser DevTools → Application → Cookies"
@@ -134,4 +134,3 @@ echo "Next steps:"
 echo "1. Check MongoDB GateLog collection for audit logs"
 echo "2. Check browser DevTools → Network tab for X-Request-Id header"
 echo "3. Review TESTING_GUIDE.md for detailed test scenarios"
-

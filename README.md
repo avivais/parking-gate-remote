@@ -99,6 +99,12 @@ npm run dev
 
 Frontend will run on `http://localhost:3000`
 
+## Scripts
+
+- **Local dev and tests:** [scripts/start-local.sh](scripts/start-local.sh), [scripts/stop-local.sh](scripts/stop-local.sh), [scripts/test-mqtt.sh](scripts/test-mqtt.sh), [scripts/test-gate.sh](scripts/test-gate.sh), [scripts/test-recovery-and-diagnostics.sh](scripts/test-recovery-and-diagnostics.sh), [scripts/e2e-recovery-diagnostics.sh](scripts/e2e-recovery-diagnostics.sh), [scripts/pio-monitor.sh](scripts/pio-monitor.sh)
+- **Deploy:** See [deploy/README.md](deploy/README.md). Main entry points: `deploy/build-and-deploy.sh`, `deploy/copy-to-server.sh`, `deploy/verify-deployment.sh`; on server: `start-services.sh`
+- **Firmware:** Build, upload, serial helpers in `firmware/`; see [firmware/README.md](firmware/README.md)
+
 ## MQTT Mode
 
 ### Overview

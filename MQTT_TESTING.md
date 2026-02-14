@@ -15,7 +15,7 @@ npm run start:dev
 
 # 2. Get a JWT token (login via frontend or curl)
 # 3. Run the test script
-./test-mqtt.sh <your-jwt-token>
+./scripts/test-mqtt.sh <your-jwt-token>
 ```
 
 **Expected:** Requests should succeed with 200 status (or occasional 502 from simulated failures).
@@ -328,14 +328,14 @@ mosquitto_passwd -c mqtt/passwordfile pgr_server
 
 ## Automated Testing Script
 
-Use the provided `test-mqtt.sh` script:
+Use the provided `scripts/test-mqtt.sh` script:
 
 ```bash
 # Get token first (login via frontend)
 TOKEN="your-jwt-token"
 
-# Run tests
-./test-mqtt.sh "$TOKEN"
+# Run tests (from repo root)
+./scripts/test-mqtt.sh "$TOKEN"
 ```
 
 ## Next Steps

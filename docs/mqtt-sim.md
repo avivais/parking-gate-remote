@@ -108,6 +108,10 @@ You can also set environment variables in a `.env` file or directly in `docker-c
 | `MCU_STATUS_INTERVAL_MS` | `5000` | Status heartbeat interval (ms) |
 | `MCU_FW_VERSION` | `sim-0.1.0` | Simulated firmware version |
 | `MCU_RSSI` | `-65` | Simulated signal strength (dBm) |
+| `MQTT_DIAGNOSTICS_TOPIC` | `pgr/mitspe6/gate/diagnostics` | Topic for diagnostic log batches (MCU → backend) |
+| `MCU_DIAGNOSTICS_ON_RECONNECT` | `false` | When `true`, publish a diagnostics batch on every connect/reconnect (for e2e recovery testing) |
+| `MCU_DISCONNECT_AFTER_MS` | *(unset)* | If set (e.g. `5000`), voluntarily disconnect after N ms from first connection, then rely on auto-reconnect; use with `MCU_DIAGNOSTICS_ON_RECONNECT=true` for e2e "lose connection → recover → send log" |
+| `MCU_SESSION_ID` | `sim-<timestamp>` | Optional session id included in diagnostics payload for correlating batches |
 
 ### ACK Modes
 
@@ -129,6 +133,12 @@ The simulator supports different ACK modes for testing various scenarios:
 - Random delay between 100-6000ms before publishing ACK
 - May cause late ACKs (after backend timeout)
 - Use to test timeout edge cases and late ACK handling
+
+### Diagnostics and E2E recovery
+
+When `MCU_DIAGNOSTICS_ON_RECONNECT=true`, the simulator publishes a diagnostics message to `pgr/mitspe6/gate/diagnostics` on every connect (including reconnects after broker down or voluntary disconnect). The payload matches the protocol: `deviceId`, optional `fwVersion`/`sessionId`, and `entries` with `connection_lost` (if a disconnect was observed) and `connection_restored`. Use this with the e2e script `scripts/e2e-recovery-diagnostics.sh` to verify the full "lose connection → recover → send log" flow.
+
+When `MCU_DISCONNECT_AFTER_MS` is set (e.g. `5000`), the simulator disconnects itself after that many milliseconds, then reconnects automatically; combined with `MCU_DIAGNOSTICS_ON_RECONNECT=true`, the next connect sends a diagnostics batch so the backend and admin diagnostics API can be asserted without stopping the broker.
 
 ## Testing Scenarios
 

@@ -6,6 +6,7 @@ const MQTT_URL = process.env.MQTT_URL || 'mqtt://parking-mosquitto:1883';
 const MQTT_CMD_TOPIC = process.env.MQTT_CMD_TOPIC || 'pgr/mitspe6/gate/cmd';
 const MQTT_ACK_TOPIC = process.env.MQTT_ACK_TOPIC || 'pgr/mitspe6/gate/ack';
 const MQTT_STATUS_TOPIC = process.env.MQTT_STATUS_TOPIC || 'pgr/mitspe6/gate/status';
+const MQTT_DIAGNOSTICS_TOPIC = process.env.MQTT_DIAGNOSTICS_TOPIC || 'pgr/mitspe6/gate/diagnostics';
 const MQTT_DEVICE_USERNAME = process.env.MQTT_DEVICE_USERNAME || 'pgr_device_mitspe6';
 const MQTT_DEVICE_PASSWORD = process.env.MQTT_DEVICE_PASSWORD;
 const MCU_DEVICE_ID = process.env.MCU_DEVICE_ID || 'mitspe6-gate-001';
@@ -14,6 +15,9 @@ const MCU_ACK_MODE = process.env.MCU_ACK_MODE || 'success';
 const MCU_STATUS_INTERVAL_MS = parseInt(process.env.MCU_STATUS_INTERVAL_MS || '5000', 10);
 const MCU_FW_VERSION = process.env.MCU_FW_VERSION || 'sim-0.1.0';
 const MCU_RSSI = parseInt(process.env.MCU_RSSI || '-65', 10);
+const MCU_DIAGNOSTICS_ON_RECONNECT = process.env.MCU_DIAGNOSTICS_ON_RECONNECT === 'true' || process.env.MCU_DIAGNOSTICS_ON_RECONNECT === '1';
+const MCU_DISCONNECT_AFTER_MS = process.env.MCU_DISCONNECT_AFTER_MS ? parseInt(process.env.MCU_DISCONNECT_AFTER_MS, 10) : null;
+const MCU_SESSION_ID = process.env.MCU_SESSION_ID || `sim-${Date.now()}`;
 
 if (!MQTT_DEVICE_PASSWORD) {
     console.error('ERROR: MQTT_DEVICE_PASSWORD is required');
@@ -75,6 +79,8 @@ async function main() {
     console.log(`ACK Mode: ${MCU_ACK_MODE}`);
     console.log(`ACK Delay: ${MCU_ACK_DELAY_MS}ms`);
     console.log(`Status Interval: ${MCU_STATUS_INTERVAL_MS}ms`);
+    if (MCU_DIAGNOSTICS_ON_RECONNECT) console.log('Diagnostics on reconnect: enabled');
+    if (MCU_DISCONNECT_AFTER_MS != null) console.log(`Disconnect after: ${MCU_DISCONNECT_AFTER_MS}ms (e2e)`);
 
     // Wait for broker to be ready (when running separately)
     try {
@@ -94,9 +100,39 @@ async function main() {
     });
 
     let statusInterval = null;
+    let connectionLostAt = null;
+    let didScheduleDisconnect = false;
+
+    function publishDiagnostics() {
+        const entries = [];
+        if (connectionLostAt != null) {
+            entries.push({ ts: connectionLostAt, level: 'warn', event: 'connection_lost' });
+        }
+        entries.push({ ts: Date.now(), level: 'info', event: 'connection_restored' });
+
+        const payload = {
+            deviceId: MCU_DEVICE_ID,
+            entries,
+        };
+        if (MCU_FW_VERSION) payload.fwVersion = MCU_FW_VERSION;
+        if (MCU_SESSION_ID) payload.sessionId = MCU_SESSION_ID;
+
+        client.publish(MQTT_DIAGNOSTICS_TOPIC, JSON.stringify(payload), { qos: 1, retain: false }, (err) => {
+            if (err) {
+                console.error('[DIAGNOSTICS] Failed to publish:', err);
+            } else {
+                console.log('[DIAGNOSTICS] Published on reconnect:', JSON.stringify(payload, null, 2));
+            }
+        });
+        connectionLostAt = null;
+    }
 
     client.on('connect', () => {
         console.log('✓ Connected to MQTT broker');
+
+        if (MCU_DIAGNOSTICS_ON_RECONNECT) {
+            publishDiagnostics();
+        }
 
         // Subscribe to command topic
         client.subscribe(MQTT_CMD_TOPIC, { qos: 1 }, (err) => {
@@ -110,6 +146,16 @@ async function main() {
             publishStatus();
             statusInterval = setInterval(publishStatus, MCU_STATUS_INTERVAL_MS);
         });
+
+        if (MCU_DISCONNECT_AFTER_MS != null && MCU_DISCONNECT_AFTER_MS > 0 && !didScheduleDisconnect) {
+            didScheduleDisconnect = true;
+            console.log(`[SIM] Will voluntarily disconnect in ${MCU_DISCONNECT_AFTER_MS}ms for e2e testing`);
+            setTimeout(() => {
+                connectionLostAt = Date.now();
+                console.log('[SIM] Voluntary disconnect (e2e mode)');
+                client.end();
+            }, MCU_DISCONNECT_AFTER_MS);
+        }
     });
 
     client.on('message', (topic, message) => {
@@ -124,6 +170,7 @@ async function main() {
 
     client.on('close', () => {
         console.warn('MQTT client connection closed');
+        if (connectionLostAt == null) connectionLostAt = Date.now();
         if (statusInterval) {
             clearInterval(statusInterval);
             statusInterval = null;
@@ -132,6 +179,7 @@ async function main() {
 
     client.on('offline', () => {
         console.warn('MQTT client offline');
+        if (connectionLostAt == null) connectionLostAt = Date.now();
         if (statusInterval) {
             clearInterval(statusInterval);
             statusInterval = null;

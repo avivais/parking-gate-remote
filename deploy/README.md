@@ -2,6 +2,29 @@
 
 This directory contains all files needed to deploy the Parking Gate Remote application to production on EC2.
 
+## Script index
+
+| Script | Purpose |
+|--------|---------|
+| [build-and-deploy.sh](build-and-deploy.sh) | Build backend and frontend locally |
+| [copy-to-server.sh](copy-to-server.sh) | Pack and copy deployment tarball to EC2 |
+| [verify-deployment.sh](verify-deployment.sh) | Check API, backend container, and MQTT subscription |
+| [start-services.sh](start-services.sh) | On server: start Docker services (Mongo, MQTT, backend, frontend) |
+| [server-setup.sh](server-setup.sh) | On server: first-time setup (env, dependencies) |
+| [setup-apache.sh](setup-apache.sh) | On server: configure Apache proxy (run with sudo) |
+| [setup-cleanup-cron.sh](setup-cleanup-cron.sh) | On server: optional cron for log/cleanup |
+| [deployment-script.sh](deployment-script.sh) | On server: full manual deployment flow |
+| [generate-mqtt-certs.sh](generate-mqtt-certs.sh) | Generate MQTT TLS certs (mqtt/certs/) |
+| [check-api.sh](check-api.sh) | Quick API health check |
+| [backup-mongodb.sh](backup-mongodb.sh) | Backup MongoDB data |
+| [cleanup-docker.sh](cleanup-docker.sh) | Remove unused Docker images/containers |
+| [cleanup-logs.sh](cleanup-logs.sh) | Rotate or trim logs |
+| [cleanup-system.sh](cleanup-system.sh) | Broader system cleanup |
+| [configure-security.sh](configure-security.sh) | Security group / firewall helpers |
+| [fix-mqtt-security-group.sh](fix-mqtt-security-group.sh) | EC2 security group for MQTT |
+| [monitoring.sh](monitoring.sh) | Monitoring/alerting helpers |
+| [mqtt/healthcheck.sh](mqtt/healthcheck.sh) | MQTT container healthcheck |
+
 ## Prerequisites
 
 - EC2 instance running Ubuntu with Apache

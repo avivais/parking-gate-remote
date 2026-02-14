@@ -321,58 +321,10 @@ Restart backend and verify:
 
 ## Quick Test Script
 
-Save this as `test-gate.sh`:
+Use the provided gate hardening test script from the repo root:
 
 ```bash
-#!/bin/bash
-
-TOKEN="${1:-your-token-here}"
-BASE_URL="http://localhost:3001/api"
-
-echo "=== Test 1: Missing X-Request-Id ==="
-curl -X POST "$BASE_URL/gate/open" \
-  -H "Authorization: Bearer $TOKEN" \
-  -w "\nStatus: %{http_code}\n\n"
-
-echo "=== Test 2: Invalid UUID ==="
-curl -X POST "$BASE_URL/gate/open" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "X-Request-Id: invalid" \
-  -w "\nStatus: %{http_code}\n\n"
-
-echo "=== Test 3: Replay Protection ==="
-REQUEST_ID=$(uuidgen)
-echo "Using RequestId: $REQUEST_ID"
-curl -X POST "$BASE_URL/gate/open" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "X-Request-Id: $REQUEST_ID" \
-  -w "\nStatus: %{http_code}\n\n"
-
-echo "Same RequestId again (should fail):"
-curl -X POST "$BASE_URL/gate/open" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "X-Request-Id: $REQUEST_ID" \
-  -w "\nStatus: %{http_code}\n\n"
-
-echo "=== Test 4: Rate Limiting ==="
-for i in {1..7}; do
-  REQUEST_ID=$(uuidgen)
-  echo "Request $i:"
-  curl -X POST "$BASE_URL/gate/open" \
-    -H "Authorization: Bearer $TOKEN" \
-    -H "X-Request-Id: $REQUEST_ID" \
-    -w "\nStatus: %{http_code}\n\n" \
-    -o /dev/null -s
-  sleep 0.5
-done
-
-echo "=== Tests Complete ==="
-```
-
-Usage:
-```bash
-chmod +x test-gate.sh
-./test-gate.sh "your-jwt-token-here"
+./scripts/test-gate.sh "your-jwt-token-here"
 ```
 
 ---

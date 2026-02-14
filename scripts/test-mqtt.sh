@@ -2,6 +2,7 @@
 
 # MQTT Integration Testing Script
 # Tests both stub and MQTT modes
+# Usage: from repo root: ./scripts/test-mqtt.sh <jwt-token>
 
 set -e
 
@@ -17,7 +18,7 @@ echo ""
 
 # Check if token is provided
 if [ -z "$1" ]; then
-    echo -e "${YELLOW}Usage: ./test-mqtt.sh <jwt-token>${NC}"
+    echo -e "${YELLOW}Usage: ./scripts/test-mqtt.sh <jwt-token>${NC}"
     echo ""
     echo "To get a token:"
     echo "1. Login via frontend and copy token from browser DevTools"
@@ -164,4 +165,3 @@ echo "2. If using MQTT mode, simulate device with mosquitto_sub/pub"
 echo "3. Check MongoDB GateLog collection for audit logs"
 echo ""
 echo "For MQTT mode testing, see README.md section 'Testing MQTT Mode'"
-
