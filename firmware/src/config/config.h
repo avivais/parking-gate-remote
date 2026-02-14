@@ -70,7 +70,7 @@
 #define DNS_SECONDARY "8.8.4.4"
 
 // Firmware Version
-#define FW_VERSION "fw-prod-1.0"
+#define FW_VERSION "fw-prod-1.0.0"
 
 // Relay Control Configuration
 #define RELAY_PIN 18

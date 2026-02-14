@@ -164,7 +164,7 @@ Published by the MCU after reconnecting to the broker when it has buffered recov
 ```json
 {
   "deviceId": "mitspe6-gate-001",
-  "fwVersion": "fw-prod-1.0",
+  "fwVersion": "fw-prod-1.0.0",
   "sessionId": "12345678",
   "entries": [
     { "ts": 1704067200000, "level": "warn", "event": "connection_lost" },

@@ -106,7 +106,7 @@ You can also set environment variables in a `.env` file or directly in `docker-c
 | `MCU_ACK_DELAY_MS` | `100` | Delay before sending ACK (ms) |
 | `MCU_ACK_MODE` | `success` | ACK behavior mode (see below) |
 | `MCU_STATUS_INTERVAL_MS` | `5000` | Status heartbeat interval (ms) |
-| `MCU_FW_VERSION` | `sim-0.1.0` | Simulated firmware version |
+| `MCU_FW_VERSION` | `sim-1.0.0` | Simulated firmware version |
 | `MCU_RSSI` | `-65` | Simulated signal strength (dBm) |
 | `MQTT_DIAGNOSTICS_TOPIC` | `pgr/mitspe6/gate/diagnostics` | Topic for diagnostic log batches (MCU → backend) |
 | `MCU_DIAGNOSTICS_ON_RECONNECT` | `false` | When `true`, publish a diagnostics batch on every connect/reconnect (for e2e recovery testing) |

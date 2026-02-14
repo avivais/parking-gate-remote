@@ -60,7 +60,7 @@ On your local machine, edit `firmware/src/config/config.h`:
 
 **Important**: Update `FW_VERSION` to production:
 ```cpp
-#define FW_VERSION "fw-prod-1.0"
+#define FW_VERSION "fw-prod-1.0.0"
 ```
 
 ## Step 3: Update CA Certificate

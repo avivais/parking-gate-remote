@@ -13,7 +13,7 @@ const MCU_DEVICE_ID = process.env.MCU_DEVICE_ID || 'mitspe6-gate-001';
 const MCU_ACK_DELAY_MS = parseInt(process.env.MCU_ACK_DELAY_MS || '100', 10);
 const MCU_ACK_MODE = process.env.MCU_ACK_MODE || 'success';
 const MCU_STATUS_INTERVAL_MS = parseInt(process.env.MCU_STATUS_INTERVAL_MS || '5000', 10);
-const MCU_FW_VERSION = process.env.MCU_FW_VERSION || 'sim-0.1.0';
+const MCU_FW_VERSION = process.env.MCU_FW_VERSION || 'sim-1.0.0';
 const MCU_RSSI = parseInt(process.env.MCU_RSSI || '-65', 10);
 const MCU_DIAGNOSTICS_ON_RECONNECT = process.env.MCU_DIAGNOSTICS_ON_RECONNECT === 'true' || process.env.MCU_DIAGNOSTICS_ON_RECONNECT === '1';
 const MCU_DISCONNECT_AFTER_MS = process.env.MCU_DISCONNECT_AFTER_MS ? parseInt(process.env.MCU_DISCONNECT_AFTER_MS, 10) : null;

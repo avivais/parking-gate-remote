@@ -5,7 +5,7 @@
 ✅ Updated `config.h` with production MQTT settings:
 - MQTT_HOST: `mqtt.mitzpe6-8.com`
 - MQTT_USERNAME: `pgr_device_mitspe6`
-- FW_VERSION: `fw-prod-1.0`
+- FW_VERSION: `fw-prod-1.0.0`
 
 ✅ Updated `main.ino` to use production config values
 
