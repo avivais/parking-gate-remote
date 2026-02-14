@@ -9,6 +9,9 @@
 #include "relay/relay.h"
 #include "gate_control/gate_control.h"
 #include "protocol/Protocol.h"
+#if DIAGNOSTIC_LOG_ENABLED
+#include "util/DiagnosticLog.h"
+#endif
 #include <ArduinoJson.h>  // For parsing requestId from invalid JSON
 #include <WiFi.h>  // For WiFiClient (works with PPP if initialized)
 
@@ -36,6 +39,16 @@ unsigned long stateEntryTime = 0;
 unsigned long lastPublishTime = 0;
 const unsigned long PUBLISH_INTERVAL = 5000; // Publish every 5 seconds
 int messageCount = 0;
+
+// Recovery: when we escalate from MQTT to PPP rebuild, force PPP to start fresh
+static bool forcePppRestart = false;
+// Modem init retry cap: count failures, then back off before retrying
+static int modemInitRetries = 0;
+
+#if DIAGNOSTIC_LOG_ENABLED
+static DiagnosticLog diagnosticLog;
+static uint32_t bootSessionId = 0;
+#endif
 
 void setup() {
     // CRITICAL: Disable watchdog timer first to prevent boot loops
@@ -135,6 +148,14 @@ void setup() {
     Serial.print("Backoff Max: ");
     Serial.print(BACKOFF_MAX_MS);
     Serial.println(" ms");
+    Serial.print("Cold Boot Delay: ");
+    Serial.print(COLD_BOOT_DELAY_MS);
+    Serial.println(" ms");
+    Serial.print("Modem Init Max Retries: ");
+    Serial.println(MODEM_INIT_MAX_RETRIES);
+    Serial.print("Modem Init Backoff: ");
+    Serial.print(MODEM_INIT_BACKOFF_MS);
+    Serial.println(" ms");
     Serial.println("========================================");
     Serial.flush();
     delay(500);
@@ -181,6 +202,15 @@ void setup() {
     Serial.println("[Device] Relay and gate control initialized");
     Serial.flush();
 
+    // Cold boot: wait for modem power rail to stabilize before any modem GPIO activity
+    Serial.print("[Device] Cold boot delay ");
+    Serial.print(COLD_BOOT_DELAY_MS);
+    Serial.println(" ms...");
+    Serial.flush();
+    delay(COLD_BOOT_DELAY_MS);
+    Serial.println("[Device] Cold boot delay complete");
+    Serial.flush();
+
     // Note: setPppManager() will be called after PPP is up (when TinyGSM modem is created)
     // MQTT will be initialized with production settings from config.h after PPP is up
 
@@ -213,18 +243,43 @@ void loop() {
             // Modem initialization
             if (modemManager->init()) {
                 Serial.println("[Device] Modem initialized, starting PPP...");
+                modemInitRetries = 0;
                 deviceState = STATE_PPP_CONNECTING;
                 stateEntryTime = now;
             } else if (now - stateEntryTime > AT_INIT_TIMEOUT_MS) {
-                Serial.println("[Device] Modem init timeout, retrying...");
-                modemManager->powerCycle();
-                stateEntryTime = now;
+                if (modemInitRetries < MODEM_INIT_MAX_RETRIES) {
+                    Serial.println("[Device] Modem init timeout, power cycle retry...");
+#if DIAGNOSTIC_LOG_ENABLED
+                    char msg[12];
+                    snprintf(msg, sizeof(msg), "retry=%d", modemInitRetries + 1);
+                    diagnosticLog.append(DiagnosticLevel::Warn, "init_retry", msg);
+#endif
+                    modemManager->powerCycle();
+                    modemInitRetries++;
+                    stateEntryTime = now;
+                } else {
+#if DIAGNOSTIC_LOG_ENABLED
+                    char msg[16];
+                    snprintf(msg, sizeof(msg), "backoff=%lu", (unsigned long)MODEM_INIT_BACKOFF_MS);
+                    diagnosticLog.append(DiagnosticLevel::Warn, "backoff", msg);
+#endif
+                    Serial.print("[Device] Modem init max retries reached, backing off ");
+                    Serial.print(MODEM_INIT_BACKOFF_MS);
+                    Serial.println(" ms...");
+                    delay(MODEM_INIT_BACKOFF_MS);
+                    modemInitRetries = 0;
+                    stateEntryTime = millis();
+                }
             }
             break;
 
         case STATE_PPP_CONNECTING:
             {
                 static bool pppStarted = false;
+                if (forcePppRestart) {
+                    pppStarted = false;
+                    forcePppRestart = false;
+                }
                 if (!pppStarted) {
                     if (pppManager->start()) {
                         pppStarted = true;
@@ -233,12 +288,24 @@ void loop() {
 
                 if (pppManager->waitForPppUp(PPP_TIMEOUT_MS)) {
                     Serial.println("[Device] PPP connected!");
+                    pppManager->resetPppFailStreak();
                     deviceState = STATE_PPP_UP;
                     pppStarted = false;
                 } else if (now - stateEntryTime > PPP_TIMEOUT_MS) {
                     Serial.println("[Device] PPP connection timeout, retrying...");
                     pppManager->stop();
                     pppStarted = false;
+                    if (pppManager->shouldHardReset()) {
+                        Serial.println("[Device] PPP failure threshold exceeded, modem hard reset...");
+#if DIAGNOSTIC_LOG_ENABLED
+                        char msg[8];
+                        snprintf(msg, sizeof(msg), "n=%d", (int)pppManager->getPppFailStreak());
+                        diagnosticLog.append(DiagnosticLevel::Warn, "modem_reset", msg);
+#endif
+                        modemManager->hardReset();
+                        pppManager->resetPppFailStreak();
+                        deviceState = STATE_MODEM_INIT;
+                    }
                     stateEntryTime = now;
                 }
             }
@@ -288,30 +355,76 @@ void loop() {
             break;
 
         case STATE_MQTT_CONNECTING:
-            // Try to connect to MQTT broker
+            // Before retrying MQTT, check if we should escalate to PPP rebuild
+            if (mqttManager->shouldRebuildPpp()) {
+                Serial.println("[Device] MQTT fail threshold exceeded, rebuilding PPP...");
+#if DIAGNOSTIC_LOG_ENABLED
+                char msg[8];
+                snprintf(msg, sizeof(msg), "n=%d", (int)mqttManager->getMqttFailStreak());
+                diagnosticLog.append(DiagnosticLevel::Warn, "ppp_rebuild", msg);
+#endif
+                mqttManager->disconnect();
+                mqttManager->resetMqttFailStreak();
+                pppManager->stop();
+                forcePppRestart = true;
+                deviceState = STATE_PPP_CONNECTING;
+                stateEntryTime = now;
+                break;
+            }
             if (mqttManager->connect()) {
                 Serial.println("[Device] MQTT connected!");
-                // Register command callback for gate control
                 mqttManager->setCommandCallback(handleMqttCommand);
                 Serial.println("[Device] Command callback registered");
+#if DIAGNOSTIC_LOG_ENABLED
+                diagnosticLog.append(DiagnosticLevel::Info, "connection_restored", nullptr);
+                if (diagnosticLog.hasEntries()) {
+                    if (bootSessionId == 0) bootSessionId = millis() + (uint32_t)random(0xFFFF);
+                    const size_t batchSize = 10;
+                    while (diagnosticLog.hasEntries()) {
+                        DynamicJsonDocument doc(1024);
+                        doc["deviceId"] = DEVICE_ID;
+                        doc["fwVersion"] = FW_VERSION;
+                        doc["sessionId"] = bootSessionId;
+                        JsonArray arr = doc.createNestedArray("entries");
+                        char eventBuf[DIAG_EVENT_LEN], messageBuf[DIAG_MESSAGE_LEN];
+                        size_t batchCount = 0;
+                        for (size_t i = 0; i < batchSize; i++) {
+                            uint32_t ts;
+                            uint8_t lvl;
+                            if (!diagnosticLog.getEntry(i, &ts, &lvl, eventBuf, sizeof(eventBuf), messageBuf, sizeof(messageBuf)))
+                                break;
+                            JsonObject e = arr.createNestedObject();
+                            e["ts"] = ts;
+                            e["level"] = lvl == 0 ? "info" : (lvl == 1 ? "warn" : "error");
+                            e["event"] = eventBuf;
+                            if (messageBuf[0]) e["message"] = messageBuf;
+                            batchCount++;
+                        }
+                        if (batchCount == 0) break;
+                        String payload;
+                        serializeJson(doc, payload);
+                        if (mqttManager->publish(MQTT_DIAGNOSTICS_TOPIC, payload.c_str())) {
+                            Serial.println("[Device] Diagnostic log batch published");
+                            diagnosticLog.removeFirst(batchCount);
+                        } else {
+                            break;
+                        }
+                    }
+                }
+#endif
                 deviceState = STATE_MQTT_CONNECTED;
                 stateEntryTime = now;
-            } else {
-                // Check timeout
-                if (now - stateEntryTime > 30000) {  // 30 second timeout
-                    Serial.println("[Device] MQTT connection timeout, retrying...");
-                    stateEntryTime = now;
-                }
             }
             break;
 
         case STATE_MQTT_CONNECTED:
-            // Publish status/healthcheck periodically
             mqttManager->publishStatus();
 
-            // Check connection health
             if (!mqttManager->isConnected()) {
                 Serial.println("[Device] MQTT connection lost, reconnecting...");
+#if DIAGNOSTIC_LOG_ENABLED
+                diagnosticLog.append(DiagnosticLevel::Warn, "connection_lost", nullptr);
+#endif
                 deviceState = STATE_MQTT_CONNECTING;
                 stateEntryTime = now;
             }

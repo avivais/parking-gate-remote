@@ -40,6 +40,16 @@ sudo ./setup-apache.sh
 ./start-services.sh
 ```
 
+### Verify deployment
+
+After copying and starting services, run from project root:
+
+```bash
+./deploy/verify-deployment.sh
+```
+
+This checks that the API responds, backend container is up, and backend logs show MQTT subscription (including the diagnostics topic). Optional: override server or API with `./deploy/verify-deployment.sh [user@host]` and `API_BASE=https://api.mitzpe6-8.com`.
+
 ### Option 2: Manual Step-by-Step
 
 ### 1. Initial Server Setup

@@ -78,3 +78,13 @@ curl -s -o /dev/null -w "%{http_code}" https://api.mitzpe6-8.com/api
 
 * Backend `.env`: ensure `JWT_SECRET` and `MQTT_PASSWORD` match `mqtt/passwordfile` when changing MQTT credentials.
 
+---
+
+## Step 4: Verify (optional)
+
+From project root:
+```
+./deploy/verify-deployment.sh
+```
+Checks API response, backend container up, and backend logs for MQTT/diagnostics subscription.
+

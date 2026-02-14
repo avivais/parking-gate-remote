@@ -2,6 +2,7 @@ import {
     BadRequestException,
     Controller,
     Get,
+    Param,
     Post,
     Query,
     Request,
@@ -9,6 +10,8 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { GateService } from './gate.service';
 import { ApprovedGuard } from '../auth/approved.guard';
 import { AdminGuard } from '../auth/admin.guard';
@@ -16,6 +19,9 @@ import { GateThrottlerGuard } from './gate-throttler.guard';
 import { Request as ExpressRequest } from 'express';
 import { UsersService } from '../users/users.service';
 import { getClientIp } from '../utils/ip-extractor';
+import {
+    DeviceDiagnosticLog,
+} from './schemas/device-diagnostic-log.schema';
 
 interface AuthenticatedUser {
     userId: string;
@@ -34,6 +40,8 @@ export class GateController {
         private readonly gateService: GateService,
         private readonly configService: ConfigService,
         private readonly usersService: UsersService,
+        @InjectModel(DeviceDiagnosticLog.name)
+        private readonly deviceDiagnosticLogModel: Model<DeviceDiagnosticLog>,
     ) {}
 
     @UseGuards(AuthGuard('jwt'), ApprovedGuard, GateThrottlerGuard)
@@ -106,5 +114,24 @@ export class GateController {
             : 50;
 
         return this.gateService.getLatest(safeLimit);
+    }
+
+    @UseGuards(AuthGuard('jwt'), ApprovedGuard, AdminGuard)
+    @Get('devices/:deviceId/diagnostics')
+    async getDeviceDiagnostics(
+        @Param('deviceId') deviceId: string,
+        @Query('limit') limit?: string,
+        @Query('skip') skip?: string,
+    ) {
+        const limitNum = limit ? Math.min(Math.max(Number(limit) || 50, 1), 200) : 50;
+        const skipNum = skip ? Math.max(Number(skip) || 0, 0) : 0;
+        const docs = await this.deviceDiagnosticLogModel
+            .find({ deviceId })
+            .sort({ receivedAt: -1 })
+            .skip(skipNum)
+            .limit(limitNum)
+            .lean()
+            .exec();
+        return { deviceId, diagnostics: docs };
     }
 }

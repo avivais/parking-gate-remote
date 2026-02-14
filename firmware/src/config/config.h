@@ -26,6 +26,16 @@
 #define BACKOFF_BASE_MS 1000
 #define BACKOFF_MAX_MS 60000
 
+// Cold boot: delay before starting modem init (let power rail stabilize)
+#define COLD_BOOT_DELAY_MS 4000
+
+// Modem power stable delay after BOARD_POWERON HIGH, before reset sequence (optional)
+#define MODEM_POWER_STABLE_MS 2000
+
+// Modem init retry cap: max powerCycle retries before backing off
+#define MODEM_INIT_MAX_RETRIES 5
+#define MODEM_INIT_BACKOFF_MS 60000
+
 // Modem GPIO Pins (LILYGO_T_A7670 configuration)
 // Based on working POC - DO NOT CHANGE without hardware verification
 #define BOARD_PWRKEY_PIN 4      // Power key pin (boot sequence)
@@ -69,6 +79,11 @@
 // Gate Control Configuration
 #define GATE_COOLDOWN_MS 8000
 #define DEDUP_CACHE_SIZE 20
+
+// Diagnostic log (recovery events for backend upload)
+#define MQTT_DIAGNOSTICS_TOPIC "pgr/mitspe6/gate/diagnostics"
+#define DIAGNOSTIC_LOG_MAX_ENTRIES 32
+#define DIAGNOSTIC_LOG_ENABLED 1
 
 #endif // CONFIG_H
 

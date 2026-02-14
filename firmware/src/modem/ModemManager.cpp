@@ -48,7 +48,7 @@ bool ModemManager::init() {
             yield();
             digitalWrite(BOARD_POWERON_PIN, HIGH);
             yield();
-            delay(100);
+            delay(MODEM_POWER_STABLE_MS);  // Let modem power rail stabilize before reset
             yield();
             #endif
 

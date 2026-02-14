@@ -13,6 +13,9 @@ import mqtt from 'mqtt';
 import { IGateDeviceService } from './gate-device.interface';
 import { McuCallResult, McuCallMetadata } from './gate-device.service';
 import { DeviceStatus } from './schemas/device-status.schema';
+import {
+    DeviceDiagnosticLog,
+} from './schemas/device-diagnostic-log.schema';
 
 interface MqttCommandMessage {
     requestId: string;
@@ -50,6 +53,7 @@ export class MqttGateDeviceService
     private readonly cmdTopic: string;
     private readonly ackTopic: string;
     private readonly statusTopic: string;
+    private readonly diagnosticsTopic: string;
     private readonly pendingRequests = new Map<string, PendingRequest>();
     private isConnected = false;
     private connectionPromise: Promise<void> | null = null;
@@ -58,6 +62,8 @@ export class MqttGateDeviceService
         private readonly configService: ConfigService,
         @InjectModel(DeviceStatus.name)
         private readonly deviceStatusModel: Model<DeviceStatus>,
+        @InjectModel(DeviceDiagnosticLog.name)
+        private readonly deviceDiagnosticLogModel: Model<DeviceDiagnosticLog>,
     ) {
         this.timeoutMs = this.configService.get<number>('MCU_TIMEOUT_MS', 5000);
         this.retryCount = this.configService.get<number>('MCU_RETRY_COUNT', 1);
@@ -82,6 +88,9 @@ export class MqttGateDeviceService
         this.statusTopic =
             this.configService.get<string>('MQTT_STATUS_TOPIC') ||
             'pgr/mitspe6/gate/status';
+        this.diagnosticsTopic =
+            this.configService.get<string>('MQTT_DIAGNOSTICS_TOPIC') ||
+            'pgr/mitspe6/gate/diagnostics';
     }
 
     async onModuleInit() {
@@ -120,10 +129,10 @@ export class MqttGateDeviceService
                     this.isConnected = true;
                     this.logger.log('MQTT client connected');
 
-                    // Subscribe to ACK and status topics
                     const topics = {
                         [this.ackTopic]: { qos: 1 },
                         [this.statusTopic]: { qos: 1 },
+                        [this.diagnosticsTopic]: { qos: 1 },
                     };
 
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
@@ -144,7 +153,7 @@ export class MqttGateDeviceService
                             return;
                         }
                         this.logger.log(
-                            `Subscribed to topics: ${this.ackTopic}, ${this.statusTopic}`,
+                            `Subscribed to topics: ${this.ackTopic}, ${this.statusTopic}, ${this.diagnosticsTopic}`,
                         );
                         resolve();
                     });
@@ -226,10 +235,15 @@ export class MqttGateDeviceService
             if (topic === this.ackTopic) {
                 this.handleAckMessage(payload as MqttAckMessage);
             } else if (topic === this.statusTopic) {
-                // Fire and forget - handle errors internally
                 this.handleStatusMessage(payload).catch((error) => {
                     this.logger.error(
                         `Unhandled error in handleStatusMessage: ${error}`,
+                    );
+                });
+            } else if (topic === this.diagnosticsTopic) {
+                this.handleDiagnosticsMessage(payload).catch((error) => {
+                    this.logger.error(
+                        `Unhandled error in handleDiagnosticsMessage: ${error}`,
                     );
                 });
             }
@@ -317,6 +331,91 @@ export class MqttGateDeviceService
             const err = error as Error;
             this.logger.error(
                 `Failed to persist device status: ${err.message}`,
+            );
+        }
+    }
+
+    private async handleDiagnosticsMessage(payload: unknown): Promise<void> {
+        try {
+            const raw =
+                typeof payload === 'string' ? payload : JSON.stringify(payload);
+            this.logger.log(
+                `Diagnostics received: ${raw.length} chars, deviceId=${(payload as { deviceId?: string })?.deviceId}, entries=${Array.isArray((payload as { entries?: unknown[] })?.entries) ? (payload as { entries: unknown[] }).entries.length : 0}`,
+            );
+            const body = payload as {
+                deviceId?: string;
+                fwVersion?: string;
+                sessionId?: string;
+                entries?: Array<{
+                    ts: number;
+                    level: string;
+                    event: string;
+                    message?: string;
+                }>;
+            };
+
+            if (
+                !body.deviceId ||
+                typeof body.deviceId !== 'string' ||
+                !Array.isArray(body.entries)
+            ) {
+                this.logger.warn(
+                    `Invalid diagnostics message: missing deviceId or entries. Received: ${JSON.stringify(body).slice(0, 200)}`,
+                );
+                return;
+            }
+
+            const deviceId = String(body.deviceId).slice(0, 128);
+            const levelToString = (v: unknown): string => {
+                if (v === 0 || v === 'info') return 'info';
+                if (v === 1 || v === 'warn') return 'warn';
+                if (v === 2 || v === 'error') return 'error';
+                return String(v).slice(0, 16);
+            };
+            const entries = body.entries
+                .slice(0, 100)
+                .filter(
+                    (e): e is { ts: number; level: unknown; event: string; message?: string } =>
+                        typeof e?.ts === 'number' &&
+                        e?.event !== undefined &&
+                        typeof e?.event === 'string',
+                )
+                .map((e) => ({
+                    ts: e.ts,
+                    level: levelToString(e.level).slice(0, 16),
+                    event: String(e.event).slice(0, 64),
+                    message:
+                        e.message != null
+                            ? String(e.message).slice(0, 256)
+                            : undefined,
+                }));
+
+            if (entries.length === 0) {
+                this.logger.warn('Diagnostics message had no valid entries');
+                return;
+            }
+
+            await this.deviceDiagnosticLogModel.create({
+                deviceId,
+                receivedAt: new Date(),
+                sessionId:
+                    body.sessionId != null
+                        ? String(body.sessionId).slice(0, 64)
+                        : undefined,
+                fwVersion:
+                    body.fwVersion != null
+                        ? String(body.fwVersion).slice(0, 32)
+                        : undefined,
+                entries,
+            });
+
+            this.logger.log(
+                `Stored diagnostic log for ${deviceId}: ${entries.length} entries`,
+            );
+        } catch (error) {
+            const err = error as Error;
+            this.logger.error(
+                `Failed to persist device diagnostic log: ${err.message}`,
             );
         }
     }

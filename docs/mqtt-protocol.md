@@ -4,9 +4,9 @@ This document serves as the single source of truth for the MQTT contract between
 
 ## Overview
 
-The protocol uses three MQTT topics for bidirectional communication:
+The protocol uses four MQTT topics for bidirectional communication:
 - **Backend → MCU**: Commands are published to the command topic
-- **MCU → Backend**: Acknowledgments and status updates are published to their respective topics
+- **MCU → Backend**: Acknowledgments, status updates, and diagnostic logs are published to their respective topics
 
 ## Topics
 
@@ -26,7 +26,13 @@ The protocol uses three MQTT topics for bidirectional communication:
 - **Direction**: MCU → Backend
 - **Publisher**: MCU device
 - **Subscriber**: NestJS backend
-- **Purpose**: Status updates from the MCU (currently logged at debug level only)
+- **Purpose**: Status updates from the MCU (heartbeat, online, RSSI, fwVersion)
+
+### `pgr/mitspe6/gate/diagnostics`
+- **Direction**: MCU → Backend
+- **Publisher**: MCU device
+- **Subscriber**: NestJS backend
+- **Purpose**: Diagnostic logs (recovery events, connection lost/restored) for later analysis. Published after connection is restored when the device has buffered entries.
 
 ## Message Schemas
 
@@ -126,6 +132,45 @@ Published by the MCU for status updates. Currently, the backend only logs these 
   "updatedAt": 1704067200000,
   "rssi": -65,
   "fwVersion": "1.2.3"
+}
+```
+
+**MQTT Settings:**
+- **QoS**: 1 (at least once delivery)
+- **Retain**: false
+
+### Diagnostics Message (`pgr/mitspe6/gate/diagnostics`)
+
+Published by the MCU after reconnecting to the broker when it has buffered recovery/diagnostic entries. Used for post-incident analysis.
+
+**Schema:**
+```json
+{
+  "deviceId": "string (required)",
+  "fwVersion": "string (optional)",
+  "sessionId": "string (optional, e.g. boot id for correlating batches)",
+  "entries": [
+    {
+      "ts": "number (millis or Unix ms)",
+      "level": "info | warn | error",
+      "event": "string (e.g. connection_lost, ppp_rebuild, modem_reset, connection_restored)",
+      "message": "string (optional)"
+    }
+  ]
+}
+```
+
+**Example:**
+```json
+{
+  "deviceId": "mitspe6-gate-001",
+  "fwVersion": "fw-prod-1.0",
+  "sessionId": "12345678",
+  "entries": [
+    { "ts": 1704067200000, "level": "warn", "event": "connection_lost" },
+    { "ts": 1704067205000, "level": "warn", "event": "ppp_rebuild", "message": "n=3" },
+    { "ts": 1704067210000, "level": "info", "event": "connection_restored" }
+  ]
 }
 ```
 

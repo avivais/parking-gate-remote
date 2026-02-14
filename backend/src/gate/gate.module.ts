@@ -15,6 +15,10 @@ import { GateExceptionFilter } from './gate-exception.filter';
 import { GateLog, GateLogSchema } from './schemas/gate-log.schema';
 import { GateRequest, GateRequestSchema } from './schemas/gate-request.schema';
 import { DeviceStatus, DeviceStatusSchema } from './schemas/device-status.schema';
+import {
+    DeviceDiagnosticLog,
+    DeviceDiagnosticLogSchema,
+} from './schemas/device-diagnostic-log.schema';
 
 @Module({
     imports: [
@@ -26,6 +30,10 @@ import { DeviceStatus, DeviceStatusSchema } from './schemas/device-status.schema
             { name: GateLog.name, schema: GateLogSchema },
             { name: GateRequest.name, schema: GateRequestSchema },
             { name: DeviceStatus.name, schema: DeviceStatusSchema },
+            {
+                name: DeviceDiagnosticLog.name,
+                schema: DeviceDiagnosticLogSchema,
+            },
         ]),
     ],
     controllers: [GateController],
