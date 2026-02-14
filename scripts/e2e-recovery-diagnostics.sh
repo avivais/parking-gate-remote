@@ -44,7 +44,8 @@ cleanup_sim() {
 trap cleanup_sim EXIT
 
 assert_backend() {
-    if ! curl -sf --connect-timeout 5 "$BASE_URL" >/dev/null 2>&1; then
+    # No -f: Nest returns 404 for GET /; we only need to reach the server (any response = up)
+    if ! curl -s --connect-timeout 5 -o /dev/null "$BASE_URL" 2>/dev/null; then
         echo "Error: Backend not reachable at $BASE_URL. Start it (e.g. ./scripts/start-local.sh)."
         exit 1
     fi
@@ -101,8 +102,20 @@ run_broker_down() {
     if ! assert_diagnostics_api; then
         exit 1
     fi
+    print_broker_down_reminder
     echo ""
     echo "=== E2E (broker-down) passed. ==="
+}
+
+print_broker_down_reminder() {
+    if [[ -z "$ADMIN_TOKEN" ]]; then
+        echo ""
+        echo "Note: ADMIN_TOKEN not set — API assertions were skipped. Set ADMIN_TOKEN to verify device and diagnostics."
+    fi
+    echo ""
+    echo "For diagnostics to be stored, the device (mcu-sim or real MCU) must publish on reconnect."
+    echo "  - mcu-sim: start with MCU_DIAGNOSTICS_ON_RECONNECT=true (./scripts/start-local.sh does this)."
+    echo "  - If you just changed that, restart the simulator (or run ./scripts/stop-local.sh && ./scripts/start-local.sh)."
 }
 
 run_sim_disconnect() {
@@ -129,13 +142,15 @@ run_sim_disconnect() {
     sleep 2
 
     echo "1. Starting MCU simulator (disconnect after ${SIM_DISCONNECT_MS}ms, diagnostics on reconnect)..."
+    rm -f "$MCU_SIM_LOG"
     (cd "$REPO_ROOT/mcu-sim" && \
+        NO_COLOR=1 \
         MQTT_URL="${MQTT_URL:-mqtt://localhost:1883}" \
         MQTT_DEVICE_PASSWORD="$MQTT_DEVICE_PASSWORD" \
         MCU_DEVICE_ID="$DEVICE_ID" \
         MCU_DISCONNECT_AFTER_MS="$SIM_DISCONNECT_MS" \
         MCU_DIAGNOSTICS_ON_RECONNECT=true \
-        node src/index.js) > "$MCU_SIM_LOG" 2>&1 &
+        node src/index.js >> "$MCU_SIM_LOG" 2>&1) &
     MCU_SIM_PID=$!
     echo "2. Waiting ${SIM_WAIT_AFTER_RECONNECT_SEC}s for disconnect and reconnect + diagnostics publish..."
     sleep "$SIM_WAIT_AFTER_RECONNECT_SEC"

@@ -104,11 +104,17 @@ async function main() {
     let didScheduleDisconnect = false;
 
     function publishDiagnostics() {
+        const now = Date.now();
         const entries = [];
         if (connectionLostAt != null) {
             entries.push({ ts: connectionLostAt, level: 'warn', event: 'connection_lost' });
+            // Simulate recovery steps (like firmware: reconnect attempts / ppp_rebuild)
+            const attempt1 = connectionLostAt + 1500;
+            const attempt2 = connectionLostAt + 4000;
+            entries.push({ ts: attempt1, level: 'warn', event: 'reconnect_attempt', message: 'n=1' });
+            entries.push({ ts: attempt2, level: 'warn', event: 'reconnect_attempt', message: 'n=2' });
         }
-        entries.push({ ts: Date.now(), level: 'info', event: 'connection_restored' });
+        entries.push({ ts: now, level: 'info', event: 'connection_restored' });
 
         const payload = {
             deviceId: MCU_DEVICE_ID,
@@ -131,7 +137,8 @@ async function main() {
         console.log('✓ Connected to MQTT broker');
 
         if (MCU_DIAGNOSTICS_ON_RECONNECT) {
-            publishDiagnostics();
+            // Delay so backend has time to re-subscribe after broker restart (avoids race)
+            setTimeout(() => publishDiagnostics(), 2000);
         }
 
         // Subscribe to command topic

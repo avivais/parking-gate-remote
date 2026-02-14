@@ -94,7 +94,12 @@ cd "$REPO_ROOT"
 # ----- Start MCU simulator if MQTT mode -----
 if [[ "$USE_MQTT" == "true" ]]; then
     echo "Starting MCU simulator..."
-    (cd "$REPO_ROOT/mcu-sim" && MQTT_URL=mqtt://localhost:1883 MQTT_DEVICE_PASSWORD=pgr_device_local nohup node src/index.js > "$REPO_ROOT/mcu-sim.log" 2>&1 &)
+    # Plain-text log: NO_COLOR disables ANSI in Node; simple redirect, no pipe
+    rm -f "$REPO_ROOT/mcu-sim.log"
+    (cd "$REPO_ROOT/mcu-sim" && \
+      NO_COLOR=1 MQTT_URL=mqtt://localhost:1883 MQTT_DEVICE_PASSWORD=pgr_device_local MCU_DIAGNOSTICS_ON_RECONNECT=true \
+      node src/index.js >> "$REPO_ROOT/mcu-sim.log" 2>&1) &
+    disown 2>/dev/null || true
 fi
 cd "$REPO_ROOT"
 

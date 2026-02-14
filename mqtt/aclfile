@@ -1,15 +1,17 @@
 # Access Control List for Parking Gate Remote MQTT Broker
 # Enforces least privilege access
 
-# Server user (pgr_server) - can publish commands and subscribe to responses
+# Server user (pgr_server) - can publish commands and subscribe to responses/diagnostics
 user pgr_server
 topic write pgr/mitspe6/gate/cmd
 topic read pgr/mitspe6/gate/ack
 topic read pgr/mitspe6/gate/status
+topic read pgr/mitspe6/gate/diagnostics
 
-# Device user (pgr_device_mitspe6) - can subscribe to commands and publish responses
+# Device user (pgr_device_mitspe6) - can subscribe to commands and publish responses/diagnostics
 user pgr_device_mitspe6
 topic read pgr/mitspe6/gate/cmd
 topic write pgr/mitspe6/gate/ack
 topic write pgr/mitspe6/gate/status
+topic write pgr/mitspe6/gate/diagnostics
 
