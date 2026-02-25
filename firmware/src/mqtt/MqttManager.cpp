@@ -163,6 +163,12 @@ void MqttManager::disconnect() {
 }
 
 bool MqttManager::isConnected() const {
+    // If we've detected failure (e.g. status publish failed), report disconnected
+    // so the state machine triggers reconnect. Modem may still report connected
+    // until keepalive/publish fails after broker restart.
+    if (!connected) {
+        return false;
+    }
     if (modem != nullptr) {
         return modem->mqtt_connected();
     }
@@ -218,6 +224,9 @@ void MqttManager::publishStatus() {
         Serial.println(statusJson);
     } else {
         Serial.println("[MQTT] Failed to publish status");
+        // Treat failed publish as connection lost so state machine triggers reconnect.
+        // Modem may still report mqtt_connected() true until keepalive fails.
+        connected = false;
     }
 }
 

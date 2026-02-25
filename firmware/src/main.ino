@@ -419,7 +419,9 @@ void loop() {
 
         case STATE_MQTT_CONNECTED:
             mqttManager->publishStatus();
-
+            // Connection lost is detected either by modem (mqtt_connected) or by
+            // failed status publish (MqttManager sets connected=false), so reconnect
+            // and PPP-rebuild failsafe kick in after broker restart.
             if (!mqttManager->isConnected()) {
                 Serial.println("[Device] MQTT connection lost, reconnecting...");
 #if DIAGNOSTIC_LOG_ENABLED

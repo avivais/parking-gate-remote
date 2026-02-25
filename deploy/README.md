@@ -330,6 +330,31 @@ docker exec -it parking-backend sh
 
 ## Troubleshooting
 
+### MCU offline after server restart
+
+If the MCU was online and then the **server** (EC2) or MQTT broker was restarted, the device may show offline. The MCU detects the dropped connection and reconnects using exponential backoff (up to 60s between attempts); after several failures it may also trigger a PPP rebuild on cellular.
+
+**Without physical access to the MCU, try (on the server):**
+
+1. **Restart only the MQTT broker** to clear any broker-side state and force a clean handshake when the MCU next tries:
+   ```bash
+   cd /opt/parking-gate-remote
+   docker compose -f docker-compose.mqtt.yml restart mosquitto
+   # or: docker-compose -f docker-compose.mqtt.yml restart mosquitto
+   ```
+
+2. **Wait 2–5 minutes** so the MCU can complete a backoff cycle and (if needed) PPP recovery.
+
+3. **Check whether the device connected:**
+   ```bash
+   docker logs parking-mosquitto --tail 80 | grep -E "pgr_device|New client"
+   ```
+   If you see `pgr_device_mitspe6` (or similar) as a new client, the MCU has reconnected.
+
+4. **Check backend device status:** Admin UI → Devices, or `curl -s -H "Authorization: Bearer <token>" https://api.mitzpe6-8.com/api/admin/device-status`.
+
+If the device still does not appear after 5–10 minutes, the modem may be in a bad state; without physical access, only a power cycle (or remote power control if available) will reset it. The retained-status change (status published with `retain: true`) ensures that after a **backend** restart the device shows online as soon as the backend subscribes, but it does not help the MCU reconnect to the broker.
+
 ### MQTT Connection Issues
 
 - Verify certificates are in place and have correct permissions

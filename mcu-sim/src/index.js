@@ -274,7 +274,7 @@ async function main() {
             status.fwVersion = MCU_FW_VERSION;
         }
 
-        client.publish(MQTT_STATUS_TOPIC, JSON.stringify(status), { qos: 1, retain: false }, (err) => {
+        client.publish(MQTT_STATUS_TOPIC, JSON.stringify(status), { qos: 1, retain: true }, (err) => {
             if (err) {
                 console.error('[STATUS] Failed to publish status:', err);
             } else {

@@ -115,7 +115,7 @@ function publishStatus() {
         fwVersion: '1.0.0-simulator',
     };
 
-    client.publish(MQTT_STATUS_TOPIC, JSON.stringify(status), (err) => {
+    client.publish(MQTT_STATUS_TOPIC, JSON.stringify(status), { qos: 1, retain: true }, (err) => {
         if (err) {
             console.error(`✗ Failed to publish status:`, err);
         } else {

@@ -137,7 +137,7 @@ Published by the MCU for status updates. Currently, the backend only logs these 
 
 **MQTT Settings:**
 - **QoS**: 1 (at least once delivery)
-- **Retain**: false
+- **Retain**: true — so that when the backend reconnects and subscribes, the broker immediately delivers the last status and the device does not appear offline after a restart.
 
 ### Diagnostics Message (`pgr/mitspe6/gate/diagnostics`)
 
@@ -297,8 +297,8 @@ All MQTT and MCU configuration is controlled via environment variables:
 - [ ] Handle duplicate commands:
   - [ ] Commands with the same `requestId` should be idempotent
   - [ ] Consider tracking processed `requestId` values to avoid duplicate operations
-- [ ] (Optional) Implement status publishing:
-  - [ ] Publish status updates to `pgr/mitspe6/gate/status` with QoS 1
+  - [ ] (Optional) Implement status publishing:
+  - [ ] Publish status updates to `pgr/mitspe6/gate/status` with QoS 1, retain: true
   - [ ] Include `deviceId`, `online`, `updatedAt` (required fields)
   - [ ] Optionally include `rssi` and `fwVersion` (optional fields)
 
