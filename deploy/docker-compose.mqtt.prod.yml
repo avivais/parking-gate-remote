@@ -2,6 +2,7 @@ services:
     mosquitto:
         image: eclipse-mosquitto:2.0
         container_name: parking-mosquitto
+        init: true
         restart: always
         ports:
             - "0.0.0.0:8883:8883"  # MQTT over TLS only

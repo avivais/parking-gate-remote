@@ -14,6 +14,7 @@
 #endif
 #include <ArduinoJson.h>  // For parsing requestId from invalid JSON
 #include <WiFi.h>  // For WiFiClient (works with PPP if initialized)
+#include <WiFiClientSecure.h>
 
 // Disable watchdog timer to prevent boot loops
 #include "esp_task_wdt.h"
@@ -39,6 +40,10 @@ unsigned long stateEntryTime = 0;
 unsigned long lastPublishTime = 0;
 const unsigned long PUBLISH_INTERVAL = 5000; // Publish every 5 seconds
 int messageCount = 0;
+
+#if OOB_HTTP_ENABLED
+static unsigned long lastOobPollTime = 0;
+#endif
 
 // Recovery: when we escalate from MQTT to PPP rebuild, force PPP to start fresh
 static bool forcePppRestart = false;
@@ -355,6 +360,24 @@ void loop() {
             break;
 
         case STATE_MQTT_CONNECTING:
+            // Time-based escalation: don't stay stuck in MQTT_CONNECTING forever.
+            // If we can't get MQTT back within a bounded window, rebuild PPP to recover.
+            if (now - stateEntryTime > MQTT_CONNECTING_MAX_MS) {
+                Serial.println("[Device] MQTT connect taking too long, forcing PPP rebuild...");
+#if DIAGNOSTIC_LOG_ENABLED
+                char msg[16];
+                snprintf(msg, sizeof(msg), "ms=%lu", (unsigned long)(now - stateEntryTime));
+                diagnosticLog.append(DiagnosticLevel::Warn, "mqtt_stuck", msg);
+                diagnosticLog.append(DiagnosticLevel::Warn, "ppp_rebuild", "reason=mqtt_stuck");
+#endif
+                mqttManager->disconnect();
+                mqttManager->resetMqttFailStreak();
+                pppManager->stop();
+                forcePppRestart = true;
+                deviceState = STATE_PPP_CONNECTING;
+                stateEntryTime = now;
+                break;
+            }
             // Before retrying MQTT, check if we should escalate to PPP rebuild
             if (mqttManager->shouldRebuildPpp()) {
                 Serial.println("[Device] MQTT fail threshold exceeded, rebuilding PPP...");
@@ -418,6 +441,60 @@ void loop() {
             break;
 
         case STATE_MQTT_CONNECTED:
+#if OOB_HTTP_ENABLED
+            // OOB channel is a safety net: it can request reboot/PPP rebuild even if MQTT is flaky.
+            // Only attempt when PPP is up and on a timer to minimize data usage.
+            if (now - lastOobPollTime > OOB_POLL_INTERVAL_MS) {
+                lastOobPollTime = now;
+                // Poll backend for pending command.
+                WiFiClientSecure client;
+                if (OOB_TLS_INSECURE) {
+                    client.setInsecure();
+                }
+                if (client.connect(OOB_API_HOST, OOB_API_PORT)) {
+                    String path = String("/api/device/pending-command?deviceId=") + DEVICE_ID;
+                    client.print(String("GET ") + path + " HTTP/1.1\r\n");
+                    client.print(String("Host: ") + OOB_API_HOST + "\r\n");
+                    client.print("Connection: close\r\n");
+                    client.print(String("X-Device-Id: ") + DEVICE_ID + "\r\n");
+                    client.print(String("X-Device-Token: ") + OOB_DEVICE_TOKEN + "\r\n\r\n");
+
+                    // Skip headers
+                    while (client.connected()) {
+                        String line = client.readStringUntil('\n');
+                        if (line == "\r" || line.length() == 0) break;
+                    }
+
+                    String body = client.readString();
+                    body.trim();
+                    if (body.length() > 0) {
+                        StaticJsonDocument<256> doc;
+                        if (deserializeJson(doc, body) == DeserializationError::Ok) {
+                            const char* action = doc["action"] | "none";
+                            if (strcmp(action, "reboot") == 0) {
+#if DIAGNOSTIC_LOG_ENABLED
+                                diagnosticLog.append(DiagnosticLevel::Warn, "oob_reboot", nullptr);
+#endif
+                                esp_restart();
+                            } else if (strcmp(action, "rebuild_ppp") == 0) {
+#if DIAGNOSTIC_LOG_ENABLED
+                                diagnosticLog.append(DiagnosticLevel::Warn, "oob_ppp_rebuild", nullptr);
+#endif
+                                mqttManager->disconnect();
+                                mqttManager->resetMqttFailStreak();
+                                pppManager->stop();
+                                forcePppRestart = true;
+                                deviceState = STATE_PPP_CONNECTING;
+                                stateEntryTime = now;
+                                client.stop();
+                                break;
+                            }
+                        }
+                    }
+                    client.stop();
+                }
+            }
+#endif
             mqttManager->publishStatus();
             // Connection lost is detected either by modem (mqtt_connected) or by
             // failed status publish (MqttManager sets connected=false), so reconnect

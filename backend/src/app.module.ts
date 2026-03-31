@@ -9,6 +9,7 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { GateModule } from './gate/gate.module';
 import { AdminModule } from './admin/admin.module';
+import { DeviceModule } from './device/device.module';
 
 @Module({
     imports: [
@@ -43,6 +44,7 @@ import { AdminModule } from './admin/admin.module';
         AuthModule,
         GateModule,
         AdminModule,
+        DeviceModule,
     ],
     controllers: [AppController],
     providers: [

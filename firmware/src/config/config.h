@@ -8,7 +8,7 @@
 #define MQTT_HOST "mqtt.mitzpe6-8.com"  // Production MQTT broker hostname
 #define MQTT_PORT 8883  // TLS port
 #define MQTT_USERNAME "pgr_device_mitspe6"  // Production device user
-#define MQTT_PASSWORD "Avivr_121"
+#define MQTT_PASSWORD "REPLACE_WITH_PRODUCTION_PASSWORD"
 
 // MQTT Topics
 #define MQTT_CMD_TOPIC "pgr/mitspe6/gate/cmd"
@@ -21,6 +21,11 @@
 // Recovery Thresholds
 #define MQTT_FAILS_BEFORE_PPP_REBUILD 3
 #define PPP_FAILS_BEFORE_MODEM_RESET 2
+
+// Long-outage escalation: if we sit in MQTT_CONNECTING too long, force PPP rebuild.
+// This protects against failure modes where connect() doesn't increment fail streak quickly
+// (e.g. long backoff / modem stuck states) and avoids needing a physical power cycle.
+#define MQTT_CONNECTING_MAX_MS 300000  // 5 minutes
 
 // Exponential Backoff Configuration
 #define BACKOFF_BASE_MS 1000
@@ -68,6 +73,18 @@
 // DNS Configuration (Google Public DNS)
 #define DNS_PRIMARY "8.8.8.8"
 #define DNS_SECONDARY "8.8.4.4"
+
+// Out-of-band (OOB) remote recovery channel (device -> backend over HTTPS)
+// Disabled by default; enable after provisioning a device token in the backend.
+#define OOB_HTTP_ENABLED 0
+#define OOB_API_HOST "api.mitzpe6-8.com"
+#define OOB_API_PORT 443
+// Token must match backend DEVICE_TOKENS_JSON mapping for this deviceId.
+#define OOB_DEVICE_TOKEN "REPLACE_ME"
+// Poll interval while PPP is up (milliseconds)
+#define OOB_POLL_INTERVAL_MS 120000
+// TLS: set to 1 to skip certificate validation (not recommended).
+#define OOB_TLS_INSECURE 0
 
 // Firmware Version
 #define FW_VERSION "fw-prod-1.0.0"

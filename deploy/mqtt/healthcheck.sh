@@ -12,14 +12,16 @@ if [ -z "$PASSWORD" ]; then
 fi
 
 # Test connection by subscribing to status topic (pgr_server has read access to this)
-# Use a timeout and check if mosquitto_sub can connect
-timeout 5 mosquitto_sub \
+# Use mosquitto_sub's built-in timeout to avoid spawning `timeout(1)` zombies.
+# -W: timeout (seconds) to wait for a message before exiting.
+mosquitto_sub \
     -h localhost \
     -p 8883 \
     --cafile /mosquitto/certs/ca.crt \
     -u "$USERNAME" \
     -P "$PASSWORD" \
     -t 'pgr/mitspe6/gate/status' \
+    -W 5 \
     -C 1 > /dev/null 2>&1
 
 exit $?
