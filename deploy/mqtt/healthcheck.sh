@@ -11,16 +11,8 @@ if [ -z "$PASSWORD" ]; then
     exit 1
 fi
 
-# Test broker health by connecting and publishing a no-payload message.
-# This avoids depending on the MCU being online/publishing, and avoids spawning `timeout(1)`.
-mosquitto_pub \
-    -h localhost \
-    -p 8883 \
-    --cafile /mosquitto/certs/ca.crt \
-    -u "$USERNAME" \
-    -P "$PASSWORD" \
-    -t 'pgr/healthcheck' \
-    -n > /dev/null 2>&1
-
+# The eclipse-mosquitto image does not include mosquitto_sub/pub clients by default.
+# Use a lightweight process check that doesn't depend on the MCU or any extra binaries.
+pgrep -x mosquitto > /dev/null 2>&1
 exit $?
 
