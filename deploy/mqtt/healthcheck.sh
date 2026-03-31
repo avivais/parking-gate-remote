@@ -11,8 +11,8 @@ if [ -z "$PASSWORD" ]; then
     exit 1
 fi
 
-# Test connection by subscribing to status topic (pgr_server has read access to this)
-# Use mosquitto_sub's built-in timeout to avoid spawning `timeout(1)` zombies.
+# Test broker health by subscribing to a $SYS topic which Mosquitto publishes periodically.
+# This avoids depending on the MCU being online/publishing, and avoids spawning `timeout(1)`.
 # -W: timeout (seconds) to wait for a message before exiting.
 mosquitto_sub \
     -h localhost \
@@ -20,7 +20,7 @@ mosquitto_sub \
     --cafile /mosquitto/certs/ca.crt \
     -u "$USERNAME" \
     -P "$PASSWORD" \
-    -t 'pgr/mitspe6/gate/status' \
+    -t '$SYS/broker/version' \
     -W 5 \
     -C 1 > /dev/null 2>&1
 
