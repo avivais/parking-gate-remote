@@ -8,7 +8,7 @@
 #define MQTT_HOST "mqtt.mitzpe6-8.com"  // Production MQTT broker hostname
 #define MQTT_PORT 8883  // TLS port
 #define MQTT_USERNAME "pgr_device_mitspe6"  // Production device user
-#define MQTT_PASSWORD "REPLACE_WITH_PRODUCTION_PASSWORD"
+#define MQTT_PASSWORD "Avivr_121"
 
 // MQTT Topics
 #define MQTT_CMD_TOPIC "pgr/mitspe6/gate/cmd"
@@ -76,15 +76,15 @@
 
 // Out-of-band (OOB) remote recovery channel (device -> backend over HTTPS)
 // Disabled by default; enable after provisioning a device token in the backend.
-#define OOB_HTTP_ENABLED 0
+#define OOB_HTTP_ENABLED 1
 #define OOB_API_HOST "api.mitzpe6-8.com"
 #define OOB_API_PORT 443
 // Token must match backend DEVICE_TOKENS_JSON mapping for this deviceId.
-#define OOB_DEVICE_TOKEN "REPLACE_ME"
+#define OOB_DEVICE_TOKEN "g8PWawpEDmAPfjW516hQU4OVUz1rpX68"
 // Poll interval while PPP is up (milliseconds)
 #define OOB_POLL_INTERVAL_MS 120000
 // TLS: set to 1 to skip certificate validation (not recommended).
-#define OOB_TLS_INSECURE 0
+#define OOB_TLS_INSECURE 1
 
 // Firmware Version
 #define FW_VERSION "fw-prod-1.0.0"

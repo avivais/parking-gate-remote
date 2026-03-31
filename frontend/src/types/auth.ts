@@ -141,3 +141,11 @@ export interface DeviceDiagnosticsResponse {
     diagnostics: DeviceDiagnosticDoc[];
 }
 
+export interface DevicePendingCommandResponse {
+    deviceId: string;
+    action: "none" | "reboot" | "rebuild_ppp";
+    reason: string | null;
+    expiresAt?: string | null;
+    createdAt?: string | null;
+}
+

@@ -14,7 +14,6 @@
 #endif
 #include <ArduinoJson.h>  // For parsing requestId from invalid JSON
 #include <WiFi.h>  // For WiFiClient (works with PPP if initialized)
-#include <WiFiClientSecure.h>
 
 // Disable watchdog timer to prevent boot loops
 #include "esp_task_wdt.h"
@@ -43,6 +42,8 @@ int messageCount = 0;
 
 #if OOB_HTTP_ENABLED
 static unsigned long lastOobPollTime = 0;
+static bool applyOobAction(const char* action, unsigned long now);
+static bool pollOobCommandViaModem(unsigned long now);
 #endif
 
 // Recovery: when we escalate from MQTT to PPP rebuild, force PPP to start fresh
@@ -53,6 +54,82 @@ static int modemInitRetries = 0;
 #if DIAGNOSTIC_LOG_ENABLED
 static DiagnosticLog diagnosticLog;
 static uint32_t bootSessionId = 0;
+#endif
+
+#if OOB_HTTP_ENABLED
+static bool applyOobAction(const char* action, unsigned long now) {
+    if (strcmp(action, "reboot") == 0) {
+        Serial.println("[OOB] Action received: reboot");
+#if DIAGNOSTIC_LOG_ENABLED
+        diagnosticLog.append(DiagnosticLevel::Warn, "oob_reboot", nullptr);
+#endif
+        esp_restart();
+        return true;
+    }
+    if (strcmp(action, "rebuild_ppp") == 0) {
+        Serial.println("[OOB] Action received: rebuild_ppp");
+#if DIAGNOSTIC_LOG_ENABLED
+        diagnosticLog.append(DiagnosticLevel::Warn, "oob_ppp_rebuild", nullptr);
+#endif
+        mqttManager->disconnect();
+        mqttManager->resetMqttFailStreak();
+        pppManager->stop();
+        forcePppRestart = true;
+        deviceState = STATE_PPP_CONNECTING;
+        stateEntryTime = now;
+        return true;
+    }
+    return false;
+}
+
+static bool pollOobCommandViaModem(unsigned long now) {
+    if (pppManager == nullptr) return false;
+    TinyGsm* modem = pppManager->getModem();
+    if (modem == nullptr) return false;
+
+    Serial.println("[OOB] Polling pending-command via built-in HTTPS...");
+    modem->https_begin();
+    String url = String("https://") + OOB_API_HOST + "/api/device/pending-command?deviceId=" + DEVICE_ID;
+    bool setOk = modem->https_set_url(url.c_str());
+    Serial.print("[OOB] https_set_url => ");
+    Serial.println(setOk ? "OK" : "FAIL");
+    if (!setOk) {
+        modem->https_end();
+        return false;
+    }
+
+    modem->https_add_header("Connection", "close");
+    modem->https_add_header("X-Device-Id", DEVICE_ID);
+    modem->https_add_header("X-Device-Token", OOB_DEVICE_TOKEN);
+
+    size_t responseSize = 0;
+    int code = modem->https_get(&responseSize);
+    Serial.print("[OOB] https_get code => ");
+    Serial.println(code);
+    Serial.print("[OOB] response size hint => ");
+    Serial.println((unsigned long)responseSize);
+    if (code == 205) {
+        Serial.println("[OOB] status 205 => reboot");
+        modem->https_end();
+        return applyOobAction("reboot", now);
+    }
+    if (code == 206) {
+        Serial.println("[OOB] status 206 => rebuild_ppp");
+        modem->https_end();
+        return applyOobAction("rebuild_ppp", now);
+    }
+    if (code == 200) {
+        // No command pending; avoid body/header parsing due to modem API instability.
+        modem->https_end();
+        return false;
+    }
+    if (code != 200) {
+        Serial.println("[OOB] non-command status, skipping body parse");
+        modem->https_end();
+        return false;
+    }
+    return false;
+}
 #endif
 
 void setup() {
@@ -339,7 +416,7 @@ void loop() {
                 // Step 2: Initialize modem MQTT with TLS (like POC)
                 if (mqttSetup && !mqttInitialized && (now - pppUpTime > 2000)) {
                     Serial.println("[Device] Initializing modem MQTT with TLS...");
-                    if (mqttManager->initializeModemMqtt(true, true, ProductionRootCA)) {
+                    if (mqttManager->initializeModemMqtt(true, true, nullptr)) {
                         Serial.println("[Device] Modem MQTT initialized with TLS");
                         mqttInitialized = true;
                     } else {
@@ -446,52 +523,8 @@ void loop() {
             // Only attempt when PPP is up and on a timer to minimize data usage.
             if (now - lastOobPollTime > OOB_POLL_INTERVAL_MS) {
                 lastOobPollTime = now;
-                // Poll backend for pending command.
-                WiFiClientSecure client;
-                if (OOB_TLS_INSECURE) {
-                    client.setInsecure();
-                }
-                if (client.connect(OOB_API_HOST, OOB_API_PORT)) {
-                    String path = String("/api/device/pending-command?deviceId=") + DEVICE_ID;
-                    client.print(String("GET ") + path + " HTTP/1.1\r\n");
-                    client.print(String("Host: ") + OOB_API_HOST + "\r\n");
-                    client.print("Connection: close\r\n");
-                    client.print(String("X-Device-Id: ") + DEVICE_ID + "\r\n");
-                    client.print(String("X-Device-Token: ") + OOB_DEVICE_TOKEN + "\r\n\r\n");
-
-                    // Skip headers
-                    while (client.connected()) {
-                        String line = client.readStringUntil('\n');
-                        if (line == "\r" || line.length() == 0) break;
-                    }
-
-                    String body = client.readString();
-                    body.trim();
-                    if (body.length() > 0) {
-                        StaticJsonDocument<256> doc;
-                        if (deserializeJson(doc, body) == DeserializationError::Ok) {
-                            const char* action = doc["action"] | "none";
-                            if (strcmp(action, "reboot") == 0) {
-#if DIAGNOSTIC_LOG_ENABLED
-                                diagnosticLog.append(DiagnosticLevel::Warn, "oob_reboot", nullptr);
-#endif
-                                esp_restart();
-                            } else if (strcmp(action, "rebuild_ppp") == 0) {
-#if DIAGNOSTIC_LOG_ENABLED
-                                diagnosticLog.append(DiagnosticLevel::Warn, "oob_ppp_rebuild", nullptr);
-#endif
-                                mqttManager->disconnect();
-                                mqttManager->resetMqttFailStreak();
-                                pppManager->stop();
-                                forcePppRestart = true;
-                                deviceState = STATE_PPP_CONNECTING;
-                                stateEntryTime = now;
-                                client.stop();
-                                break;
-                            }
-                        }
-                    }
-                    client.stop();
+                if (pollOobCommandViaModem(now)) {
+                    break;
                 }
             }
 #endif

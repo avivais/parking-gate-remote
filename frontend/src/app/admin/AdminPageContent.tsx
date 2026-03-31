@@ -11,6 +11,7 @@ import type {
     AdminUser,
     DeviceStatusResponse,
     DeviceDiagnosticsResponse,
+    DevicePendingCommandResponse,
 } from "@/types/auth";
 import toast from "react-hot-toast";
 import { Terminal } from "@/components/Terminal";
@@ -172,6 +173,8 @@ export default function AdminPageContent({ defaultTab }: AdminPageContentProps) 
 
     // Device status state
     const [deviceStatusData, setDeviceStatusData] = useState<DeviceStatusResponse | null>(null);
+    const [devicePendingMap, setDevicePendingMap] = useState<Record<string, DevicePendingCommandResponse>>({});
+    const [pendingBusyDeviceId, setPendingBusyDeviceId] = useState<string | null>(null);
 
     // Diagnostics modal state
     const [diagnosticsModalOpen, setDiagnosticsModalOpen] = useState(false);
@@ -418,6 +421,22 @@ export default function AdminPageContent({ defaultTab }: AdminPageContentProps) 
                 })
             };
             setDeviceStatusData(processedData);
+            const pendingResults = await Promise.all(
+                processedData.items.map(async (device) => {
+                    try {
+                        const pending = await apiRequest<DevicePendingCommandResponse>(
+                            `/device/admin/${encodeURIComponent(device.deviceId)}/pending-command`,
+                        );
+                        return [device.deviceId, pending] as const;
+                    } catch {
+                        return [
+                            device.deviceId,
+                            { deviceId: device.deviceId, action: "none", reason: null } satisfies DevicePendingCommandResponse,
+                        ] as const;
+                    }
+                }),
+            );
+            setDevicePendingMap(Object.fromEntries(pendingResults));
         } catch (err) {
             if (err instanceof ApiError) {
                 if (err.message === AUTH_FORBIDDEN || err.status === 403) {
@@ -434,6 +453,55 @@ export default function AdminPageContent({ defaultTab }: AdminPageContentProps) 
             }
         }
     }, []);
+
+    const setPendingCommandForDevice = useCallback(
+        async (deviceId: string, action: "reboot" | "rebuild_ppp") => {
+            setPendingBusyDeviceId(deviceId);
+            try {
+                await apiRequest(`/device/admin/${encodeURIComponent(deviceId)}/pending-command`, {
+                    method: "POST",
+                    body: {
+                        action,
+                        reason: "admin_dashboard",
+                        ttlSeconds: 300,
+                    },
+                });
+                toast.success(action === "reboot" ? "פקודת אתחול נשלחה" : "פקודת בניית PPP נשלחה");
+                await loadDeviceStatus(true);
+            } catch (err) {
+                if (err instanceof ApiError) {
+                    toast.error(err.message || "שגיאה בשליחת פקודה");
+                } else {
+                    toast.error("שגיאה בשליחת פקודה");
+                }
+            } finally {
+                setPendingBusyDeviceId(null);
+            }
+        },
+        [loadDeviceStatus],
+    );
+
+    const clearPendingCommandForDevice = useCallback(
+        async (deviceId: string) => {
+            setPendingBusyDeviceId(deviceId);
+            try {
+                await apiRequest(`/device/admin/${encodeURIComponent(deviceId)}/pending-command`, {
+                    method: "DELETE",
+                });
+                toast.success("פקודה ממתינה נוקתה");
+                await loadDeviceStatus(true);
+            } catch (err) {
+                if (err instanceof ApiError) {
+                    toast.error(err.message || "שגיאה בניקוי פקודה");
+                } else {
+                    toast.error("שגיאה בניקוי פקודה");
+                }
+            } finally {
+                setPendingBusyDeviceId(null);
+            }
+        },
+        [loadDeviceStatus],
+    );
 
     const openDiagnostics = useCallback((deviceId: string) => {
         setDiagnosticsDeviceId(deviceId);
@@ -2201,6 +2269,47 @@ export default function AdminPageContent({ defaultTab }: AdminPageContentProps) 
                                                             <span style={{ color: "var(--text)" }}>{device.fwVersion}</span>
                                                         </div>
                                                     )}
+                                                    <div className="flex justify-between">
+                                                        <span className="text-muted">פקודה ממתינה:</span>
+                                                        <span style={{ color: "var(--text)" }}>
+                                                            {devicePendingMap[device.deviceId]?.action ?? "none"}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-wrap gap-2 pt-1">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            void setPendingCommandForDevice(device.deviceId, "rebuild_ppp");
+                                                        }}
+                                                        disabled={pendingBusyDeviceId === device.deviceId}
+                                                        className="rounded-theme-md border border-theme bg-surface px-2 py-1 text-xs font-medium hover:bg-surface-2 disabled:opacity-50"
+                                                        style={{ color: "var(--text)" }}
+                                                    >
+                                                        PPP Rebuild
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            void setPendingCommandForDevice(device.deviceId, "reboot");
+                                                        }}
+                                                        disabled={pendingBusyDeviceId === device.deviceId}
+                                                        className="rounded-theme-md border border-theme bg-surface px-2 py-1 text-xs font-medium hover:bg-surface-2 disabled:opacity-50"
+                                                        style={{ color: "var(--text)" }}
+                                                    >
+                                                        Reboot
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            void clearPendingCommandForDevice(device.deviceId);
+                                                        }}
+                                                        disabled={pendingBusyDeviceId === device.deviceId}
+                                                        className="rounded-theme-md border border-theme bg-surface px-2 py-1 text-xs font-medium hover:bg-surface-2 disabled:opacity-50"
+                                                        style={{ color: "var(--text)" }}
+                                                    >
+                                                        Clear
+                                                    </button>
                                                 </div>
                                             </div>
                                         ))
@@ -2231,13 +2340,19 @@ export default function AdminPageContent({ defaultTab }: AdminPageContentProps) 
                                                     <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
                                                         גרסת תוכנה
                                                     </th>
+                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
+                                                        פקודת OOB
+                                                    </th>
+                                                    <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider" style={{ color: "var(--table-header-text)" }}>
+                                                        פעולות
+                                                    </th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y bg-surface" style={{ borderColor: "var(--table-border)" }}>
                                                 {deviceStatusData.items.length === 0 ? (
                                                     <tr>
                                                         <td
-                                                            colSpan={6}
+                                                            colSpan={8}
                                                             className="px-6 py-4 text-center text-sm text-muted"
                                                         >
                                                             אין מכשירים להצגה
@@ -2289,6 +2404,46 @@ export default function AdminPageContent({ defaultTab }: AdminPageContentProps) 
                                                             </td>
                                                             <td className="whitespace-nowrap px-6 py-4 text-sm text-muted">
                                                                 {device.fwVersion || "-"}
+                                                            </td>
+                                                            <td className="whitespace-nowrap px-6 py-4 text-sm text-muted">
+                                                                {devicePendingMap[device.deviceId]?.action ?? "none"}
+                                                            </td>
+                                                            <td className="whitespace-nowrap px-6 py-4 text-sm">
+                                                                <div className="flex items-center gap-2">
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            void setPendingCommandForDevice(device.deviceId, "rebuild_ppp");
+                                                                        }}
+                                                                        disabled={pendingBusyDeviceId === device.deviceId}
+                                                                        className="rounded-theme-md border border-theme bg-surface px-2 py-1 text-xs font-medium hover:bg-surface-2 disabled:opacity-50"
+                                                                        style={{ color: "var(--text)" }}
+                                                                    >
+                                                                        PPP
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            void setPendingCommandForDevice(device.deviceId, "reboot");
+                                                                        }}
+                                                                        disabled={pendingBusyDeviceId === device.deviceId}
+                                                                        className="rounded-theme-md border border-theme bg-surface px-2 py-1 text-xs font-medium hover:bg-surface-2 disabled:opacity-50"
+                                                                        style={{ color: "var(--text)" }}
+                                                                    >
+                                                                        Reboot
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            void clearPendingCommandForDevice(device.deviceId);
+                                                                        }}
+                                                                        disabled={pendingBusyDeviceId === device.deviceId}
+                                                                        className="rounded-theme-md border border-theme bg-surface px-2 py-1 text-xs font-medium hover:bg-surface-2 disabled:opacity-50"
+                                                                        style={{ color: "var(--text)" }}
+                                                                    >
+                                                                        Clear
+                                                                    </button>
+                                                                </div>
                                                             </td>
                                                         </tr>
                                                     ))

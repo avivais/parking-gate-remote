@@ -109,6 +109,32 @@ export class DeviceCommandsService {
         };
     }
 
+    async getLatestPending(deviceId: string) {
+        const now = new Date();
+        const doc = await this.pendingModel
+            .findOne({
+                deviceId,
+                consumedAt: { $exists: false },
+                $or: [{ expiresAt: { $exists: false } }, { expiresAt: { $gt: now } }],
+            })
+            .sort({ createdAt: -1 })
+            .exec();
+
+        if (!doc) {
+            return { deviceId, action: 'none' as const, reason: null, expiresAt: null, createdAt: null };
+        }
+
+        return {
+            deviceId,
+            action: doc.action as DeviceCommandAction,
+            reason: doc.reason ?? null,
+            expiresAt: doc.expiresAt ? new Date(doc.expiresAt).toISOString() : null,
+            createdAt: (doc as any).createdAt
+                ? new Date((doc as any).createdAt).toISOString()
+                : null,
+        };
+    }
+
     async getOta(deviceId: string) {
         const manifest = this.getOtaManifest(deviceId);
         if (!manifest) return { deviceId, ota: null };
