@@ -71,6 +71,7 @@ cp "$LOCAL_PROJECT_ROOT/deploy/docker-compose.mqtt.prod.yml" "$TEMP_DIR/docker-c
 echo "  - MQTT configuration..."
 cp "$LOCAL_PROJECT_ROOT/deploy/mosquitto.prod.conf" "$TEMP_DIR/mqtt/mosquitto.conf"
 cp "$LOCAL_PROJECT_ROOT/mqtt/aclfile" "$TEMP_DIR/mqtt/aclfile" 2>/dev/null || true
+cp "$LOCAL_PROJECT_ROOT/deploy/mqtt/healthcheck.sh" "$TEMP_DIR/mqtt/healthcheck.sh" 2>/dev/null || true
 cp "$LOCAL_PROJECT_ROOT/deploy/generate-mqtt-certs.sh" "$TEMP_DIR/mqtt/certs/"
 
 # Copy Apache configurations (for separate handling)
