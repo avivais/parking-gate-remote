@@ -11,18 +11,16 @@ if [ -z "$PASSWORD" ]; then
     exit 1
 fi
 
-# Test broker health by subscribing to a $SYS topic which Mosquitto publishes periodically.
+# Test broker health by connecting and publishing a no-payload message.
 # This avoids depending on the MCU being online/publishing, and avoids spawning `timeout(1)`.
-# -W: timeout (seconds) to wait for a message before exiting.
-mosquitto_sub \
+mosquitto_pub \
     -h localhost \
     -p 8883 \
     --cafile /mosquitto/certs/ca.crt \
     -u "$USERNAME" \
     -P "$PASSWORD" \
-    -t '$SYS/broker/version' \
-    -W 20 \
-    -C 1 > /dev/null 2>&1
+    -t 'pgr/healthcheck' \
+    -n > /dev/null 2>&1
 
 exit $?
 
