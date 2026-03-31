@@ -65,7 +65,7 @@ sleep 2
 # Start backend
 echo ""
 echo "Starting backend..."
-$DOCKER_COMPOSE up -d backend
+$DOCKER_COMPOSE up -d --build --force-recreate backend
 
 # Wait a moment for backend
 sleep 2
@@ -73,7 +73,7 @@ sleep 2
 # Start frontend
 echo ""
 echo "Starting frontend..."
-$DOCKER_COMPOSE up -d frontend
+$DOCKER_COMPOSE up -d --build --force-recreate frontend
 
 # Show status
 echo ""
