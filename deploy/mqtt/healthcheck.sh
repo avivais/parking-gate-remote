@@ -21,7 +21,7 @@ mosquitto_sub \
     -u "$USERNAME" \
     -P "$PASSWORD" \
     -t '$SYS/broker/version' \
-    -W 5 \
+    -W 20 \
     -C 1 > /dev/null 2>&1
 
 exit $?
