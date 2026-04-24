@@ -79,6 +79,10 @@ export class UsersService {
         return this.userModel.findById(id).exec();
     }
 
+    async deleteById(id: string): Promise<UserDocument | null> {
+        return this.userModel.findByIdAndDelete(id).exec();
+    }
+
     async findAll(): Promise<User[]> {
         return this.userModel.find().exec();
     }

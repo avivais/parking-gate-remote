@@ -6,9 +6,12 @@ import {
     IsNumber,
     Matches,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 export class RegisterDto {
+    @Transform(({ value }) =>
+        typeof value === 'string' ? value.trim().toLowerCase() : value,
+    )
     @IsEmail({}, { message: 'כתובת אימייל לא תקינה' })
     @IsNotEmpty({ message: 'אימייל הוא שדה חובה' })
     email: string;

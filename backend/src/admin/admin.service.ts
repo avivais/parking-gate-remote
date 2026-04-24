@@ -530,6 +530,28 @@ export class AdminService {
         };
     }
 
+    async deleteUser(
+        userId: string,
+        actingAdminId: string,
+    ): Promise<{ id: string; email: string }> {
+        if (userId === actingAdminId) {
+            throw new BadRequestException('לא ניתן למחוק את החשבון של עצמך');
+        }
+
+        const user = await this.usersService.findById(userId);
+        if (!user) {
+            throw new NotFoundException('משתמש לא נמצא');
+        }
+
+        await this.usersService.clearAllSessions(userId);
+        const deleted = await this.usersService.deleteById(userId);
+        if (!deleted) {
+            throw new NotFoundException('משתמש לא נמצא');
+        }
+
+        return { id: deleted._id.toString(), email: deleted.email };
+    }
+
     async resetUserDevice(
         userId: string,
         deviceId?: string,

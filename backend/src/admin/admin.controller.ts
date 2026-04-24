@@ -1,13 +1,16 @@
 import {
     Controller,
+    Delete,
     Get,
     Post,
     Patch,
     Param,
     Body,
     Query,
+    Request,
     UseGuards,
 } from '@nestjs/common';
+import { Request as ExpressRequest } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { SkipThrottle } from '@nestjs/throttler';
 import { AdminService } from './admin.service';
@@ -37,6 +40,14 @@ export class AdminController {
         @Body() updateDto: UpdateUserDto,
     ) {
         return this.adminService.updateUser(id, updateDto);
+    }
+
+    @Delete('users/:id')
+    async deleteUser(
+        @Param('id') id: string,
+        @Request() req: ExpressRequest & { user: { userId: string } },
+    ) {
+        return this.adminService.deleteUser(id, req.user.userId);
     }
 
     @Patch('users/:id/role')

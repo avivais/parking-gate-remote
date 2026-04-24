@@ -133,6 +133,8 @@ export default function AdminPageContent({ defaultTab }: AdminPageContentProps) 
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [editModalConfirmClose, setEditModalConfirmClose] = useState(false);
     const [approveAllModalOpen, setApproveAllModalOpen] = useState(false);
+    const [deleteUserModalOpen, setDeleteUserModalOpen] = useState(false);
+    const [userToDelete, setUserToDelete] = useState<AdminUser | null>(null);
     const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
     const [rejectionReason, setRejectionReason] = useState("");
     const [editFormData, setEditFormData] = useState({
@@ -656,6 +658,50 @@ export default function AdminPageContent({ defaultTab }: AdminPageContentProps) 
         }
     };
 
+    // Handle reactivate archived user
+    const handleReactivateUser = async (userId: string) => {
+        try {
+            await apiRequest(`/admin/users/${userId}`, {
+                method: "PATCH",
+                body: { status: "approved" },
+            });
+            toast.success("המשתמש הופעל מחדש");
+            loadUsers();
+        } catch (err) {
+            if (err instanceof ApiError) {
+                toast.error(err.message || "שגיאה בהפעלת המשתמש");
+            } else {
+                toast.error("שגיאה בהפעלת המשתמש");
+            }
+        }
+    };
+
+    // Open delete confirmation modal
+    const openDeleteUserModal = (user: AdminUser) => {
+        setUserToDelete(user);
+        setDeleteUserModalOpen(true);
+    };
+
+    // Handle confirmed delete user
+    const handleDeleteUser = async () => {
+        if (!userToDelete) return;
+        try {
+            await apiRequest(`/admin/users/${userToDelete.id}`, {
+                method: "DELETE",
+            });
+            toast.success("המשתמש נמחק לצמיתות");
+            setDeleteUserModalOpen(false);
+            setUserToDelete(null);
+            loadUsers();
+        } catch (err) {
+            if (err instanceof ApiError) {
+                toast.error(err.message || "שגיאה במחיקת המשתמש");
+            } else {
+                toast.error("שגיאה במחיקת המשתמש");
+            }
+        }
+    };
+
     // Handle edit user
     const handleEditUser = async () => {
         if (!selectedUser) return;
@@ -881,6 +927,9 @@ export default function AdminPageContent({ defaultTab }: AdminPageContentProps) 
                     setRejectionReason("");
                 } else if (approveAllModalOpen) {
                     setApproveAllModalOpen(false);
+                } else if (deleteUserModalOpen) {
+                    setDeleteUserModalOpen(false);
+                    setUserToDelete(null);
                 } else if (editModalOpen) {
                     if (editFormHasChanges || isResettingPassword) {
                         if (!editModalConfirmClose) {
@@ -903,13 +952,13 @@ export default function AdminPageContent({ defaultTab }: AdminPageContentProps) 
             }
         };
 
-        if (rejectModalOpen || approveAllModalOpen || editModalOpen || logModalOpen || diagnosticsModalOpen) {
+        if (rejectModalOpen || approveAllModalOpen || deleteUserModalOpen || editModalOpen || logModalOpen || diagnosticsModalOpen) {
             document.addEventListener("keydown", handleEscapeKey);
             return () => {
                 document.removeEventListener("keydown", handleEscapeKey);
             };
         }
-    }, [rejectModalOpen, approveAllModalOpen, editModalOpen, logModalOpen, diagnosticsModalOpen, closeDiagnostics, editFormHasChanges, isResettingPassword, editModalConfirmClose]);
+    }, [rejectModalOpen, approveAllModalOpen, deleteUserModalOpen, editModalOpen, logModalOpen, diagnosticsModalOpen, closeDiagnostics, editFormHasChanges, isResettingPassword, editModalConfirmClose]);
 
     // Confirm close edit modal (discard changes)
     const confirmCloseEditModal = () => {
@@ -1326,6 +1375,28 @@ export default function AdminPageContent({ defaultTab }: AdminPageContentProps) 
                                                             השבתה
                                                         </button>
                                                     )}
+                                                    {user.status === "archived" && (
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleReactivateUser(user.id); }}
+                                                            className="rounded-theme-sm px-3 py-1.5 text-xs font-medium"
+                                                            style={{
+                                                                backgroundColor: "var(--success)",
+                                                                color: "var(--primary-contrast)",
+                                                            }}
+                                                        >
+                                                            הפעלה
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); openDeleteUserModal(user); }}
+                                                        className="rounded-theme-sm px-3 py-1.5 text-xs font-medium"
+                                                        style={{
+                                                            backgroundColor: "var(--danger)",
+                                                            color: "var(--primary-contrast)",
+                                                        }}
+                                                    >
+                                                        מחיקה
+                                                    </button>
                                                 </div>
                                             </div>
                                         ))
@@ -1573,6 +1644,28 @@ export default function AdminPageContent({ defaultTab }: AdminPageContentProps) 
                                                                                 השבתה
                                                                             </button>
                                                                         )}
+                                                                        {user.status === "archived" && (
+                                                                            <button
+                                                                                onClick={(e) => { e.stopPropagation(); handleReactivateUser(user.id); }}
+                                                                                className="btn-success rounded-theme-sm px-2 py-0.5 text-xs font-medium"
+                                                                                style={{
+                                                                                    backgroundColor: "var(--success)",
+                                                                                    color: "var(--primary-contrast)",
+                                                                                }}
+                                                                            >
+                                                                                הפעלה
+                                                                            </button>
+                                                                        )}
+                                                                        <button
+                                                                            onClick={(e) => { e.stopPropagation(); openDeleteUserModal(user); }}
+                                                                            className="btn-danger rounded-theme-sm px-2 py-0.5 text-xs font-medium"
+                                                                            style={{
+                                                                                backgroundColor: "var(--danger)",
+                                                                                color: "var(--primary-contrast)",
+                                                                            }}
+                                                                        >
+                                                                            מחיקה
+                                                                        </button>
                                                                     </div>
                                                                 </td>
                                                             </tr>,
@@ -2541,6 +2634,41 @@ export default function AdminPageContent({ defaultTab }: AdminPageContentProps) 
                                     }}
                                 >
                                     אישור הכל
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {deleteUserModalOpen && userToDelete && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}>
+                        <div className="card-theme w-full max-w-md p-6 shadow-theme-lg">
+                            <h3 className="mb-4 text-lg font-bold" style={{ color: "var(--danger)" }}>
+                                מחיקת משתמש
+                            </h3>
+                            <p className="mb-2 text-sm" style={{ color: "var(--text)" }}>
+                                האם למחוק את {userToDelete.firstName} {userToDelete.lastName} ({userToDelete.email})?
+                            </p>
+                            <p className="mb-4 text-sm font-semibold" style={{ color: "var(--danger)" }}>
+                                פעולה זו אינה הפיכה. החשבון וכל הסשנים שלו יימחקו לצמיתות.
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => { setDeleteUserModalOpen(false); setUserToDelete(null); }}
+                                    className="btn-outline flex-1 rounded-theme-md border border-theme bg-surface px-4 py-2 text-sm font-medium"
+                                    style={{ color: "var(--text)" }}
+                                >
+                                    ביטול
+                                </button>
+                                <button
+                                    onClick={handleDeleteUser}
+                                    className="btn-danger flex-1 rounded-theme-md px-4 py-2 text-sm font-medium"
+                                    style={{
+                                        backgroundColor: "var(--danger)",
+                                        color: "var(--primary-contrast)",
+                                    }}
+                                >
+                                    מחק לצמיתות
                                 </button>
                             </div>
                         </div>
